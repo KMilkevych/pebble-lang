@@ -12,11 +12,14 @@ run ~zig build run -- interactive~ to start the interactive REPL shell.
 
 Computing the first =N= fibonacci numbers:
 #+begin_src
-declare N = 1000
+declare N = 10
 declare n1 = 1
 declare n2 = n1
 
-while n1 + n2 <= N {
+declare i = 1
+while i <= N  {
+
+      i = i + 1
       print n1
 
       declare TMP = n1
@@ -24,14 +27,29 @@ while n1 + n2 <= N {
       n2 = TMP
 }
 #+end_src
+which results in output
+#+begin_example
+1
+2
+3
+5
+8
+13
+21
+34
+55
+89
+#+end_example
+
 
 * Features
 ** Implemented
 - Integer and boolean types
 - Basic control flow (if and while)
 - PRINT statements
+- Basic lexical scoping
 
-** TODO
+** Not yet implemented
 - String types
 - Floating point types
 - COMMA declarations, e.g. ~declare x = 1, y = 2, z = 3~
