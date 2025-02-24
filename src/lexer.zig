@@ -263,11 +263,8 @@ pub const Lexer = struct {
         var tok: token.Token = undefined;
 
         var isStatement: bool = false;
+        while (true) {
 
-        while (switch(tok) {
-            .EOF => false,
-            else => true
-        }) {
             tok = self.lexToken();
             switch (tok) {
 
@@ -306,6 +303,7 @@ pub const Lexer = struct {
                 // EOF is the last token
                 .EOF => {
                     res.append(tok) catch unreachable;
+                    break;
                 },
 
                 // Otherwise, skip it
