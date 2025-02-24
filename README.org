@@ -1,0 +1,43 @@
+#+title: pebble-lang
+
+* Usage
+
+Run ~zig build run -- compile filename~ to execute the interpreter pipeline on the contents of =filename=
+
+or
+
+run ~zig build run -- interactive~ to start the interactive REPL shell.
+
+* Example
+
+Computing the first =N= fibonacci numbers:
+#+begin_src
+declare N = 1000
+declare n1 = 1
+declare n2 = n1
+
+while n1 + n2 <= N {
+      print n1
+
+      declare TMP = n1
+      n1 = n1 + n2
+      n2 = TMP
+}
+#+end_src
+
+* Features
+** Implemented
+- Integer and boolean types
+- Basic control flow (if and while)
+- PRINT statements
+
+** TODO
+- String types
+- Floating point types
+- COMMA declarations, e.g. ~declare x = 1, y = 2, z = 3~
+- Function calls
+- ~break~ and ~continue~ statements
+- Lists
+- Structs
+- For-loops
+- INPUT statements
