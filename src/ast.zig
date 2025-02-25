@@ -302,6 +302,8 @@ pub const Stmt = union(enum) {
     BlockStmt: []const Stmt,
     IfElseStmt: *const IfElseStmt,
     WhileStmt: *const WhileStmt,
+    BreakStmt: void,
+    ContinueStmt: void,
 
     pub fn destroyAll(self: *const Stmt, allocator: std.mem.Allocator) void {
         switch (self.*) {
@@ -314,6 +316,8 @@ pub const Stmt = union(enum) {
             },
             .IfElseStmt => |stmt| stmt.destroyAll(allocator),
             .WhileStmt => |stmt| stmt.destroyAll(allocator),
+            .BreakStmt => {},
+            .ContinueStmt => {},
         }
     }
 
@@ -336,6 +340,8 @@ pub const Stmt = union(enum) {
             },
             .IfElseStmt => |stmt| try writer.print("{}\n", .{stmt}),
             .WhileStmt => |stmt| try writer.print("{}\n", .{stmt}),
+            .BreakStmt => try writer.print("BREAK\n", .{}),
+            .ContinueStmt => try writer.print("CONTINUE\n", .{}),
         };
     }
 };

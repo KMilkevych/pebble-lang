@@ -140,9 +140,67 @@ test "declare statement undefined" {
     var env = venv.Env.new(std.testing.allocator);
     defer env.deinit();
 
-    try interpreter.evalStmt(stmt, &env);
+    _ = try interpreter.evalStmt(stmt, &env);
 
     // Assert that x has been added into environment as undefined
     const objval: ?venv.ObjectVal = env.lookup("x");
     try std.testing.expectEqualDeep(venv.ObjectVal {.Var = venv.Value {.Undefined = {}}}, objval);
+}
+
+
+test "break statement" {
+    const input: []const u8 =
+        \\declare x = 10
+        \\while x > 0 {
+        \\x = x - 1
+        \\if x == 5 break
+        \\}
+    ;
+
+    var lxr: lexer.Lexer = lexer.Lexer.new(input, std.testing.allocator);
+    const tokens: std.ArrayList(token.Token) = lxr.lex();
+    defer tokens.deinit();
+
+    var prsr: parser.Parser = parser.Parser.new(tokens, std.testing.allocator);
+    const proc: ast.Proc = try prsr.parseProcedure();
+    defer proc.destroyAll(std.testing.allocator);
+
+    var env = venv.Env.new(std.testing.allocator);
+    defer env.deinit();
+
+    _ = try interpreter.evalProc(proc, &env);
+
+    // Assert that x has been added into environment as undefined
+    const objval: ?venv.ObjectVal = env.lookup("x");
+    try std.testing.expectEqualDeep(venv.ObjectVal {.Var = venv.Value {.Int = 5}}, objval);
+}
+
+test "continue statement" {
+    const input: []const u8 =
+        \\declare x = 10
+        \\declare y = 0
+        \\while x > 0 {
+        \\x = x - 1
+        \\continue
+        \\y = y + 1
+        \\}
+        \\y = y + 1
+    ;
+
+    var lxr: lexer.Lexer = lexer.Lexer.new(input, std.testing.allocator);
+    const tokens: std.ArrayList(token.Token) = lxr.lex();
+    defer tokens.deinit();
+
+    var prsr: parser.Parser = parser.Parser.new(tokens, std.testing.allocator);
+    const proc: ast.Proc = try prsr.parseProcedure();
+    defer proc.destroyAll(std.testing.allocator);
+
+    var env = venv.Env.new(std.testing.allocator);
+    defer env.deinit();
+
+    _ = try interpreter.evalProc(proc, &env);
+
+    // Assert that x has been added into environment as undefined
+    const objval: ?venv.ObjectVal = env.lookup("y");
+    try std.testing.expectEqualDeep(venv.ObjectVal {.Var = venv.Value {.Int = 1}}, objval);
 }

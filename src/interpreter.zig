@@ -16,10 +16,17 @@ const ValueError = error {
 };
 const SemanticError = error {
     IdentifierAlreadyDeclared,
+    UnexpectedBreak,
+    UnexpectedContinue,
 };
 
 pub const EvalError = TypeError || ArithmeticError || ValueError || SemanticError;
 
+pub const StmtReturn: type = union(enum) {
+    NoReturn: void,
+    Continue: void,
+    Break: void,
+};
 
 // Functions
 pub fn evalLval(lval: ast.Lval, env: *venv.Env) ValueError!ast.Lit {
@@ -191,13 +198,14 @@ pub fn evalExpr(expr: *const ast.Expr, env: *venv.Env) EvalError!ast.Lit {
 }
 
 
-pub fn evalStmt(statement: ast.Stmt, env: *venv.Env) EvalError!void {
+pub fn evalStmt(statement: ast.Stmt, env: *venv.Env) EvalError!StmtReturn {
 
     switch (statement) {
         .ExprStmt => |expr| {
 
             // Evaluate and return underlying expression
             _ = try evalExpr(expr, env);
+            return StmtReturn {.NoReturn = {}};
         },
         .DeclareStmt => |expr| {
 
@@ -232,6 +240,7 @@ pub fn evalStmt(statement: ast.Stmt, env: *venv.Env) EvalError!void {
                 else => unreachable // Sensible here
             }
 
+            return StmtReturn {.NoReturn = {}};
 
         },
         .PrintStmt => |expr| {
@@ -240,13 +249,21 @@ pub fn evalStmt(statement: ast.Stmt, env: *venv.Env) EvalError!void {
             // TODO: Use parameterized writer and remove unreachable
             const res: ast.Lit = try evalExpr(expr, env);
             std.io.getStdOut().writer().print("{}\n", .{res}) catch unreachable;
+            return StmtReturn {.NoReturn = {}};
         },
         .BlockStmt => |stmts| {
             // Start new environment
             var nestedEnv: venv.Env = env.newScoped();
             defer nestedEnv.deinit();
+
             // Evalute each statement with nested environment
-            for (stmts) |stmt| try evalStmt(stmt, &nestedEnv);
+            for (stmts) |stmt| switch (try evalStmt(stmt, &nestedEnv)) {
+                .NoReturn => {},
+                .Break => return StmtReturn {.Break = {}},
+                .Continue => return StmtReturn {.Continue = {}},
+            };
+
+            return StmtReturn {.NoReturn = {}};
         },
         .IfElseStmt => |stmt| {
 
@@ -261,9 +278,13 @@ pub fn evalStmt(statement: ast.Stmt, env: *venv.Env) EvalError!void {
             defer scopedEnv.deinit();
 
             // Evaluate if or else branch
+            if (res)
+                return try evalStmt(stmt.ifStmt, &scopedEnv)
+            else if (stmt.elseStmt) |es|
+                return try evalStmt(es, &scopedEnv)
+            else
+                return StmtReturn {.NoReturn = {}};
 
-            if (res) try evalStmt(stmt.ifStmt, &scopedEnv)
-            else if (stmt.elseStmt) |es| try evalStmt(es, &scopedEnv);
         },
         .WhileStmt => |stmt| {
 
@@ -281,15 +302,29 @@ pub fn evalStmt(statement: ast.Stmt, env: *venv.Env) EvalError!void {
                 var scoped: venv.Env = env.newScoped();
                 defer scoped.deinit();
 
-                // TODO: Statements should return break and continue...
-                try evalStmt(stmt.body, &scoped);
+                // Evaluate body and consume break statements
+                switch(try evalStmt(stmt.body, &scoped)) {
+                    .NoReturn => {},
+                    .Break => break,
+                    .Continue => continue,
+                }
             }
 
-        }
+            return StmtReturn {.NoReturn = {}};
+        },
+        .BreakStmt => return StmtReturn {.Break = {}},
+        .ContinueStmt => return StmtReturn {.Continue = {}},
     }
+
+    unreachable;
 }
 
 pub fn evalProc(procedure: ast.Proc, env: *venv.Env) EvalError!void {
+
     // Evaluate statements one by one
-    for (procedure.stmts) |stmt| try evalStmt(stmt, env);
+    for (procedure.stmts) |stmt| switch (try evalStmt(stmt, env)) {
+        .NoReturn => {},
+        .Break => return EvalError.UnexpectedBreak,
+        .Continue => return EvalError.UnexpectedContinue,
+    };
 }

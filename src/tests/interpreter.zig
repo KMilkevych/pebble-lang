@@ -120,7 +120,7 @@ test "let x (= undefined)" {
     const stmt: ast.Stmt = ast.Stmt {.DeclareStmt = &ast.Expr {.Lval = ast.Lval {.Var = "x"}}};
 
     // Evaluate statement
-    try interpreter.evalStmt(stmt, &env);
+    _ = try interpreter.evalStmt(stmt, &env);
 
     // Assert that environment has been updated with x = 49
     try std.testing.expectEqualDeep(
@@ -141,7 +141,7 @@ test "let x = 49" {
     }}};
 
     // Evaluate statement
-    try interpreter.evalStmt(stmt, &env);
+    _ = try interpreter.evalStmt(stmt, &env);
 
     // Assert that environment has been updated with x = 49
     try std.testing.expectEqualDeep(
@@ -165,7 +165,7 @@ test "invalid chain declaration" {
     }}};
 
     // Evaluate statement to error for z
-    const err: interpreter.EvalError!void = interpreter.evalStmt(stmt, &env);
+    const err: interpreter.EvalError!interpreter.StmtReturn = interpreter.evalStmt(stmt, &env);
     try std.testing.expectEqual(interpreter.EvalError.UndefinedVariable, err);
 }
 
@@ -183,7 +183,7 @@ test "redeclaration error" {
     }}};
 
     // Evaluate statement to error for z
-    const err: interpreter.EvalError!void = interpreter.evalStmt(stmt, &env);
+    const err: interpreter.EvalError!interpreter.StmtReturn = interpreter.evalStmt(stmt, &env);
     try std.testing.expectEqual(interpreter.EvalError.IdentifierAlreadyDeclared, err);
 }
 
@@ -197,7 +197,7 @@ test "redeclaration error 2" {
     const stmt: ast.Stmt = ast.Stmt {.DeclareStmt = &ast.Expr {.Lval = ast.Lval {.Var = "x"}}};
 
     // Evaluate statement to error for z
-    const err: interpreter.EvalError!void = interpreter.evalStmt(stmt, &env);
+    const err: interpreter.EvalError!interpreter.StmtReturn = interpreter.evalStmt(stmt, &env);
     try std.testing.expectEqual(interpreter.EvalError.IdentifierAlreadyDeclared, err);
 }
 
@@ -380,4 +380,297 @@ test "comparison expressions" {
         .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 2}}
     }};
     try std.testing.expectEqual(try interpreter.evalExpr(&exp12, &env), ast.Lit {.Bool = true});
+}
+
+
+test "break works" {
+    // Prepare environment
+    var env = venv.Env.new(std.testing.allocator);
+    defer env.deinit();
+
+    // Prepare procedure
+    const proc: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
+
+        ast.Stmt {.DeclareStmt = &ast.Expr {.AssignExpr = ast.AssignExpr {
+            .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
+            .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 10}}
+        }}},
+
+        ast.Stmt {.WhileStmt = &ast.WhileStmt {
+            .cond = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
+                .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
+                .op = ast.BinOp.Gt,
+                .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 0}},
+            }},
+            .body = ast.Stmt {.BlockStmt = &[_]ast.Stmt {
+                ast.Stmt {.ExprStmt = &ast.Expr {.AssignExpr = ast.AssignExpr {
+                    .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
+                    .rhs = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
+                        .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
+                        .op = .Sub,
+                        .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 1}},
+                    }},
+                }}},
+                ast.Stmt {.BreakStmt = {}},
+                ast.Stmt {.ExprStmt = &ast.Expr {.AssignExpr = ast.AssignExpr {
+                    .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
+                    .rhs = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
+                        .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
+                        .op = .Sub,
+                        .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 1}},
+                    }},
+                }}},
+            }},
+        }},
+    }};
+
+    // Evaluate statement to error for z
+    try interpreter.evalProc(proc, &env);
+    try std.testing.expectEqualDeep(
+        venv.ObjectVal {.Var = venv.Value {.Int = 9}},
+        env.lookup("x")
+    );
+}
+
+test "break in block works" {
+    // Prepare environment
+    var env = venv.Env.new(std.testing.allocator);
+    defer env.deinit();
+
+    // Prepare procedure
+    const proc: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
+
+        ast.Stmt {.DeclareStmt = &ast.Expr {.AssignExpr = ast.AssignExpr {
+            .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
+            .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 10}}
+        }}},
+
+        ast.Stmt {.WhileStmt = &ast.WhileStmt {
+            .cond = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
+                .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
+                .op = ast.BinOp.Gt,
+                .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 0}},
+            }},
+            .body = ast.Stmt {.BlockStmt = &[_]ast.Stmt {
+                ast.Stmt {.ExprStmt = &ast.Expr {.AssignExpr = ast.AssignExpr {
+                    .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
+                    .rhs = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
+                        .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
+                        .op = .Sub,
+                        .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 1}},
+                    }},
+                }}},
+                ast.Stmt {.BlockStmt = &[_]ast.Stmt {
+                    ast.Stmt {.BlockStmt = &[_]ast.Stmt {
+                        ast.Stmt {.BreakStmt = {}},
+                    }},
+                }},
+                ast.Stmt {.ExprStmt = &ast.Expr {.AssignExpr = ast.AssignExpr {
+                    .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
+                    .rhs = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
+                        .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
+                        .op = .Sub,
+                        .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 1}},
+                    }},
+                }}},
+            }},
+        }},
+    }};
+
+    // Evaluate statement to error for z
+    try interpreter.evalProc(proc, &env);
+    try std.testing.expectEqualDeep(
+        venv.ObjectVal {.Var = venv.Value {.Int = 9}},
+        env.lookup("x")
+    );
+}
+
+test "continue works" {
+    // Prepare environment
+    var env = venv.Env.new(std.testing.allocator);
+    defer env.deinit();
+
+    // Prepare procedure
+    const proc: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
+
+        ast.Stmt {.DeclareStmt = &ast.Expr {.AssignExpr = ast.AssignExpr {
+            .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
+            .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 10}}
+        }}},
+        ast.Stmt {.DeclareStmt = &ast.Expr {.AssignExpr = ast.AssignExpr {
+            .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "y"}},
+            .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 0}}
+        }}},
+
+        ast.Stmt {.WhileStmt = &ast.WhileStmt {
+            .cond = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
+                .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
+                .op = ast.BinOp.Gt,
+                .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 0}},
+            }},
+            .body = ast.Stmt {.BlockStmt = &[_]ast.Stmt {
+                ast.Stmt {.ExprStmt = &ast.Expr {.AssignExpr = ast.AssignExpr {
+                    .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
+                    .rhs = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
+                        .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
+                        .op = .Sub,
+                        .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 1}},
+                    }},
+                }}},
+                ast.Stmt {.ContinueStmt = {}},
+                ast.Stmt {.ExprStmt = &ast.Expr {.AssignExpr = ast.AssignExpr {
+                    .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "y"}},
+                    .rhs = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
+                        .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "y"}},
+                        .op = .Add,
+                        .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 1}},
+                    }},
+                }}},
+            }},
+        }},
+    }};
+
+    // Evaluate statement to error for z
+    try interpreter.evalProc(proc, &env);
+    try std.testing.expectEqualDeep(
+        venv.ObjectVal {.Var = venv.Value {.Int = 0}},
+        env.lookup("y")
+    );
+}
+
+test "continue in block works" {
+    // Prepare environment
+    var env = venv.Env.new(std.testing.allocator);
+    defer env.deinit();
+
+    // Prepare procedure
+    const proc: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
+
+        ast.Stmt {.DeclareStmt = &ast.Expr {.AssignExpr = ast.AssignExpr {
+            .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
+            .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 10}}
+        }}},
+        ast.Stmt {.DeclareStmt = &ast.Expr {.AssignExpr = ast.AssignExpr {
+            .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "y"}},
+            .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 0}}
+        }}},
+
+        ast.Stmt {.WhileStmt = &ast.WhileStmt {
+            .cond = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
+                .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
+                .op = ast.BinOp.Gt,
+                .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 0}},
+            }},
+            .body = ast.Stmt {.BlockStmt = &[_]ast.Stmt {
+                ast.Stmt {.ExprStmt = &ast.Expr {.AssignExpr = ast.AssignExpr {
+                    .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
+                    .rhs = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
+                        .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
+                        .op = .Sub,
+                        .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 1}},
+                    }},
+                }}},
+                ast.Stmt {.BlockStmt = &[_]ast.Stmt {
+                    ast.Stmt {.BlockStmt = &[_]ast.Stmt {
+                        ast.Stmt {.ContinueStmt = {}},
+                    }}
+                }},
+                ast.Stmt {.ExprStmt = &ast.Expr {.AssignExpr = ast.AssignExpr {
+                    .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "y"}},
+                    .rhs = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
+                        .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "y"}},
+                        .op = .Add,
+                        .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 1}},
+                    }},
+                }}},
+            }},
+        }},
+    }};
+
+    // Evaluate statement to error for z
+    try interpreter.evalProc(proc, &env);
+    try std.testing.expectEqualDeep(
+        venv.ObjectVal {.Var = venv.Value {.Int = 0}},
+        env.lookup("y")
+    );
+}
+
+
+test "break outside error" {
+    // Prepare environment
+    var env = venv.Env.new(std.testing.allocator);
+    defer env.deinit();
+
+    // Prepare procedure
+    const proc: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
+
+        ast.Stmt {.BlockStmt = &[_]ast.Stmt {
+            ast.Stmt {.BreakStmt = {}}
+        }}
+    }};
+
+    // Evaluate statement to error for z
+    const res: interpreter.EvalError!void = interpreter.evalProc(proc, &env);
+    try std.testing.expectEqualDeep(
+        res,
+        interpreter.EvalError.UnexpectedBreak
+    );
+}
+
+test "break outside error 2" {
+    // Prepare environment
+    var env = venv.Env.new(std.testing.allocator);
+    defer env.deinit();
+
+    // Prepare procedure
+    const proc: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
+        ast.Stmt {.BreakStmt = {}}
+    }};
+
+    // Evaluate statement to error for z
+    const res: interpreter.EvalError!void = interpreter.evalProc(proc, &env);
+    try std.testing.expectEqualDeep(
+        res,
+        interpreter.EvalError.UnexpectedBreak
+    );
+}
+
+test "continue outside error" {
+    // Prepare environment
+    var env = venv.Env.new(std.testing.allocator);
+    defer env.deinit();
+
+    // Prepare procedure
+    const proc: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
+
+        ast.Stmt {.BlockStmt = &[_]ast.Stmt {
+            ast.Stmt {.ContinueStmt = {}}
+        }}
+    }};
+
+    // Evaluate statement to error for z
+    const res: interpreter.EvalError!void = interpreter.evalProc(proc, &env);
+    try std.testing.expectEqualDeep(
+        res,
+        interpreter.EvalError.UnexpectedContinue
+    );
+}
+
+
+test "continue outside error 2" {
+    // Prepare environment
+    var env = venv.Env.new(std.testing.allocator);
+    defer env.deinit();
+
+    // Prepare procedure
+    const proc: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
+        ast.Stmt {.ContinueStmt = {}}
+    }};
+
+    // Evaluate statement to error for z
+    const res: interpreter.EvalError!void = interpreter.evalProc(proc, &env);
+    try std.testing.expectEqualDeep(
+        res,
+        interpreter.EvalError.UnexpectedContinue
+    );
 }

@@ -1,13 +1,5 @@
 const std = @import("std");
 
-// TODO:
-// 1. Segregate tokens by type
-// 2. Add following token types:
-//      - LESSTHAN, GREATERTHAN, NOTEQ
-//      - ASSIGN
-//      - SEMICOLON
-//      - EQUALS
-//
 pub const TokenType: type = enum {
     INTLIT,
     BOOLLIT,
@@ -36,6 +28,8 @@ pub const TokenType: type = enum {
     IF,
     ELSE,
     WHILE,
+    BREAK,
+    CONTINUE,
     LB,
     EOF,
     ERROR,
@@ -79,6 +73,8 @@ pub const Token: type = union(TokenType) {
     IF: void,
     ELSE: void,
     WHILE: void,
+    BREAK: void,
+    CONTINUE: void,
 
     // Utility
     LB: void,
@@ -95,37 +91,39 @@ pub const Token: type = union(TokenType) {
         _ = fmt;
         _ = options;
         switch (self) {
-            .EOF      => try writer.print("[EOF    ]:", .{}),
-            .LB       => try writer.print("[LB     ]:", .{}),
-            .ERROR    => |val| try writer.print("[ERROR  ]: {s}", .{val}),
-            .ILLEGAL  => |val| try writer.print("[ILLEGAL]: {c}", .{val}),
-            .LPAREN   => try writer.print("[LPAREN ]:", .{}),
-            .RPAREN   => try writer.print("[RPAREN ]:", .{}),
-            .LBRACK   => try writer.print("[LBRACK ]:", .{}),
-            .RBRACK   => try writer.print("[RBRACK ]:", .{}),
-            .LCURLY   => try writer.print("[LCURLY ]:", .{}),
-            .RCURLY   => try writer.print("[RCURLY ]:", .{}),
-            .PLUS     => try writer.print("[PLUS   ]:", .{}),
-            .MINUS    => try writer.print("[MINUS  ]:", .{}),
-            .DIV      => try writer.print("[DIV    ]:", .{}),
-            .MUL      => try writer.print("[MUL    ]:", .{}),
-            .AND      => try writer.print("[AND    ]:", .{}),
-            .OR       => try writer.print("[OR     ]:", .{}),
-            .NOT      => try writer.print("[NOT    ]:", .{}),
-            .DEQ      => try writer.print("[DEQ    ]:", .{}),
-            .EQ       => try writer.print("[EQ     ]:", .{}),
-            .LT       => try writer.print("[LT     ]:", .{}),
-            .GT       => try writer.print("[GT     ]:", .{}),
-            .LTE      => try writer.print("[LTE    ]:", .{}),
-            .GTE      => try writer.print("[GTE    ]:", .{}),
-            .DECLARE  => try writer.print("[DECLARE]:", .{}),
-            .PRINT    => try writer.print("[PRINT  ]:", .{}),
-            .IF       => try writer.print("[IF     ]:", .{}),
-            .ELSE     => try writer.print("[ELSE   ]:", .{}),
-            .WHILE    => try writer.print("[WHILE  ]:", .{}),
-            .INTLIT   => |val| try writer.print("[INTLIT ]: {}", .{val}),
-            .BOOLLIT  => |val| try writer.print("[BOOLLIT]: {}", .{val}),
-            .IDENT    => |val| try writer.print("[IDENT  ]: {s}", .{val})
+            .EOF      => try writer.print("[EOF     ]:", .{}),
+            .LB       => try writer.print("[LB      ]:", .{}),
+            .ERROR    => |val| try writer.print("[ERROR   ]: {s}", .{val}),
+            .ILLEGAL  => |val| try writer.print("[ILLEGAL ]: {c}", .{val}),
+            .LPAREN   => try writer.print("[LPAREN  ]:", .{}),
+            .RPAREN   => try writer.print("[RPAREN  ]:", .{}),
+            .LBRACK   => try writer.print("[LBRACK  ]:", .{}),
+            .RBRACK   => try writer.print("[RBRACK  ]:", .{}),
+            .LCURLY   => try writer.print("[LCURLY  ]:", .{}),
+            .RCURLY   => try writer.print("[RCURLY  ]:", .{}),
+            .PLUS     => try writer.print("[PLUS    ]:", .{}),
+            .MINUS    => try writer.print("[MINUS   ]:", .{}),
+            .DIV      => try writer.print("[DIV     ]:", .{}),
+            .MUL      => try writer.print("[MUL     ]:", .{}),
+            .AND      => try writer.print("[AND     ]:", .{}),
+            .OR       => try writer.print("[OR      ]:", .{}),
+            .NOT      => try writer.print("[NOT     ]:", .{}),
+            .DEQ      => try writer.print("[DEQ     ]:", .{}),
+            .EQ       => try writer.print("[EQ      ]:", .{}),
+            .LT       => try writer.print("[LT      ]:", .{}),
+            .GT       => try writer.print("[GT      ]:", .{}),
+            .LTE      => try writer.print("[LTE     ]:", .{}),
+            .GTE      => try writer.print("[GTE     ]:", .{}),
+            .DECLARE  => try writer.print("[DECLARE ]:", .{}),
+            .PRINT    => try writer.print("[PRINT   ]:", .{}),
+            .IF       => try writer.print("[IF      ]:", .{}),
+            .ELSE     => try writer.print("[ELSE    ]:", .{}),
+            .WHILE    => try writer.print("[WHILE   ]:", .{}),
+            .BREAK    => try writer.print("[BREAK   ]:", .{}),
+            .CONTINUE => try writer.print("[CONTINUE]:", .{}),
+            .INTLIT   => |val| try writer.print("[INTLIT  ]: {}", .{val}),
+            .BOOLLIT  => |val| try writer.print("[BOOLLIT ]: {}", .{val}),
+            .IDENT    => |val| try writer.print("[IDENT   ]: {s}", .{val})
         }
     }
 

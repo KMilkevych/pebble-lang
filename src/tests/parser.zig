@@ -1211,3 +1211,116 @@ test "more interesting while" {
 
     try std.testing.expectEqualDeep(expect, actual);
 }
+
+
+test "while with break statement" {
+    var tokens: std.ArrayList(Token) = std.ArrayList(Token).init(std.testing.allocator);
+
+    try tokens.append(Token {.DECLARE = {}});
+    try tokens.append(Token {.IDENT = "x"});
+    try tokens.append(Token {.EQ = {}});
+    try tokens.append(Token {.INTLIT = 10});
+    try tokens.append(Token {.LB = {}});
+
+    try tokens.append(Token {.WHILE = {}});
+    try tokens.append(Token {.IDENT = "x"});
+    try tokens.append(Token {.GT = {}});
+    try tokens.append(Token {.INTLIT = 1});
+    try tokens.append(Token {.LB = {}});
+
+    try tokens.append(Token {.LCURLY = {}});
+    try tokens.append(Token {.LB = {}});
+    try tokens.append(Token {.PRINT = {}});
+    try tokens.append(Token {.IDENT = "x"});
+    try tokens.append(Token {.LB = {}});
+
+    try tokens.append(Token {.BREAK = {}});
+    try tokens.append(Token {.LB = {}});
+    try tokens.append(Token {.RCURLY = {}});
+
+    try tokens.append(Token {.EOF = {}});
+    defer tokens.deinit();
+
+    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+
+    const expect: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
+
+        ast.Stmt {.DeclareStmt = &ast.Expr {.AssignExpr = ast.AssignExpr {
+            .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
+            .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 10}}
+        }}},
+
+        ast.Stmt {.WhileStmt = &ast.WhileStmt {
+            .cond = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
+                .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
+                .op = ast.BinOp.Gt,
+                .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 1}},
+            }},
+            .body = ast.Stmt {.BlockStmt = &[_]ast.Stmt {
+                ast.Stmt {.PrintStmt = &ast.Expr {.Lval = ast.Lval {.Var = "x"}}},
+                ast.Stmt {.BreakStmt = {}},
+            }},
+        }},
+    }};
+
+    const actual: ast.Proc = try prs.parseProcedure();
+    defer actual.destroyAll(std.testing.allocator);
+
+    try std.testing.expectEqualDeep(expect, actual);
+}
+
+test "while with continue statement" {
+    var tokens: std.ArrayList(Token) = std.ArrayList(Token).init(std.testing.allocator);
+
+    try tokens.append(Token {.DECLARE = {}});
+    try tokens.append(Token {.IDENT = "x"});
+    try tokens.append(Token {.EQ = {}});
+    try tokens.append(Token {.INTLIT = 10});
+    try tokens.append(Token {.LB = {}});
+
+    try tokens.append(Token {.WHILE = {}});
+    try tokens.append(Token {.IDENT = "x"});
+    try tokens.append(Token {.GT = {}});
+    try tokens.append(Token {.INTLIT = 1});
+    try tokens.append(Token {.LB = {}});
+
+    try tokens.append(Token {.LCURLY = {}});
+    try tokens.append(Token {.LB = {}});
+    try tokens.append(Token {.PRINT = {}});
+    try tokens.append(Token {.IDENT = "x"});
+    try tokens.append(Token {.LB = {}});
+
+    try tokens.append(Token {.CONTINUE = {}});
+    try tokens.append(Token {.LB = {}});
+    try tokens.append(Token {.RCURLY = {}});
+
+    try tokens.append(Token {.EOF = {}});
+    defer tokens.deinit();
+
+    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+
+    const expect: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
+
+        ast.Stmt {.DeclareStmt = &ast.Expr {.AssignExpr = ast.AssignExpr {
+            .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
+            .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 10}}
+        }}},
+
+        ast.Stmt {.WhileStmt = &ast.WhileStmt {
+            .cond = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
+                .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
+                .op = ast.BinOp.Gt,
+                .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 1}},
+            }},
+            .body = ast.Stmt {.BlockStmt = &[_]ast.Stmt {
+                ast.Stmt {.PrintStmt = &ast.Expr {.Lval = ast.Lval {.Var = "x"}}},
+                ast.Stmt {.ContinueStmt = {}},
+            }},
+        }},
+    }};
+
+    const actual: ast.Proc = try prs.parseProcedure();
+    defer actual.destroyAll(std.testing.allocator);
+
+    try std.testing.expectEqualDeep(expect, actual);
+}
