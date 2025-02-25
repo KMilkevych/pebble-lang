@@ -258,6 +258,16 @@ pub const Parser = struct {
 
                 break :blk ast.Stmt {.WhileStmt = whileStmt};
             },
+            .BREAK => {
+                try self.expectToken(Token {.BREAK = {}});
+                try self.expectTokenOrEOF(Token {.LB = {}});
+                break :blk ast.Stmt {.BreakStmt = {}};
+            },
+            .CONTINUE => {
+                try self.expectToken(Token {.CONTINUE = {}});
+                try self.expectTokenOrEOF(Token {.LB = {}});
+                break :blk ast.Stmt {.ContinueStmt = {}};
+            },
 
             // Block Statements
             .LCURLY => {

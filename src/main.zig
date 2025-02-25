@@ -64,8 +64,7 @@ fn compile(loc: [:0]const u8) !void {
     // std.debug.print("PROCEDURE: {}\n", .{proc});
 
     // Evaluate all
-    for (proc.stmts) |stmt| try interpreter.evalStmt(stmt, &env);
-
+    try interpreter.evalProc(proc, &env);
 }
 
 fn interactive() !void {
@@ -99,7 +98,7 @@ fn interactive() !void {
                 break :blk null;
             },
             else => {
-                interpreter.evalStmt(tree, &env) catch |err| {
+                _ = interpreter.evalStmt(tree, &env) catch |err| {
                     try outw.print("{}\n", .{err});
                     break :blk null;
                 };

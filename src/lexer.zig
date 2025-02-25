@@ -56,7 +56,7 @@ fn operator_from_string(str: []const u8) token.Token {
 }
 
 fn is_keyword(chars: []const u8) bool {
-    return contains(&[_][]const u8 {"declare", "print", "if", "else", "while"}, chars);
+    return contains(&[_][]const u8 {"declare", "print", "if", "else", "while", "break", "continue"}, chars);
 }
 
 fn keyword_from_string(str: []const u8) token.Token {
@@ -65,6 +65,8 @@ fn keyword_from_string(str: []const u8) token.Token {
     if (std.mem.eql(u8, str, "if")) return token.Token {.IF = {}};
     if (std.mem.eql(u8, str, "else")) return token.Token {.ELSE = {}};
     if (std.mem.eql(u8, str, "while")) return token.Token {.WHILE = {}};
+    if (std.mem.eql(u8, str, "break")) return token.Token {.BREAK = {}};
+    if (std.mem.eql(u8, str, "continue")) return token.Token {.CONTINUE = {}};
     unreachable;
 }
 
@@ -280,7 +282,8 @@ pub const Lexer = struct {
                 },
 
                 // Allow line breaks before statement keywords
-                .DECLARE, .PRINT, .IF, .ELSE, .WHILE => {
+                // NOTE: Including single-word statements here to get LB error on "break x"
+                .DECLARE, .PRINT, .IF, .ELSE, .WHILE, .BREAK, .CONTINUE => {
                     self.pushLB(&res);
                     res.append(tok) catch unreachable;
                     isStatement = true;

@@ -1316,3 +1316,133 @@ test "expression statement after other statements" {
 
     try std.testing.expectEqualDeep(expected, tokens.items);
 }
+
+test "break" {
+    const input = "break";
+
+    var lx = lexer.Lexer.new(input, std.testing.allocator);
+
+    const tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit();
+
+    const expected: []const Token = &[_]Token{
+        Token {.BREAK = {}},
+        Token {.EOF = {}}
+    };
+
+    try std.testing.expectEqualDeep(expected, tokens.items);
+}
+
+test "continue" {
+    const input = "continue";
+
+    var lx = lexer.Lexer.new(input, std.testing.allocator);
+
+    const tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit();
+
+    const expected: []const Token = &[_]Token{
+        Token {.CONTINUE = {}},
+        Token {.EOF = {}}
+    };
+
+    try std.testing.expectEqualDeep(expected, tokens.items);
+}
+
+test "block break" {
+    const input =
+        \\while true {
+        \\break
+        \\}
+    ;
+
+    var lx = lexer.Lexer.new(input, std.testing.allocator);
+
+    const tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit();
+
+    const expected: []const Token = &[_]Token{
+        Token {.WHILE = {}},
+        Token {.BOOLLIT = true},
+        Token {.LB = {}},
+        Token {.LCURLY = {}},
+        Token {.LB = {}},
+        Token {.BREAK = {}},
+        Token {.LB = {}},
+        Token {.RCURLY = {}},
+        Token {.EOF = {}}
+    };
+
+    try std.testing.expectEqualDeep(expected, tokens.items);
+}
+
+
+test "block continue" {
+    const input =
+        \\while true {
+        \\continue
+        \\}
+    ;
+
+    var lx = lexer.Lexer.new(input, std.testing.allocator);
+
+    const tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit();
+
+    const expected: []const Token = &[_]Token{
+        Token {.WHILE = {}},
+        Token {.BOOLLIT = true},
+        Token {.LB = {}},
+        Token {.LCURLY = {}},
+        Token {.LB = {}},
+        Token {.CONTINUE = {}},
+        Token {.LB = {}},
+        Token {.RCURLY = {}},
+        Token {.EOF = {}}
+    };
+
+    try std.testing.expectEqualDeep(expected, tokens.items);
+}
+
+test "inline block break" {
+    const input =
+        \\while true break
+    ;
+
+    var lx = lexer.Lexer.new(input, std.testing.allocator);
+
+    const tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit();
+
+    const expected: []const Token = &[_]Token{
+        Token {.WHILE = {}},
+        Token {.BOOLLIT = true},
+        Token {.LB = {}},
+        Token {.BREAK = {}},
+        Token {.EOF = {}}
+    };
+
+    try std.testing.expectEqualDeep(expected, tokens.items);
+}
+
+test "newline block break" {
+    const input =
+        \\while true
+        \\break
+    ;
+
+    var lx = lexer.Lexer.new(input, std.testing.allocator);
+
+    const tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit();
+
+    const expected: []const Token = &[_]Token{
+        Token {.WHILE = {}},
+        Token {.BOOLLIT = true},
+        Token {.LB = {}},
+        Token {.BREAK = {}},
+        Token {.EOF = {}}
+    };
+
+    try std.testing.expectEqualDeep(expected, tokens.items);
+}
