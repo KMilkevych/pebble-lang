@@ -674,3 +674,35 @@ test "continue outside error 2" {
         interpreter.EvalError.UnexpectedContinue
     );
 }
+
+test "re-declaration inside block using var name" {
+
+    // Prepare environment
+    var env = venv.Env.new(std.testing.allocator);
+    defer env.deinit();
+
+    // Prepare procedure
+    const proc: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
+        ast.Stmt {.DeclareStmt = &ast.Expr {.AssignExpr = ast.AssignExpr {
+            .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
+            .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 1}}
+        }}},
+        ast.Stmt {.BlockStmt = &[_]ast.Stmt {
+            ast.Stmt {.DeclareStmt = &ast.Expr {.AssignExpr = ast.AssignExpr {
+                .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
+                .rhs = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
+                    .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
+                    .op = .Add,
+                    .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 1}}
+                }}
+            }}},
+        }},
+    }};
+
+    // Evaluate statement to error for z
+    try interpreter.evalProc(proc, &env);
+    try std.testing.expectEqualDeep(
+        env.lookup("x"),
+        venv.ObjectVal {.Var = venv.Value {.Int = 1}}
+    );
+}
