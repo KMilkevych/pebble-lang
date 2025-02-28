@@ -48,13 +48,13 @@ which results in output
 - Basic control flow (if and while)
 - PRINT statements
 - Basic lexical scoping
+- ~break~ and ~continue~ statements
 
 ** Not yet implemented
 - String types
 - Floating point types
 - COMMA declarations, e.g. ~declare x = 1, y = 2, z = 3~
 - Function calls
-- ~break~ and ~continue~ statements
 - Lists
 - Structs
 - For-loops
