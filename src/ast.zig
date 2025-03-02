@@ -296,9 +296,9 @@ pub const WhileStmt = struct {
 
 
 pub const Stmt = union(enum) {
-    DeclareStmt: *const Expr,
+    DeclareStmt: []const *const Expr,
     ExprStmt: *const Expr,
-    PrintStmt: *const Expr,
+    PrintStmt: []const *const Expr,
     BlockStmt: []const Stmt,
     IfElseStmt: *const IfElseStmt,
     WhileStmt: *const WhileStmt,
@@ -307,9 +307,15 @@ pub const Stmt = union(enum) {
 
     pub fn destroyAll(self: *const Stmt, allocator: std.mem.Allocator) void {
         switch (self.*) {
-            .DeclareStmt => |expr| expr.destroyAll(allocator),
+            .DeclareStmt => |exprs| {
+                for (exprs) |expr| expr.destroyAll(allocator);
+                allocator.free(exprs);
+            },
             .ExprStmt => |expr| expr.destroyAll(allocator),
-            .PrintStmt => |expr| expr.destroyAll(allocator),
+            .PrintStmt => |exprs| {
+                for (exprs) |expr| expr.destroyAll(allocator);
+                allocator.free(exprs);
+            },
             .BlockStmt => |stmts| {
                 for (stmts) |stmt| stmt.destroyAll(allocator);
                 allocator.free(stmts);
@@ -330,9 +336,17 @@ pub const Stmt = union(enum) {
         _ = options;
         _ = fmt;
         return switch (self) {
-            .DeclareStmt => |expr| try writer.print("DECLARE {}\n", .{expr}),
+            .DeclareStmt => |exprs| {
+                try writer.print("DECLARE ", .{});
+                for (exprs) |expr| try writer.print("{}, ", .{expr});
+                try writer.print("\n", .{});
+            },
             .ExprStmt => |expr| try writer.print("{}\n", .{expr}),
-            .PrintStmt => |expr| try writer.print("PRINT {}\n", .{expr}),
+            .PrintStmt => |exprs| {
+                try writer.print("PRINT ", .{});
+                for (exprs) |expr| try writer.print("{}, ", .{expr});
+                try writer.print("\n", .{});
+            },
             .BlockStmt => |stmts| {
                 try writer.print("BEGIN BLOCK\n", .{});
                 for (stmts) |stmt| try writer.print("{}\n", .{stmt});

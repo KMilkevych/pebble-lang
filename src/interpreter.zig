@@ -207,48 +207,53 @@ pub fn evalStmt(statement: ast.Stmt, env: *venv.Env) EvalError!StmtReturn {
             _ = try evalExpr(expr, env);
             return StmtReturn {.NoReturn = {}};
         },
-        .DeclareStmt => |expr| {
+        .DeclareStmt => |exprs| {
 
             // DECLARE X evaluates X = undefined
             // DECLARE X = 10 evaluates X = 10
 
-            // Make sure the expression is an assignment expression or Lval
-            const lhs: EvalError!ast.Lval = switch (expr.*) {
-                .Lval => |lval| lval,
-                .AssignExpr => |exp| switch (exp.lhs.*) {
+            // Evaluate each expression one by one
+            for (exprs) |expr| {
+
+                // Make sure the expression is an assignment expression or Lval
+                const lhs: EvalError!ast.Lval = switch (expr.*) {
                     .Lval => |lval| lval,
-                    else => EvalError.NotIdentifier,
-                },
-                else => return EvalError.NotIdentifier
-            };
+                    .AssignExpr => |exp| switch (exp.lhs.*) {
+                        .Lval => |lval| lval,
+                        else => EvalError.NotIdentifier,
+                    },
+                    else => return EvalError.NotIdentifier
+                };
 
-            // Evalute left-hand side lval to an identifier
-            const id: []const u8 = switch (try lhs) {
-                .Var => |id| id
-            };
+                // Evalute left-hand side lval to an identifier
+                const id: []const u8 = switch (try lhs) {
+                    .Var => |id| id
+                };
 
-            // Do error checking
-            if (env.isDeclaredLocal(id)) return EvalError.IdentifierAlreadyDeclared;
+                // Do error checking
+                if (env.isDeclaredLocal(id)) return EvalError.IdentifierAlreadyDeclared;
 
-            // Add lhs identifier to environment
-            env.insert(id, venv.ObjectVal {.Var = venv.Value {.Undefined = {}}});
+                // Add lhs identifier to environment
+                env.insert(id, venv.ObjectVal {.Var = venv.Value {.Undefined = {}}});
 
-            // Evaluate assignment expression if exists
-            switch (expr.*) {
-                .AssignExpr => |*exp| _ = try evalAssignExpr(exp, env),
-                .Lval => {},
-                else => unreachable // Sensible here
+                // Evaluate assignment expression if exists
+                switch (expr.*) {
+                    .AssignExpr => |*exp| _ = try evalAssignExpr(exp, env),
+                    .Lval => {},
+                    else => unreachable // Sensible here
+                }
             }
 
             return StmtReturn {.NoReturn = {}};
-
         },
-        .PrintStmt => |expr| {
-
-            // Evaluate expression and print resulting literal
-            // TODO: Use parameterized writer and remove unreachable
-            const res: ast.Lit = try evalExpr(expr, env);
-            std.io.getStdOut().writer().print("{}\n", .{res}) catch unreachable;
+        .PrintStmt => |exprs| {
+            for (exprs) |expr| {
+                // Evaluate expression and print resulting literal
+                // TODO: Use parameterized writer and remove unreachable
+                const res: ast.Lit = try evalExpr(expr, env);
+                std.io.getStdOut().writer().print("{} ", .{res}) catch unreachable;
+            }
+            std.io.getStdOut().writer().print("\n", .{}) catch unreachable;
             return StmtReturn {.NoReturn = {}};
         },
         .BlockStmt => |stmts| {

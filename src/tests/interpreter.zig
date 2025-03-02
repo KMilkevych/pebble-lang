@@ -117,7 +117,9 @@ test "let x (= undefined)" {
     defer env.deinit();
 
     // Prepare statement
-    const stmt: ast.Stmt = ast.Stmt {.DeclareStmt = &ast.Expr {.Lval = ast.Lval {.Var = "x"}}};
+    const stmt: ast.Stmt = ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {
+        &ast.Expr {.Lval = ast.Lval {.Var = "x"}}
+    }};
 
     // Evaluate statement
     _ = try interpreter.evalStmt(stmt, &env);
@@ -135,10 +137,12 @@ test "let x = 49" {
     defer env.deinit();
 
     // Prepare statement
-    const stmt: ast.Stmt = ast.Stmt {.DeclareStmt = &ast.Expr {.AssignExpr = ast.AssignExpr {
-        .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-        .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 49}}
-    }}};
+    const stmt: ast.Stmt = ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {
+        &ast.Expr {.AssignExpr = ast.AssignExpr {
+            .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
+            .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 49}}
+        }}
+    }};
 
     // Evaluate statement
     _ = try interpreter.evalStmt(stmt, &env);
@@ -156,12 +160,14 @@ test "invalid chain declaration" {
     defer env.deinit();
 
     // Prepare statement
-    const stmt: ast.Stmt = ast.Stmt {.DeclareStmt = &ast.Expr {.AssignExpr = ast.AssignExpr {
-        .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-        .rhs = &ast.Expr {.AssignExpr = ast.AssignExpr {
-            .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "y"}},
-            .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 19}}
-        }}
+    const stmt: ast.Stmt = ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {
+        &ast.Expr {.AssignExpr = ast.AssignExpr {
+            .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
+            .rhs = &ast.Expr {.AssignExpr = ast.AssignExpr {
+                .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "y"}},
+                .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 19}}
+            }}
+        }
     }}};
 
     // Evaluate statement to error for z
@@ -177,9 +183,10 @@ test "redeclaration error" {
     defer env.deinit();
 
     // Prepare statement
-    const stmt: ast.Stmt = ast.Stmt {.DeclareStmt = &ast.Expr {.AssignExpr = ast.AssignExpr {
+    const stmt: ast.Stmt = ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {&ast.Expr {.AssignExpr = ast.AssignExpr {
         .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
         .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 1}}
+        }
     }}};
 
     // Evaluate statement to error for z
@@ -194,7 +201,7 @@ test "redeclaration error 2" {
     defer env.deinit();
 
     // Prepare statement
-    const stmt: ast.Stmt = ast.Stmt {.DeclareStmt = &ast.Expr {.Lval = ast.Lval {.Var = "x"}}};
+    const stmt: ast.Stmt = ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {&ast.Expr {.Lval = ast.Lval {.Var = "x"}}}};
 
     // Evaluate statement to error for z
     const err: interpreter.EvalError!interpreter.StmtReturn = interpreter.evalStmt(stmt, &env);
@@ -209,10 +216,10 @@ test "smart scoped assignment" {
     // Prepare procedure
     const proc: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
 
-        ast.Stmt {.DeclareStmt = &ast.Expr {.AssignExpr = ast.AssignExpr {
+        ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {&ast.Expr {.AssignExpr = ast.AssignExpr {
             .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
             .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 10}}
-        }}},
+        }}}},
 
         ast.Stmt {.IfElseStmt = &ast.IfElseStmt {
             .cond = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
@@ -225,14 +232,14 @@ test "smart scoped assignment" {
                     .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
                     .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 20}},
                 }}},
-                ast.Stmt {.PrintStmt = &ast.Expr {.Lval = ast.Lval {.Var = "x"}}}
+                ast.Stmt {.PrintStmt = &[_]*const ast.Expr {&ast.Expr {.Lval = ast.Lval {.Var = "x"}}}}
             }},
             .elseStmt = ast.Stmt {.BlockStmt = &[_]ast.Stmt {
-                ast.Stmt {.PrintStmt = &ast.Expr {.Lit = ast.Lit {.Int = 1}}}
+                ast.Stmt {.PrintStmt = &[_]*const ast.Expr {&ast.Expr {.Lit = ast.Lit {.Int = 1}}}}
             }}
         }},
 
-        ast.Stmt {.PrintStmt = &ast.Expr {.Lval = ast.Lval {.Var = "x"}}}
+        ast.Stmt {.PrintStmt = &[_]*const ast.Expr {&ast.Expr {.Lval = ast.Lval {.Var = "x"}}}}
     }};
 
     // Evaluate statement to error for z
@@ -252,10 +259,10 @@ test "smart scoped declaration" {
     // Prepare procedure
     const proc: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
 
-        ast.Stmt {.DeclareStmt = &ast.Expr {.AssignExpr = ast.AssignExpr {
+        ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {&ast.Expr {.AssignExpr = ast.AssignExpr {
             .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
             .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 10}}
-        }}},
+        }}}},
 
         ast.Stmt {.IfElseStmt = &ast.IfElseStmt {
             .cond = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
@@ -264,18 +271,18 @@ test "smart scoped declaration" {
                 .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 10}},
             }},
             .ifStmt = ast.Stmt {.BlockStmt = &[_]ast.Stmt {
-                ast.Stmt {.DeclareStmt = &ast.Expr {.AssignExpr = ast.AssignExpr {
+                ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {&ast.Expr {.AssignExpr = ast.AssignExpr {
                     .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
                     .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 20}},
-                }}},
-                ast.Stmt {.PrintStmt = &ast.Expr {.Lval = ast.Lval {.Var = "x"}}}
+                }}}},
+                ast.Stmt {.PrintStmt = &[_]*const ast.Expr {&ast.Expr {.Lval = ast.Lval {.Var = "x"}}}}
             }},
             .elseStmt = ast.Stmt {.BlockStmt = &[_]ast.Stmt {
-                ast.Stmt {.PrintStmt = &ast.Expr {.Lit = ast.Lit {.Int = 1}}}
+                ast.Stmt {.PrintStmt = &[_]*const ast.Expr {&ast.Expr {.Lit = ast.Lit {.Int = 1}}}}
             }}
         }},
 
-        ast.Stmt {.PrintStmt = &ast.Expr {.Lval = ast.Lval {.Var = "x"}}}
+        ast.Stmt {.PrintStmt = &[_]*const ast.Expr {&ast.Expr {.Lval = ast.Lval {.Var = "x"}}}}
     }};
 
     // Evaluate statement to error for z
@@ -391,10 +398,10 @@ test "break works" {
     // Prepare procedure
     const proc: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
 
-        ast.Stmt {.DeclareStmt = &ast.Expr {.AssignExpr = ast.AssignExpr {
+        ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {&ast.Expr {.AssignExpr = ast.AssignExpr {
             .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
             .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 10}}
-        }}},
+        }}}},
 
         ast.Stmt {.WhileStmt = &ast.WhileStmt {
             .cond = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
@@ -440,10 +447,10 @@ test "break in block works" {
     // Prepare procedure
     const proc: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
 
-        ast.Stmt {.DeclareStmt = &ast.Expr {.AssignExpr = ast.AssignExpr {
+        ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {&ast.Expr {.AssignExpr = ast.AssignExpr {
             .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
             .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 10}}
-        }}},
+        }}}},
 
         ast.Stmt {.WhileStmt = &ast.WhileStmt {
             .cond = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
@@ -493,14 +500,14 @@ test "continue works" {
     // Prepare procedure
     const proc: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
 
-        ast.Stmt {.DeclareStmt = &ast.Expr {.AssignExpr = ast.AssignExpr {
+        ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {&ast.Expr {.AssignExpr = ast.AssignExpr {
             .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
             .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 10}}
-        }}},
-        ast.Stmt {.DeclareStmt = &ast.Expr {.AssignExpr = ast.AssignExpr {
+        }}}},
+        ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {&ast.Expr {.AssignExpr = ast.AssignExpr {
             .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "y"}},
             .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 0}}
-        }}},
+        }}}},
 
         ast.Stmt {.WhileStmt = &ast.WhileStmt {
             .cond = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
@@ -546,14 +553,14 @@ test "continue in block works" {
     // Prepare procedure
     const proc: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
 
-        ast.Stmt {.DeclareStmt = &ast.Expr {.AssignExpr = ast.AssignExpr {
+        ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {&ast.Expr {.AssignExpr = ast.AssignExpr {
             .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
             .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 10}}
-        }}},
-        ast.Stmt {.DeclareStmt = &ast.Expr {.AssignExpr = ast.AssignExpr {
+        }}}},
+        ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {&ast.Expr {.AssignExpr = ast.AssignExpr {
             .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "y"}},
             .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 0}}
-        }}},
+        }}}},
 
         ast.Stmt {.WhileStmt = &ast.WhileStmt {
             .cond = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
@@ -672,5 +679,71 @@ test "continue outside error 2" {
     try std.testing.expectEqualDeep(
         res,
         interpreter.EvalError.UnexpectedContinue
+    );
+}
+
+test "comma declaration" {
+    // Prepare environment
+    var env = venv.Env.new(std.testing.allocator);
+    defer env.deinit();
+
+    // Prepare procedure
+    const proc: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
+
+        ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {
+            &ast.Expr {.AssignExpr = ast.AssignExpr {
+                .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
+                .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 1}}
+            }},
+            &ast.Expr {.AssignExpr = ast.AssignExpr {
+                .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "y"}},
+                .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 2}}
+            }},
+            &ast.Expr {.Lval = ast.Lval {.Var = "z"}},
+            &ast.Expr {.AssignExpr = ast.AssignExpr {
+                .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "w"}},
+                .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 1}}
+            }},
+        }},
+    }};
+
+    // Evaluate procedure
+    _ = try interpreter.evalProc(proc, &env);
+    try std.testing.expectEqualDeep(venv.ObjectVal {.Var = venv.Value {.Int = 1}}, env.lookup("x"));
+    try std.testing.expectEqualDeep(venv.ObjectVal {.Var = venv.Value {.Int = 2}}, env.lookup("y"));
+    try std.testing.expectEqualDeep(venv.ObjectVal {.Var = venv.Value {.Undefined = {}}}, env.lookup("z"));
+    try std.testing.expectEqualDeep(venv.ObjectVal {.Var = venv.Value {.Int = 1}}, env.lookup("w"));
+}
+
+test "undefined variable in comma declaration" {
+    // Prepare environment
+    var env = venv.Env.new(std.testing.allocator);
+    defer env.deinit();
+
+    // Prepare procedure
+    const proc: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
+
+        ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {
+            &ast.Expr {.AssignExpr = ast.AssignExpr {
+                .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
+                .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 1}}
+            }},
+            &ast.Expr {.AssignExpr = ast.AssignExpr {
+                .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "y"}},
+                .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 2}}
+            }},
+            &ast.Expr {.Lval = ast.Lval {.Var = "z"}},
+            &ast.Expr {.AssignExpr = ast.AssignExpr {
+                .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "w"}},
+                .rhs = &ast.Expr {.Lval = ast.Lval {.Var = "z"}}
+            }},
+        }},
+    }};
+
+    // Evaluate statement to error for z
+    const res: interpreter.EvalError!void = interpreter.evalProc(proc, &env);
+    try std.testing.expectEqualDeep(
+        res,
+        interpreter.EvalError.UndefinedVariable
     );
 }

@@ -14,7 +14,7 @@ fn createLU(comptime chars: []const u8) [256]bool {
 const is_numeric_digit: [256]bool = createLU("0123456789");
 const is_real_digit: [256]bool = createLU(".0123456789");
 const is_whitespace_digit: [256]bool = createLU(" \t\r");
-const is_operator_digit: [256]bool = createLU("+-/*|&()[]{}=!<>\n");
+const is_operator_digit: [256]bool = createLU("+-/*|&()[]{}=!<>\n,");
 const is_ident_digit: [256]bool = createLU(
     "abcdefghijklmnopqrstuvwxyz_ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 );
@@ -26,7 +26,7 @@ fn contains(arr: []const []const u8, item: []const u8) bool {
 
 fn is_operator(chars: []const u8) bool {
     return contains(
-        &[_][]const u8 { "\n", "+", "-", "*", "/", "!", "||", "&&", "==", "=", "(", ")", "[", "]", "{", "}", "<", ">", "<=", ">="},
+        &[_][]const u8 { "\n", "+", "-", "*", "/", "!", "||", "&&", "==", "=", "(", ")", "[", "]", "{", "}", "<", ">", "<=", ">=", ","},
         chars
     );
 }
@@ -51,6 +51,7 @@ fn operator_from_string(str: []const u8) token.Token {
     if (std.mem.eql(u8, str, ">")) return token.Token {.GT = {}};
     if (std.mem.eql(u8, str, "<=")) return token.Token {.LTE = {}};
     if (std.mem.eql(u8, str, ">=")) return token.Token {.GTE = {}};
+    if (std.mem.eql(u8, str, ",")) return token.Token {.COMMA = {}};
     if (std.mem.eql(u8, str, "\n")) return token.Token {.LB = {}};
     unreachable;
 }
