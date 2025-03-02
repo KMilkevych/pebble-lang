@@ -196,10 +196,19 @@ pub const Parser = struct {
             // Statements that start with specific keywords
             .PRINT => {
                 try self.expectToken(Token {.PRINT = {}});
-                const exp: *ast.Expr = try self.parseExpr();
-                errdefer exp.destroyAll(self.allocator);
+
+                var acc: ArrayList(*ast.Expr) = .init(self.allocator);
+                defer acc.deinit();
+                errdefer for (acc.items) |expr| expr.destroyAll(self.allocator);
+
+                acc.append(try self.parseExpr()) catch unreachable;
+                while (std.meta.eql(self.peekToken(), Token {.COMMA = {}})) {
+                    try self.expectToken(Token {.COMMA = {}});
+                    acc.append(try self.parseExpr()) catch unreachable;
+                }
+
                 try self.expectTokenOrEOF(Token {.LB = {}});
-                break :blk ast.Stmt {.PrintStmt = exp};
+                break :blk ast.Stmt {.PrintStmt = acc.toOwnedSlice() catch unreachable};
             },
             .DECLARE => {
                 try self.expectToken(Token {.DECLARE = {}});
@@ -209,7 +218,6 @@ pub const Parser = struct {
                 errdefer for (acc.items) |expr| expr.destroyAll(self.allocator);
 
                 acc.append(try self.parseExpr()) catch unreachable;
-
                 while (std.meta.eql(self.peekToken(), Token {.COMMA = {}})) {
                     try self.expectToken(Token {.COMMA = {}});
                     acc.append(try self.parseExpr()) catch unreachable;

@@ -246,12 +246,14 @@ pub fn evalStmt(statement: ast.Stmt, env: *venv.Env) EvalError!StmtReturn {
 
             return StmtReturn {.NoReturn = {}};
         },
-        .PrintStmt => |expr| {
-
-            // Evaluate expression and print resulting literal
-            // TODO: Use parameterized writer and remove unreachable
-            const res: ast.Lit = try evalExpr(expr, env);
-            std.io.getStdOut().writer().print("{}\n", .{res}) catch unreachable;
+        .PrintStmt => |exprs| {
+            for (exprs) |expr| {
+                // Evaluate expression and print resulting literal
+                // TODO: Use parameterized writer and remove unreachable
+                const res: ast.Lit = try evalExpr(expr, env);
+                std.io.getStdOut().writer().print("{} ", .{res}) catch unreachable;
+            }
+            std.io.getStdOut().writer().print("\n", .{}) catch unreachable;
             return StmtReturn {.NoReturn = {}};
         },
         .BlockStmt => |stmts| {

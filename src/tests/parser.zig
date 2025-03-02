@@ -715,9 +715,9 @@ test "print statement" {
     const result: ast.Stmt = try prs.parseStmt();
     defer result.destroyAll(std.testing.allocator);
 
-    const expect: ast.Stmt = ast.Stmt {.PrintStmt = &ast.Expr {
+    const expect: ast.Stmt = ast.Stmt {.PrintStmt = &[_]*const ast.Expr {&ast.Expr {
         .Lval = ast.Lval {.Var = "x"}
-    }};
+    }}};
 
     try std.testing.expectEqualDeep(expect, result);
 }
@@ -778,18 +778,18 @@ test "print statement sequence" {
     const result: ast.Stmt = try prs.parseStmt();
     defer result.destroyAll(std.testing.allocator);
 
-    const expect: ast.Stmt = ast.Stmt {.PrintStmt = &ast.Expr {
+    const expect: ast.Stmt = ast.Stmt {.PrintStmt = &[_]*const ast.Expr {&ast.Expr {
         .Lval = ast.Lval {.Var = "x"}
-    }};
+    }}};
 
     try std.testing.expectEqualDeep(expect, result);
 
     const result2: ast.Stmt = try prs.parseStmt();
     defer result2.destroyAll(std.testing.allocator);
 
-    const expect2: ast.Stmt = ast.Stmt {.PrintStmt = &ast.Expr {
+    const expect2: ast.Stmt = ast.Stmt {.PrintStmt = &[_]*const ast.Expr {&ast.Expr {
         .Lval = ast.Lval {.Var = "y"}
-    }};
+    }}};
     try std.testing.expectEqualDeep(expect2, result2);
 }
 
@@ -1076,14 +1076,14 @@ test "complicated if-else branch" {
                     .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
                     .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 20}},
                 }}},
-                ast.Stmt {.PrintStmt = &ast.Expr {.Lval = ast.Lval {.Var = "x"}}}
+                ast.Stmt {.PrintStmt = &[_]*const ast.Expr {&ast.Expr {.Lval = ast.Lval {.Var = "x"}}}}
             }},
             .elseStmt = ast.Stmt {.BlockStmt = &[_]ast.Stmt {
-                ast.Stmt {.PrintStmt = &ast.Expr {.Lit = ast.Lit {.Int = 1}}}
+                ast.Stmt {.PrintStmt = &[_]*const ast.Expr {&ast.Expr {.Lit = ast.Lit {.Int = 1}}}}
             }}
         }},
 
-        ast.Stmt {.PrintStmt = &ast.Expr {.Lval = ast.Lval {.Var = "x"}}}
+        ast.Stmt {.PrintStmt = &[_]*const ast.Expr {&ast.Expr {.Lval = ast.Lval {.Var = "x"}}}}
     }};
 
     const actual: ast.Proc = try prs.parseProcedure();
@@ -1134,7 +1134,7 @@ test "simple while with condition" {
                 .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 1}},
             }},
             .body = ast.Stmt {.BlockStmt = &[_]ast.Stmt {
-                ast.Stmt {.PrintStmt = &ast.Expr {.Lval = ast.Lval {.Var = "x"}}}
+                ast.Stmt {.PrintStmt = &[_]*const ast.Expr {&ast.Expr {.Lval = ast.Lval {.Var = "x"}}}}
             }},
         }},
     }};
@@ -1193,7 +1193,7 @@ test "more interesting while" {
                 .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 1}},
             }},
             .body = ast.Stmt {.BlockStmt = &[_]ast.Stmt {
-                ast.Stmt {.PrintStmt = &ast.Expr {.Lval = ast.Lval {.Var = "x"}}},
+                ast.Stmt {.PrintStmt = &[_]*const ast.Expr {&ast.Expr {.Lval = ast.Lval {.Var = "x"}}}},
                 ast.Stmt {.ExprStmt = &ast.Expr {.AssignExpr = ast.AssignExpr {
                     .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
                     .rhs = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
@@ -1257,7 +1257,7 @@ test "while with break statement" {
                 .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 1}},
             }},
             .body = ast.Stmt {.BlockStmt = &[_]ast.Stmt {
-                ast.Stmt {.PrintStmt = &ast.Expr {.Lval = ast.Lval {.Var = "x"}}},
+                ast.Stmt {.PrintStmt = &[_]*const ast.Expr {&ast.Expr {.Lval = ast.Lval {.Var = "x"}}}},
                 ast.Stmt {.BreakStmt = {}},
             }},
         }},
@@ -1313,7 +1313,7 @@ test "while with continue statement" {
                 .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 1}},
             }},
             .body = ast.Stmt {.BlockStmt = &[_]ast.Stmt {
-                ast.Stmt {.PrintStmt = &ast.Expr {.Lval = ast.Lval {.Var = "x"}}},
+                ast.Stmt {.PrintStmt = &[_]*const ast.Expr {&ast.Expr {.Lval = ast.Lval {.Var = "x"}}}},
                 ast.Stmt {.ContinueStmt = {}},
             }},
         }},
@@ -1400,4 +1400,57 @@ test "comma declaration double comma error" {
     const res: parser.ParseError!ast.Proc = prs.parseProcedure();
 
     try std.testing.expectEqualDeep(res, parser.ParseError.ExpectedExpression);
+}
+
+test "comma print" {
+    var tokens: std.ArrayList(Token) = std.ArrayList(Token).init(std.testing.allocator);
+
+
+    try tokens.append(Token {.PRINT = {}});
+    try tokens.append(Token {.IDENT = "x"});
+    try tokens.append(Token {.PLUS = {}});
+    try tokens.append(Token {.INTLIT = 1});
+    try tokens.append(Token {.COMMA = {}});
+    try tokens.append(Token {.IDENT = "y"});
+    try tokens.append(Token {.EOF = {}});
+    defer tokens.deinit();
+
+    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+
+    const expect: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
+
+        ast.Stmt {.PrintStmt = &[_]*const ast.Expr {
+            &ast.Expr {.BinOpExpr = ast.BinOpExpr {
+                .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
+                .op = .Add,
+                .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 1}}
+            }},
+            &ast.Expr {.Lval = ast.Lval {.Var = "y"}},
+        }},
+    }};
+
+    const actual: ast.Proc = try prs.parseProcedure();
+    defer actual.destroyAll(std.testing.allocator);
+
+    try std.testing.expectEqualDeep(expect, actual);
+}
+
+test "comma print multiple comma error" {
+    var tokens: std.ArrayList(Token) = std.ArrayList(Token).init(std.testing.allocator);
+
+    try tokens.append(Token {.PRINT = {}});
+    try tokens.append(Token {.IDENT = "x"});
+    try tokens.append(Token {.COMMA = {}});
+    try tokens.append(Token {.IDENT = "y"});
+    try tokens.append(Token {.COMMA = {}});
+    try tokens.append(Token {.COMMA = {}});
+    try tokens.append(Token {.IDENT = "z"});
+    try tokens.append(Token {.EOF = {}});
+    defer tokens.deinit();
+
+    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+
+    const actual: parser.ParseError!ast.Proc = prs.parseProcedure();
+
+    try std.testing.expectEqualDeep(parser.ParseError.ExpectedExpression, actual);
 }
