@@ -1373,3 +1373,31 @@ test "comma declaration" {
 
     try std.testing.expectEqualDeep(expect, actual);
 }
+
+test "comma declaration double comma error" {
+    var tokens: std.ArrayList(Token) = std.ArrayList(Token).init(std.testing.allocator);
+
+
+    try tokens.append(Token {.DECLARE = {}});
+    try tokens.append(Token {.IDENT = "x"});
+    try tokens.append(Token {.EQ = {}});
+    try tokens.append(Token {.INTLIT = 1});
+    try tokens.append(Token {.COMMA = {}});
+    try tokens.append(Token {.IDENT = "y"});
+    try tokens.append(Token {.EQ = {}});
+    try tokens.append(Token {.INTLIT = 2});
+    try tokens.append(Token {.COMMA = {}});
+    try tokens.append(Token {.COMMA = {}});
+    try tokens.append(Token {.IDENT = "z"});
+    try tokens.append(Token {.COMMA = {}});
+    try tokens.append(Token {.IDENT = "w"});
+    try tokens.append(Token {.EQ = {}});
+    try tokens.append(Token {.INTLIT = 1});
+    try tokens.append(Token {.EOF = {}});
+    defer tokens.deinit();
+
+    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+    const res: parser.ParseError!ast.Proc = prs.parseProcedure();
+
+    try std.testing.expectEqualDeep(res, parser.ParseError.ExpectedExpression);
+}

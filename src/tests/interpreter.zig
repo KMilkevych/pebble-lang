@@ -707,10 +707,43 @@ test "comma declaration" {
         }},
     }};
 
-    // Evaluate statement to error for z
+    // Evaluate procedure
     _ = try interpreter.evalProc(proc, &env);
     try std.testing.expectEqualDeep(venv.ObjectVal {.Var = venv.Value {.Int = 1}}, env.lookup("x"));
     try std.testing.expectEqualDeep(venv.ObjectVal {.Var = venv.Value {.Int = 2}}, env.lookup("y"));
     try std.testing.expectEqualDeep(venv.ObjectVal {.Var = venv.Value {.Undefined = {}}}, env.lookup("z"));
     try std.testing.expectEqualDeep(venv.ObjectVal {.Var = venv.Value {.Int = 1}}, env.lookup("w"));
+}
+
+test "undefined variable in comma declaration" {
+    // Prepare environment
+    var env = venv.Env.new(std.testing.allocator);
+    defer env.deinit();
+
+    // Prepare procedure
+    const proc: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
+
+        ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {
+            &ast.Expr {.AssignExpr = ast.AssignExpr {
+                .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
+                .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 1}}
+            }},
+            &ast.Expr {.AssignExpr = ast.AssignExpr {
+                .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "y"}},
+                .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 2}}
+            }},
+            &ast.Expr {.Lval = ast.Lval {.Var = "z"}},
+            &ast.Expr {.AssignExpr = ast.AssignExpr {
+                .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "w"}},
+                .rhs = &ast.Expr {.Lval = ast.Lval {.Var = "z"}}
+            }},
+        }},
+    }};
+
+    // Evaluate statement to error for z
+    const res: interpreter.EvalError!void = interpreter.evalProc(proc, &env);
+    try std.testing.expectEqualDeep(
+        res,
+        interpreter.EvalError.UndefinedVariable
+    );
 }
