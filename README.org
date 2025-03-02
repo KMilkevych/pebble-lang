@@ -13,10 +13,7 @@ run ~zig build run -- interactive~ to start the interactive REPL shell.
 Computing the first =N= fibonacci numbers:
 #+begin_src
 declare N = 10
-declare n1 = 1
-declare n2 = n1
-
-declare i = 1
+declare n1 = 1, n2 = 1, i = 1
 while i <= N  {
 
       i = i + 1
@@ -49,11 +46,11 @@ which results in output
 - PRINT statements
 - Basic lexical scoping
 - ~break~ and ~continue~ statements
+- COMMA declarations, e.g. ~declare x = 1, y = 2, z = 3~
 
 ** Not yet implemented
 - String types
 - Floating point types
-- COMMA declarations, e.g. ~declare x = 1, y = 2, z = 3~
 - Function calls
 - Lists
 - Structs
