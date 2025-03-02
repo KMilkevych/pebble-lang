@@ -1446,3 +1446,35 @@ test "newline block break" {
 
     try std.testing.expectEqualDeep(expected, tokens.items);
 }
+
+
+test "comma declaration" {
+    const input =
+        \\declare x = 1, y = 2, z, w = 5
+    ;
+
+    var lx = lexer.Lexer.new(input, std.testing.allocator);
+
+    const tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit();
+
+    const expected: []const Token = &[_]Token{
+        Token {.DECLARE = {}},
+        Token {.IDENT = "x"},
+        Token {.EQ = {}},
+        Token {.INTLIT = 1},
+        Token {.COMMA = {}},
+        Token {.IDENT = "y"},
+        Token {.EQ = {}},
+        Token {.INTLIT = 2},
+        Token {.COMMA = {}},
+        Token {.IDENT = "z"},
+        Token {.COMMA = {}},
+        Token {.IDENT = "w"},
+        Token {.EQ = {}},
+        Token {.INTLIT = 5},
+        Token {.EOF = {}}
+    };
+
+    try std.testing.expectEqualDeep(expected, tokens.items);
+}
