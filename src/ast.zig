@@ -42,23 +42,6 @@ pub const Lval = union(enum) {
     }
 };
 
-pub const LitOrLval = union(enum) {
-    Lit: Lit,
-    Lval: Lval,
-
-    pub fn format(
-        self: LitOrLval,
-        comptime fmt: []const u8,
-        options: std.fmt.FormatOptions,
-        writer: anytype
-    ) !void {
-        switch(self) {
-            .Lit => |lit| lit.format(fmt, options, writer),
-            .Lval => |lval| lval.format(fmt, options, writer)
-        }
-    }
-};
-
 pub const BinOp = enum {
     Add,
     Sub,
