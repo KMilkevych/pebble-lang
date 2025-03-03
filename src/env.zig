@@ -1,29 +1,22 @@
 const std = @import("std");
 const ast = @import("ast.zig");
 
-pub const Value: type = union(enum) {
-    Int: i64,
-    Bool: bool,
-    Undefined: void,
+// pub const Value: type = union(enum) {
+//     Int: i64,
+//     Bool: bool,
+//     Undefined: void,
 
-    pub fn fromLiteral(literal: ast.Lit) Value {
-        return switch (literal) {
-            .Int => |int| Value {.Int = int},
-            .Bool => |bl| Value {.Bool = bl},
-        };
-    }
-};
-
-// pub const FunValue: type = struct {
-//     // TODO:
-//     // This should contain all the function information
-//     // such as the arguments it takes, the closure of values it has
-//     // as well as the actual function contents (sequenceo of statements)
+//     pub fn fromLiteral(literal: ast.Lit) Value {
+//         return switch (literal) {
+//             .Int => |int| Value {.Int = int},
+//             .Bool => |bl| Value {.Bool = bl},
+//         };
+//     }
 // };
 
 pub const ObjectVal: type = union(enum) {
-    Var: Value,
-    // Fun: FunValue
+    Var: ast.Lit,
+    Undefined: void,
 };
 
 pub const Env: type = struct {

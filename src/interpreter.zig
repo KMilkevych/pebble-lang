@@ -42,8 +42,8 @@ pub fn evalLval(lval: ast.Lval, env: *venv.Env) ValueError!ast.Lit {
                 .Var => |val| switch (val) {
                     .Int => |ival| ast.Lit {.Int = ival},
                     .Bool => |bval| ast.Lit {.Bool = bval},
-                    .Undefined => EvalError.UndefinedVariable,
-                }
+                },
+                .Undefined => EvalError.UndefinedVariable
             };
 
         }
@@ -179,7 +179,7 @@ pub fn evalAssignExpr(expr: *const ast.AssignExpr, env: *venv.Env) EvalError!ast
     switch (lval) {
         .Var => |id| {
             if (!env.isDeclaredGlobal(id)) return EvalError.UndefinedVariable;
-            env.insertScoping(id, venv.ObjectVal {.Var = venv.Value.fromLiteral(rhs)});
+            env.insertScoping(id, venv.ObjectVal {.Var = rhs});
         }
     }
 
@@ -234,7 +234,7 @@ pub fn evalStmt(statement: ast.Stmt, env: *venv.Env) EvalError!StmtReturn {
                 if (env.isDeclaredLocal(id)) return EvalError.IdentifierAlreadyDeclared;
 
                 // Add lhs identifier to environment
-                env.insert(id, venv.ObjectVal {.Var = venv.Value {.Undefined = {}}});
+                env.insert(id, venv.ObjectVal {.Undefined = {}});
 
                 // Evaluate assignment expression if exists
                 switch (expr.*) {

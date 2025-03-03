@@ -78,7 +78,7 @@ test "variable lookup" {
     const identifier: []const u8 = "x";
     var env = venv.Env.new(std.testing.allocator);
     defer env.deinit();
-    env.insert(identifier, venv.ObjectVal {.Var = venv.Value {.Int = 32}});
+    env.insert(identifier, venv.ObjectVal { .Var = ast.Lit {.Int = 32}});
 
     const exp: ast.Expr = ast.Expr {
         .Lval = ast.Lval {.Var = identifier}
@@ -94,7 +94,7 @@ test "variable assignment" {
 
     // Prepare environment
     var env = venv.Env.new(std.testing.allocator);
-    env.insert("x", venv.ObjectVal {.Var = venv.Value {.Undefined = {}}});
+    env.insert("x", venv.ObjectVal { .Undefined = {}});
     defer env.deinit();
 
     const exp: ast.Expr = ast.Expr {
@@ -126,7 +126,7 @@ test "let x (= undefined)" {
 
     // Assert that environment has been updated with x = 49
     try std.testing.expectEqualDeep(
-        venv.ObjectVal {.Var = venv.Value {.Undefined = {}}},
+        venv.ObjectVal { .Undefined = {}},
         env.lookup("x")
     );
 }
@@ -149,7 +149,7 @@ test "let x = 49" {
 
     // Assert that environment has been updated with x = 49
     try std.testing.expectEqualDeep(
-        venv.ObjectVal {.Var = venv.Value {.Int = 49}},
+        venv.ObjectVal { .Var = ast.Lit {.Int = 49}},
         env.lookup("x")
     );
 }
@@ -179,7 +179,7 @@ test "invalid chain declaration" {
 test "redeclaration error" {
     // Prepare environment
     var env = venv.Env.new(std.testing.allocator);
-    env.insert("x", venv.ObjectVal {.Var = venv.Value {.Undefined = {}}});
+    env.insert("x", venv.ObjectVal { .Undefined = {}});
     defer env.deinit();
 
     // Prepare statement
@@ -197,7 +197,7 @@ test "redeclaration error" {
 test "redeclaration error 2" {
     // Prepare environment
     var env = venv.Env.new(std.testing.allocator);
-    env.insert("x", venv.ObjectVal {.Var = venv.Value {.Undefined = {}}});
+    env.insert("x", venv.ObjectVal { .Undefined = {}});
     defer env.deinit();
 
     // Prepare statement
@@ -245,7 +245,7 @@ test "smart scoped assignment" {
     // Evaluate statement to error for z
     try interpreter.evalProc(proc, &env);
     try std.testing.expectEqualDeep(
-        venv.ObjectVal {.Var = venv.Value {.Int = 20}},
+        venv.ObjectVal { .Var = ast.Lit {.Int = 20}},
         env.lookup("x")
     );
 }
@@ -288,7 +288,7 @@ test "smart scoped declaration" {
     // Evaluate statement to error for z
     try interpreter.evalProc(proc, &env);
     try std.testing.expectEqualDeep(
-        venv.ObjectVal {.Var = venv.Value {.Int = 10}},
+        venv.ObjectVal { .Var = ast.Lit {.Int = 10}},
         env.lookup("x")
     );
 }
@@ -434,7 +434,7 @@ test "break works" {
     // Evaluate statement to error for z
     try interpreter.evalProc(proc, &env);
     try std.testing.expectEqualDeep(
-        venv.ObjectVal {.Var = venv.Value {.Int = 9}},
+        venv.ObjectVal { .Var = ast.Lit {.Int = 9}},
         env.lookup("x")
     );
 }
@@ -487,7 +487,7 @@ test "break in block works" {
     // Evaluate statement to error for z
     try interpreter.evalProc(proc, &env);
     try std.testing.expectEqualDeep(
-        venv.ObjectVal {.Var = venv.Value {.Int = 9}},
+        venv.ObjectVal { .Var = ast.Lit {.Int = 9}},
         env.lookup("x")
     );
 }
@@ -540,7 +540,7 @@ test "continue works" {
     // Evaluate statement to error for z
     try interpreter.evalProc(proc, &env);
     try std.testing.expectEqualDeep(
-        venv.ObjectVal {.Var = venv.Value {.Int = 0}},
+        venv.ObjectVal { .Var = ast.Lit {.Int = 0}},
         env.lookup("y")
     );
 }
@@ -597,7 +597,7 @@ test "continue in block works" {
     // Evaluate statement to error for z
     try interpreter.evalProc(proc, &env);
     try std.testing.expectEqualDeep(
-        venv.ObjectVal {.Var = venv.Value {.Int = 0}},
+        venv.ObjectVal { .Var = ast.Lit {.Int = 0}},
         env.lookup("y")
     );
 }
@@ -709,10 +709,10 @@ test "comma declaration" {
 
     // Evaluate procedure
     _ = try interpreter.evalProc(proc, &env);
-    try std.testing.expectEqualDeep(venv.ObjectVal {.Var = venv.Value {.Int = 1}}, env.lookup("x"));
-    try std.testing.expectEqualDeep(venv.ObjectVal {.Var = venv.Value {.Int = 2}}, env.lookup("y"));
-    try std.testing.expectEqualDeep(venv.ObjectVal {.Var = venv.Value {.Undefined = {}}}, env.lookup("z"));
-    try std.testing.expectEqualDeep(venv.ObjectVal {.Var = venv.Value {.Int = 1}}, env.lookup("w"));
+    try std.testing.expectEqualDeep(venv.ObjectVal { .Var = ast.Lit {.Int = 1}}, env.lookup("x"));
+    try std.testing.expectEqualDeep(venv.ObjectVal { .Var = ast.Lit {.Int = 2}}, env.lookup("y"));
+    try std.testing.expectEqualDeep(venv.ObjectVal { .Undefined = {}}, env.lookup("z"));
+    try std.testing.expectEqualDeep(venv.ObjectVal { .Var = ast.Lit {.Int = 1}}, env.lookup("w"));
 }
 
 test "undefined variable in comma declaration" {
