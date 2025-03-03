@@ -226,6 +226,7 @@ pub fn evalStmt(statement: ast.Stmt, env: *venv.Env) EvalError!StmtReturn {
                 };
 
                 // Evalute left-hand side lval to an identifier
+                // TODO: This can also be array indexing, object field/property, etc.
                 const id: []const u8 = switch (try lhs) {
                     .Var => |id| id
                 };
@@ -237,6 +238,10 @@ pub fn evalStmt(statement: ast.Stmt, env: *venv.Env) EvalError!StmtReturn {
                 env.insert(id, venv.ObjectVal {.Undefined = {}});
 
                 // Evaluate assignment expression if exists
+                // TODO: Try to manually evaluate the assignment expression to fix
+                // declare x = 10
+                // { declare x = x + 1 }
+                // bug
                 switch (expr.*) {
                     .AssignExpr => |*exp| _ = try evalAssignExpr(exp, env),
                     .Lval => {},
