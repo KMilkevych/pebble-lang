@@ -20,8 +20,10 @@ pub const Lit = union(enum) {
     }
 };
 
+pub const Var: type = []const u8;
+
 pub const Lval = union(enum) {
-    Var: []const u8,
+    Var: Var,
 
     // TODO: Add array index and field lookup
 
