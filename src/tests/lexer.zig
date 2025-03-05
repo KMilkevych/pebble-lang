@@ -1478,3 +1478,38 @@ test "comma declaration" {
 
     try std.testing.expectEqualDeep(expected, tokens.items);
 }
+
+test "inline simple function definition with return" {
+    const input =
+        \\declare x = 0
+        \\function last(x, y, z) return z
+    ;
+
+    var lx = lexer.Lexer.new(input, std.testing.allocator);
+
+    const tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit();
+
+    const expected: []const Token = &[_]Token{
+        Token {.DECLARE = {}},
+        Token {.IDENT = "x"},
+        Token {.EQ = {}},
+        Token {.INTLIT = 0},
+        Token {.LB = {}},
+        Token {.FUN = {}},
+        Token {.IDENT = "last"},
+        Token {.LPAREN = {}},
+        Token {.IDENT = "x"},
+        Token {.COMMA = {}},
+        Token {.IDENT = "y"},
+        Token {.COMMA = {}},
+        Token {.IDENT = "z"},
+        Token {.RPAREN = {}},
+        Token {.LB = {}},
+        Token {.RETURN = {}},
+        Token {.IDENT = "z"},
+        Token {.EOF = {}}
+    };
+
+    try std.testing.expectEqualDeep(expected, tokens.items);
+}

@@ -1658,3 +1658,96 @@ test "funcall funcall funcall" {
 
     try std.testing.expectEqualDeep(expect, result.*);
 }
+
+test "empty return statement" {
+
+    var tokens: std.ArrayList(Token) = std.ArrayList(Token).init(std.testing.allocator);
+    try tokens.append(Token {.RETURN = {}});
+    try tokens.append(Token {.LB = {}});
+    try tokens.append(Token {.DECLARE = {}});
+    try tokens.append(Token {.IDENT = "x"});
+    try tokens.append(Token {.EOF = {}});
+    defer tokens.deinit();
+
+    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+
+    const expect: ast.Stmt = ast.Stmt {.ReturnStmt = &ast.Expr {.Lit = ast.Lit {.Void = {}}}};
+
+    const actual: ast.Stmt = try prs.parseStmt();
+    defer actual.destroyAll(std.testing.allocator);
+
+    try std.testing.expectEqualDeep(expect, actual);
+
+}
+
+test "return statement with expression" {
+
+    var tokens: std.ArrayList(Token) = std.ArrayList(Token).init(std.testing.allocator);
+    try tokens.append(Token {.RETURN = {}});
+    try tokens.append(Token {.IDENT = "x"});
+    try tokens.append(Token {.PLUS = {}});
+    try tokens.append(Token {.IDENT = "x"});
+    try tokens.append(Token {.LB = {}});
+    try tokens.append(Token {.DECLARE = {}});
+    try tokens.append(Token {.IDENT = "x"});
+    try tokens.append(Token {.EOF = {}});
+    defer tokens.deinit();
+
+    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+
+    const expect: ast.Stmt = ast.Stmt {.ReturnStmt = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
+        .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
+        .op = .Add,
+        .rhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
+    }}};
+
+    const actual: ast.Stmt = try prs.parseStmt();
+    defer actual.destroyAll(std.testing.allocator);
+
+    try std.testing.expectEqualDeep(expect, actual);
+
+}
+
+
+test "empty return statement at the end" {
+
+    var tokens: std.ArrayList(Token) = std.ArrayList(Token).init(std.testing.allocator);
+    try tokens.append(Token {.RETURN = {}});
+    try tokens.append(Token {.EOF = {}});
+    defer tokens.deinit();
+
+    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+
+    const expect: ast.Stmt = ast.Stmt {.ReturnStmt = &ast.Expr {.Lit = ast.Lit {.Void = {}}}};
+
+    const actual: ast.Stmt = try prs.parseStmt();
+    defer actual.destroyAll(std.testing.allocator);
+
+    try std.testing.expectEqualDeep(expect, actual);
+
+}
+
+test "return statement with expression at the end" {
+
+    var tokens: std.ArrayList(Token) = std.ArrayList(Token).init(std.testing.allocator);
+    try tokens.append(Token {.RETURN = {}});
+    try tokens.append(Token {.IDENT = "x"});
+    try tokens.append(Token {.PLUS = {}});
+    try tokens.append(Token {.IDENT = "x"});
+    try tokens.append(Token {.EOF = {}});
+    defer tokens.deinit();
+
+    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+
+    const expect: ast.Stmt = ast.Stmt {.ReturnStmt = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
+        .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
+        .op = .Add,
+        .rhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
+    }}};
+
+    const actual: ast.Stmt = try prs.parseStmt();
+    defer actual.destroyAll(std.testing.allocator);
+
+    try std.testing.expectEqualDeep(expect, actual);
+
+}

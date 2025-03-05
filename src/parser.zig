@@ -338,6 +338,28 @@ pub const Parser = struct {
                 try self.expectTokenOrEOF(Token {.LB = {}});
                 break :blk ast.Stmt {.ContinueStmt = {}};
             },
+            .RETURN => {
+                try self.expectToken(Token {.RETURN = {}});
+
+                // Try to parse return expression
+                const maybe_expr: ?*ast.Expr = if (self.peekToken()) |tk| switch (tk) {
+                    .LB, .EOF => null,
+                    else => try self.parseExpr()
+                } else null;
+                try self.expectTokenOrEOF(Token {.LB = {}});
+
+                // Create the actual return expression
+                const expr: *ast.Expr = if (maybe_expr) |ex| ex else bk: {
+                    const ptr: *ast.Expr = self.allocator.create(ast.Expr) catch unreachable;
+                    ptr.* = ast.Expr {.Lit = ast.Lit {.Void = {}}};
+                    break :bk ptr;
+                };
+
+                errdefer expr.destroyAll(self.allocator);
+
+                // Return statement
+                break :blk ast.Stmt {.ReturnStmt = expr};
+            },
 
             // Block Statements
             .LCURLY => {

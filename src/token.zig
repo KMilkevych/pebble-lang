@@ -30,6 +30,7 @@ pub const TokenType: type = enum {
     WHILE,
     BREAK,
     CONTINUE,
+    RETURN,
     FUN,
     LB,
     COMMA,
@@ -77,6 +78,7 @@ pub const Token: type = union(TokenType) {
     WHILE: void,
     BREAK: void,
     CONTINUE: void,
+    RETURN: void,
     FUN: void,
 
     // Utility
@@ -126,6 +128,7 @@ pub const Token: type = union(TokenType) {
             .WHILE    => try writer.print("[WHILE   ]:", .{}),
             .BREAK    => try writer.print("[BREAK   ]:", .{}),
             .CONTINUE => try writer.print("[CONTINUE]:", .{}),
+            .RETURN   => try writer.print("[RETURN  ]:", .{}),
             .FUN      => try writer.print("[FUN     ]:", .{}),
             .INTLIT   => |val| try writer.print("[INTLIT  ]: {}", .{val}),
             .BOOLLIT  => |val| try writer.print("[BOOLLIT ]: {}", .{val}),
