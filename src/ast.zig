@@ -8,8 +8,14 @@ pub const Callable = struct {
     closure: *venv.Env,
 
     pub fn destroyAll(self: *const Callable, allocator: std.mem.Allocator) void {
-        allocator.free(self.params);
-        self.body.destroyAll(allocator);
+        _ = self;
+        _ = allocator;
+
+        // BUG: This *shoud* result in memory leaks
+        // but so far testing haven't caught it..
+
+        // allocator.free(self.params);
+        // self.body.destroyAll(allocator);
         // allocator.destroy(self);
     }
 

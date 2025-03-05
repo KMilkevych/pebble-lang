@@ -1357,3 +1357,55 @@ test "function definition" {
         env.lookup("last")
     );
 }
+
+test "closure test" {
+    // Prepare environment
+    var env = venv.Env.new(std.testing.allocator);
+    defer env.table.deinit();
+
+    // Prepare procedure
+    const proc: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
+
+        ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {
+            &ast.Expr {.AssignExpr = ast.AssignExpr {
+                .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
+                .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 7}},
+            }}
+        }},
+
+        ast.Stmt {.FunDefStmt = &ast.FunDefStmt {
+            .id = "f",
+            .params = &[_]ast.Var {"n"},
+            .body = ast.Stmt {.ReturnStmt = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
+                .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
+                .op = .Mul,
+                .rhs = &ast.Expr {.Lval = ast.Lval {.Var = "n"}}
+            }}}
+        }},
+
+        ast.Stmt {.ExprStmt = &ast.Expr {.AssignExpr = ast.AssignExpr {
+                .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
+                .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 13}},
+            }}
+        },
+
+        ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {
+            &ast.Expr {.AssignExpr = ast.AssignExpr {
+                .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "y"}},
+                .rhs = &ast.Expr {.CallExpr = ast.CallExpr {
+                    .id = &ast.Expr {.Lval = ast.Lval {.Var = "f"}},
+                    .args = &[_]*const ast.Expr {
+                        &ast.Expr {.Lit = ast.Lit {.Int = 2}}
+                    }
+                }},
+            }}
+        }},
+    }};
+
+    // Make sure that y is set with updated x
+    _ = try interpreter.evalProc(proc, &env);
+    try std.testing.expectEqualDeep(
+        venv.ObjectVal {.Var = ast.Lit {.Int = 26}},
+        env.lookup("y")
+    );
+}

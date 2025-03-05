@@ -41,15 +41,18 @@ fn compile(loc: [:0]const u8) !void {
     var file = try std.fs.cwd().openFile(loc, .{});
     defer file.close();
 
-    var env: venv.Env = venv.Env.new(std.heap.page_allocator);
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    const allocator = gpa.allocator();
+
+    var env: venv.Env = venv.Env.new(allocator);
     defer env.deinit();
 
     // Read the whole file
     const input: []const u8 = try file.reader()
-        .readAllAlloc(std.heap.page_allocator, 4096 * 4096);
+        .readAllAlloc(allocator, 4096 * 4096);
 
     // Perform lexing parsing and interpreting...
-    var lxr: lexer.Lexer = lexer.Lexer.new(input, std.heap.page_allocator);
+    var lxr: lexer.Lexer = lexer.Lexer.new(input, allocator);
     var tokens: std.ArrayList(token.Token) = lxr.lex();
     defer tokens.deinit();
 
@@ -57,7 +60,7 @@ fn compile(loc: [:0]const u8) !void {
     // for (tokens.items) |tok| std.debug.print("{}\n", .{tok});
 
     // Create parser
-    var prsr: parser.Parser = parser.Parser.new(tokens, std.heap.page_allocator);
+    var prsr: parser.Parser = parser.Parser.new(tokens, allocator);
 
     // Parse all statements into a procedure
     const proc: ast.Proc = try prsr.parseProcedure();
