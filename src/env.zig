@@ -1,19 +1,6 @@
 const std = @import("std");
 const ast = @import("ast.zig");
 
-// pub const Value: type = union(enum) {
-//     Int: i64,
-//     Bool: bool,
-//     Undefined: void,
-
-//     pub fn fromLiteral(literal: ast.Lit) Value {
-//         return switch (literal) {
-//             .Int => |int| Value {.Int = int},
-//             .Bool => |bl| Value {.Bool = bl},
-//         };
-//     }
-// };
-
 pub const ObjectVal: type = union(enum) {
     Var: ast.Lit,
     Undefined: void,
