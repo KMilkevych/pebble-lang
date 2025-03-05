@@ -30,6 +30,7 @@ pub const TokenType: type = enum {
     WHILE,
     BREAK,
     CONTINUE,
+    FUN,
     LB,
     COMMA,
     EOF,
@@ -76,6 +77,7 @@ pub const Token: type = union(TokenType) {
     WHILE: void,
     BREAK: void,
     CONTINUE: void,
+    FUN: void,
 
     // Utility
     LB: void,
@@ -124,6 +126,7 @@ pub const Token: type = union(TokenType) {
             .WHILE    => try writer.print("[WHILE   ]:", .{}),
             .BREAK    => try writer.print("[BREAK   ]:", .{}),
             .CONTINUE => try writer.print("[CONTINUE]:", .{}),
+            .FUN      => try writer.print("[FUN     ]:", .{}),
             .INTLIT   => |val| try writer.print("[INTLIT  ]: {}", .{val}),
             .BOOLLIT  => |val| try writer.print("[BOOLLIT ]: {}", .{val}),
             .IDENT    => |val| try writer.print("[IDENT   ]: {s}", .{val})
@@ -133,6 +136,7 @@ pub const Token: type = union(TokenType) {
     pub fn getInfixPrecedence(self: Token) ?InfixPrecedence {
         // TODO:
         // Implement the remaining tokens here..
+        // TODO: FUN should be binding hard here...
         return switch(self) {
 
             // Right-associative assignment
@@ -156,6 +160,14 @@ pub const Token: type = union(TokenType) {
     pub fn getPrefixPrecedence(self: Token) ?u8 {
         return switch(self) {
             .MINUS, .NOT => 13,
+            else => null
+        };
+    }
+
+    pub fn getPostfixPrecedence(self: Token) ?u8 {
+        return switch(self) {
+            // TODO: Implement arr[idx] and object.field operators
+            .LPAREN => 15,
             else => null
         };
     }

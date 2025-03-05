@@ -136,6 +136,58 @@ pub const Parser = struct {
             // Make sure that there is a token
             const op_token: Token = if (self.peekToken()) |tok| tok else return ParseError.ExpectedTokenOrEOF;
 
+            // If postfix operator, we treat as postfix
+            if (op_token.getPostfixPrecedence()) |op_prec| {
+
+                // Make sure that we are binding stronger
+                if (op_prec < min_bp) break
+                else _ = self.nextToken() catch unreachable;
+
+                // Treat the next token (can only be parenthesis)
+                const r: ast.Expr = sw: switch (op_token) {
+                    .LPAREN => {
+
+                        // Parse expressions while possible
+                        var acc: ArrayList(*const ast.Expr) = .init(self.allocator);
+                        errdefer acc.deinit();
+                        errdefer for (acc.items) |expr| expr.destroyAll(self.allocator);
+
+                        // Keep parsing expressions while comma until rparen
+                        while (!std.meta.eql(self.peekToken(), Token {.RPAREN = {}})) {
+
+                            // Parse expression
+                            acc.append(try self.parseExprBp(0)) catch unreachable;
+
+                            // Peek the next token
+                            if (self.peekToken()) |tok| switch (tok) {
+                                .COMMA => _ = self.nextToken() catch unreachable,
+                                else => break
+                            } else break;
+                        }
+
+                        // Make sure call expression is closed
+                        try self.expectToken(Token {.RPAREN = {}});
+
+                        // Produce call expression
+                        break :sw ast.Expr {.CallExpr = ast.CallExpr {
+                            .id = lhs,
+                            .args = acc.toOwnedSlice() catch unreachable
+                        }};
+
+                    },
+                    // TODO: Allow other kinds of post-fix operators
+                    // like obj.property and arr[idx]
+                    else => unreachable,
+                };
+
+                // Allocate and assign expression
+                lhs = self.allocator.create(ast.Expr) catch unreachable;
+                lhs.* = r;
+
+                // Continue for next token
+                continue;
+            }
+
             // If infix operator, we treat it as an infix
             if (op_token.getInfixPrecedence()) |op_prec| {
 

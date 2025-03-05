@@ -1,9 +1,44 @@
 const std = @import("std");
 const token = @import("token.zig");
+const venv = @import("env.zig");
+
+pub const Callable = struct {
+    params: []const Var,
+    body: Stmt,
+    closure: *venv.Env,
+
+    pub fn destroyAll(self: *const Callable, allocator: std.mem.Allocator) void {
+        allocator.free(self.params);
+        self.body.destroyAll(allocator);
+    }
+
+    pub fn format(
+        self: Callable,
+        comptime fmt: []const u8,
+        options: std.fmt.FormatOptions,
+        writer: anytype
+    ) !void {
+        _ = fmt;
+        _ = options;
+        try writer.print("(", .{});
+        for (self.params) |param| try writer.print("{s},", .{param});
+        try writer.print(") => {}\n", .{self.body});
+    }
+
+};
 
 pub const Lit = union(enum) {
     Int: i64,
     Bool: bool,
+    Void: void,
+    Callable: Callable,
+
+    pub fn destroyAll(self: *const Lit, allocator: std.mem.Allocator) void {
+        switch (self) {
+            .Int, .Bool, .Void => {},
+            .Callable => |fun| fun.destroyAll(allocator)
+        }
+    }
 
     pub fn format(
         self: Lit,
@@ -16,6 +51,8 @@ pub const Lit = union(enum) {
         switch(self) {
             .Int => |v| try writer.print("{}", .{v}),
             .Bool => |v| try writer.print("{}", .{v}),
+            .Void => try writer.print("{{}}", .{}),
+            .Callable => |f| try writer.print("{}", .{f}),
         }
     }
 };
@@ -196,12 +233,38 @@ pub const AssignExpr = struct {
     }
 };
 
+pub const CallExpr = struct {
+
+    id: *const Expr,
+    args: []const *const Expr,
+
+    pub fn destroyAll(self: *const CallExpr, allocator: std.mem.Allocator) void {
+        self.id.destroyAll(allocator);
+        for (self.args) |arg| arg.destroyAll(allocator);
+        allocator.free(self.args);
+    }
+
+    pub fn format(
+        self: CallExpr,
+        comptime fmt: []const u8,
+        options: std.fmt.FormatOptions,
+        writer: anytype
+    ) !void {
+        _ = fmt;
+        _ = options;
+        try writer.print("{}(", .{self.id});
+        for (self.args) |arg| try writer.print("{},", .{arg});
+        try writer.print(")", .{});
+    }
+};
+
 pub const Expr = union(enum) {
     BinOpExpr: BinOpExpr,
     UnOpExpr: UnOpExpr,
     Lit: Lit,
     Lval: Lval,
     AssignExpr: AssignExpr,
+    CallExpr: CallExpr,
 
     pub fn destroyAll(self: *const Expr, allocator: std.mem.Allocator) void {
         switch (self.*) {
@@ -210,6 +273,7 @@ pub const Expr = union(enum) {
             .Lit => {},
             .Lval => {}, // TODO: Figure out if this needs implementation
             .AssignExpr => |*expr| expr.destroyAll(allocator),
+            .CallExpr => |*expr| expr.destroyAll(allocator),
         }
         allocator.destroy(self);
     }
@@ -226,6 +290,7 @@ pub const Expr = union(enum) {
             .Lit => |lit| lit.format(fmt, options, writer),
             .Lval => |lval| lval.format(fmt, options, writer),
             .AssignExpr => |expr| expr.format(fmt, options, writer),
+            .CallExpr => |expr| expr.format(fmt, options, writer),
         };
     }
 };
@@ -289,6 +354,7 @@ pub const Stmt = union(enum) {
     WhileStmt: *const WhileStmt,
     BreakStmt: void,
     ContinueStmt: void,
+    ReturnStmt: *const Expr,
 
     pub fn destroyAll(self: *const Stmt, allocator: std.mem.Allocator) void {
         switch (self.*) {
@@ -309,6 +375,7 @@ pub const Stmt = union(enum) {
             .WhileStmt => |stmt| stmt.destroyAll(allocator),
             .BreakStmt => {},
             .ContinueStmt => {},
+            .ReturnStmt => |expr| expr.destroyAll(allocator),
         }
     }
 
@@ -341,6 +408,7 @@ pub const Stmt = union(enum) {
             .WhileStmt => |stmt| try writer.print("{}\n", .{stmt}),
             .BreakStmt => try writer.print("BREAK\n", .{}),
             .ContinueStmt => try writer.print("CONTINUE\n", .{}),
+            .ReturnStmt => |expr| try writer.print("RETURN {}\n", .{expr}),
         };
     }
 };

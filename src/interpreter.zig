@@ -12,12 +12,16 @@ const ArithmeticError = error {
     DivisionByZero
 };
 const ValueError = error {
-    UndefinedVariable
+    UndefinedVariable,
+    UnexpectedVoidValue,
 };
 const SemanticError = error {
     IdentifierAlreadyDeclared,
     UnexpectedBreak,
     UnexpectedContinue,
+    UnexpectedReturn,
+    NotCallable,
+    WrongArgCount,
 };
 
 pub const EvalError = TypeError || ArithmeticError || ValueError || SemanticError;
@@ -26,6 +30,7 @@ pub const StmtReturn: type = union(enum) {
     NoReturn: void,
     Continue: void,
     Break: void,
+    Return: ast.Lit,
 };
 
 // Functions
@@ -40,8 +45,11 @@ pub fn evalLval(lval: ast.Lval, env: *venv.Env) ValueError!ast.Lit {
             // Evalue to a literal based on value
             return switch(value) {
                 .Var => |val| switch (val) {
+                    // TODO: Figure out if this is needed as objectvals store literals
                     .Int => |ival| ast.Lit {.Int = ival},
                     .Bool => |bval| ast.Lit {.Bool = bval},
+                    .Void => ValueError.UnexpectedVoidValue,
+                    .Callable => |fun| ast.Lit {.Callable = fun}
                 },
                 .Undefined => EvalError.UndefinedVariable
             };
@@ -61,23 +69,23 @@ pub fn evalBinOpExpr(expr: *const ast.BinOpExpr, env: *venv.Env) EvalError!ast.L
         .Add => switch (lhs) {
             .Int => |l| switch (rhs) {
                 .Int => |r| ast.Lit {.Int = l + r},
-                .Bool => TypeError.MismatchedType,
+                .Bool, .Callable, .Void => TypeError.MismatchedType,
             },
-            .Bool => TypeError.MismatchedType,
+            .Bool, .Callable, .Void => TypeError.MismatchedType,
         },
         .Sub => switch (lhs) {
             .Int => |l| switch (rhs) {
                 .Int => |r| ast.Lit {.Int = l - r},
-                .Bool => TypeError.MismatchedType,
+                .Bool, .Callable, .Void => TypeError.MismatchedType,
             },
-            .Bool => TypeError.MismatchedType,
+            .Bool, .Callable, .Void => TypeError.MismatchedType,
         },
         .Mul => switch (lhs) {
             .Int => |l| switch (rhs) {
                 .Int => |r| ast.Lit {.Int = l * r},
-                .Bool => TypeError.MismatchedType,
+                .Bool, .Callable, .Void => TypeError.MismatchedType,
             },
-            .Bool => TypeError.MismatchedType,
+            .Bool, .Callable, .Void => TypeError.MismatchedType,
         },
         .Div => switch (lhs) {
             .Int => |l| switch (rhs) {
@@ -85,59 +93,64 @@ pub fn evalBinOpExpr(expr: *const ast.BinOpExpr, env: *venv.Env) EvalError!ast.L
                     if (r == 0) return ArithmeticError.DivisionByZero;
                     return ast.Lit {.Int = @divFloor(l, r)};
                 },
-                .Bool => TypeError.MismatchedType,
+                .Bool, .Callable, .Void => TypeError.MismatchedType,
             },
-            .Bool => TypeError.MismatchedType,
+            .Bool, .Callable, .Void => TypeError.MismatchedType,
         },
         .And => switch (lhs) {
             .Bool => |l| switch (rhs) {
                 .Bool => |r| ast.Lit {.Bool = l and r},
-                .Int => TypeError.MismatchedType,
+                .Int, .Callable, .Void => TypeError.MismatchedType,
             },
-            .Int => TypeError.MismatchedType,
+            .Int, .Callable, .Void => TypeError.MismatchedType,
         },
         .Or => switch (lhs) {
             .Bool => |l| switch (rhs) {
                 .Bool => |r| ast.Lit {.Bool = l or r},
-                .Int => TypeError.MismatchedType,
+                .Int, .Callable, .Void => TypeError.MismatchedType,
             },
-            .Int => TypeError.MismatchedType,
+            .Int, .Callable, .Void => TypeError.MismatchedType,
         },
         .Eq => switch (lhs) {
             .Bool => |l| switch (rhs) {
                 .Bool => |r| ast.Lit {.Bool = l == r},
-                .Int => ast.Lit {.Bool = false},
+                .Int, .Callable, .Void => ast.Lit {.Bool = false},
             },
             .Int => |l| switch (rhs) {
-                .Bool => ast.Lit {.Bool = false},
+                .Bool, .Callable, .Void => ast.Lit {.Bool = false},
                 .Int => |r| ast.Lit {.Bool = l == r}
-            }
+            },
+            .Callable => |l| switch (rhs) {
+                .Callable => |r| ast.Lit {.Bool = std.meta.eql(l, r)},
+                .Int, .Bool, .Void => ast.Lit {.Bool = false},
+            },
+            .Void => ast.Lit {.Bool = false},
         },
         .Lt => switch (lhs) {
-            .Bool => TypeError.MismatchedType,
+            .Bool, .Callable, .Void => TypeError.MismatchedType,
             .Int => |l| switch (rhs) {
-                .Bool => TypeError.MismatchedType,
+                .Bool, .Callable, .Void => TypeError.MismatchedType,
                 .Int => |r| ast.Lit {.Bool = l < r}
             }
         },
         .Gt => switch (lhs) {
-            .Bool => TypeError.MismatchedType,
+            .Bool, .Callable, .Void => TypeError.MismatchedType,
             .Int => |l| switch (rhs) {
-                .Bool => TypeError.MismatchedType,
+                .Bool, .Callable, .Void => TypeError.MismatchedType,
                 .Int => |r| ast.Lit {.Bool = l > r}
             }
         },
         .Lte => switch (lhs) {
-            .Bool => TypeError.MismatchedType,
+            .Bool, .Callable, .Void => TypeError.MismatchedType,
             .Int => |l| switch (rhs) {
-                .Bool => TypeError.MismatchedType,
+                .Bool, .Callable, .Void => TypeError.MismatchedType,
                 .Int => |r| ast.Lit {.Bool = l <= r}
             }
         },
         .Gte => switch (lhs) {
-            .Bool => TypeError.MismatchedType,
+            .Bool, .Callable, .Void => TypeError.MismatchedType,
             .Int => |l| switch (rhs) {
-                .Bool => TypeError.MismatchedType,
+                .Bool, .Callable, .Void => TypeError.MismatchedType,
                 .Int => |r| ast.Lit {.Bool = l >= r}
             }
         },
@@ -152,12 +165,12 @@ pub fn evalUnOpExpr(expr: *const ast.UnOpExpr, env: *venv.Env) EvalError!ast.Lit
     // Evaluate operator
     return switch (expr.op) {
         .Not => switch (lit) {
-            .Int => TypeError.MismatchedType,
+            .Int, .Callable, .Void => TypeError.MismatchedType,
             .Bool => |val| ast.Lit { .Bool = !val },
         },
         .Neg => switch (lit) {
             .Int => |val| ast.Lit { .Int = -val },
-            .Bool => TypeError.MismatchedType,
+            .Bool, .Callable, .Void => TypeError.MismatchedType,
         },
     };
 }
@@ -186,6 +199,39 @@ pub fn evalAssignExpr(expr: *const ast.AssignExpr, env: *venv.Env) EvalError!ast
     return rhs;
 }
 
+pub fn evalCallExpr(expr: *const ast.CallExpr, env: *venv.Env) EvalError!ast.Lit {
+
+    // Evaluate identifier
+    const callable: ast.Callable = switch(try evalExpr(expr.id, env)) {
+        .Callable => |fun| fun,
+        .Int, .Bool, .Void => return EvalError.NotCallable,
+    };
+
+    // Create a scoped environment based on function closure
+    var scopedEnv: venv.Env = callable.closure.newScoped();
+    defer scopedEnv.deinit();
+
+    // Bind all args to function parameter names
+    if (callable.params.len != expr.args.len) return EvalError.WrongArgCount;
+    for (callable.params, expr.args) |id, arg| {
+
+        // NOTE: Evaluating in current environment, not in closure or scoped
+        const r: ast.Lit = try evalExpr(arg, env);
+
+        // Bind in environment directly
+        // NOTE: Can also declare and then insertScoped
+        scopedEnv.insert(id, venv.ObjectVal {.Var = r});
+    }
+
+    // Evaluate function body
+    return switch(try evalStmt(callable.body, &scopedEnv)) {
+        .NoReturn => ast.Lit {.Void = {}},
+        .Return => |lit| lit,
+        .Break => EvalError.UnexpectedBreak,
+        .Continue => EvalError.UnexpectedContinue
+    };
+}
+
 
 pub fn evalExpr(expr: *const ast.Expr, env: *venv.Env) EvalError!ast.Lit {
     return switch (expr.*) {
@@ -194,6 +240,7 @@ pub fn evalExpr(expr: *const ast.Expr, env: *venv.Env) EvalError!ast.Lit {
         .Lval => |lval| evalLval(lval, env),
         .Lit => |lit| lit,
         .AssignExpr => |ex| evalAssignExpr(&ex, env),
+        .CallExpr => |ex| evalCallExpr(&ex, env),
     };
 }
 
@@ -269,6 +316,7 @@ pub fn evalStmt(statement: ast.Stmt, env: *venv.Env) EvalError!StmtReturn {
             // Evalute each statement with nested environment
             for (stmts) |stmt| switch (try evalStmt(stmt, &nestedEnv)) {
                 .NoReturn => {},
+                .Return => |lit| return StmtReturn {.Return = lit},
                 .Break => return StmtReturn {.Break = {}},
                 .Continue => return StmtReturn {.Continue = {}},
             };
@@ -279,7 +327,7 @@ pub fn evalStmt(statement: ast.Stmt, env: *venv.Env) EvalError!StmtReturn {
 
             // Check condition
             const res: bool = switch (try evalExpr(stmt.cond, env)) {
-                .Int => return TypeError.MismatchedType,
+                .Int, .Callable, .Void => return TypeError.MismatchedType,
                 .Bool => |b| b,
             };
 
@@ -302,7 +350,7 @@ pub fn evalStmt(statement: ast.Stmt, env: *venv.Env) EvalError!StmtReturn {
 
                 // Check condition
                 const res: bool = switch (try evalExpr(stmt.cond, env)) {
-                    .Int => return TypeError.MismatchedType,
+                    .Int, .Callable, .Void => return TypeError.MismatchedType,
                     .Bool => |b| b,
                 };
 
@@ -315,6 +363,7 @@ pub fn evalStmt(statement: ast.Stmt, env: *venv.Env) EvalError!StmtReturn {
                 // Evaluate body and consume break statements
                 switch(try evalStmt(stmt.body, &scoped)) {
                     .NoReturn => {},
+                    .Return => |lit| return StmtReturn {.Return = lit},
                     .Break => break,
                     .Continue => continue,
                 }
@@ -324,6 +373,7 @@ pub fn evalStmt(statement: ast.Stmt, env: *venv.Env) EvalError!StmtReturn {
         },
         .BreakStmt => return StmtReturn {.Break = {}},
         .ContinueStmt => return StmtReturn {.Continue = {}},
+        .ReturnStmt => |expr| return StmtReturn {.Return = try evalExpr(expr, env)},
     }
 
     unreachable;
@@ -334,6 +384,7 @@ pub fn evalProc(procedure: ast.Proc, env: *venv.Env) EvalError!void {
     // Evaluate statements one by one
     for (procedure.stmts) |stmt| switch (try evalStmt(stmt, env)) {
         .NoReturn => {},
+        .Return => return EvalError.UnexpectedReturn,
         .Break => return EvalError.UnexpectedBreak,
         .Continue => return EvalError.UnexpectedContinue,
     };

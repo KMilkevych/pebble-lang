@@ -747,3 +747,575 @@ test "undefined variable in comma declaration" {
         interpreter.EvalError.UndefinedVariable
     );
 }
+
+test "simple funcall" {
+    // Prepare environment
+    var env = venv.Env.new(std.testing.allocator);
+    defer env.deinit();
+
+    // Insert function into environment
+    env.insert("always1", venv.ObjectVal {.Var = ast.Lit {
+        .Callable = ast.Callable {
+            .params = &[_] ast.Var {},
+            .body = ast.Stmt {
+                .ReturnStmt = &ast.Expr {.Lit = ast.Lit {.Int = 1}},
+            },
+            .closure = &env,
+        }
+    }});
+
+    // Prepare expression
+    const expr: ast.Expr = ast.Expr {.CallExpr = ast.CallExpr {
+        .id = &ast.Expr {.Lval = ast.Lval {.Var = "always1"}},
+        .args = &[_]*const ast.Expr {},
+    }};
+
+    // Evaluate statement
+    const r: ast.Lit = try interpreter.evalExpr(&expr, &env);
+
+    // Assert that function returns 1
+    try std.testing.expectEqualDeep(r, ast.Lit {.Int = 1});
+}
+
+test "simple funcall one param" {
+    // Prepare environment
+    var env = venv.Env.new(std.testing.allocator);
+    defer env.deinit();
+
+    // Insert function into environment
+    env.insert("double", venv.ObjectVal {.Var = ast.Lit {
+        .Callable = ast.Callable {
+            .params = &[_] ast.Var {"arg1"},
+            .body = ast.Stmt {
+                .ReturnStmt = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
+                    .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "arg1"}},
+                    .op = .Mul,
+                    .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 2}}
+                }},
+            },
+            .closure = &env,
+        }
+    }});
+
+    // Prepare expression
+    const expr: ast.Expr = ast.Expr {.CallExpr = ast.CallExpr {
+        .id = &ast.Expr {.Lval = ast.Lval {.Var = "double"}},
+        .args = &[_]*const ast.Expr {
+            &ast.Expr {.Lit = ast.Lit {.Int = 7}}
+        },
+    }};
+
+    // Evaluate statement
+    const r: ast.Lit = try interpreter.evalExpr(&expr, &env);
+
+    // Assert that function doubles argument
+    try std.testing.expectEqualDeep(r, ast.Lit {.Int = 14});
+}
+
+test "simple funcall three params" {
+    // Prepare environment
+    var env = venv.Env.new(std.testing.allocator);
+    defer env.deinit();
+
+    // Insert function into environment
+    env.insert("sum", venv.ObjectVal {.Var = ast.Lit {
+        .Callable = ast.Callable {
+            .params = &[_] ast.Var {"x", "y", "z"},
+            .body = ast.Stmt {
+                .ReturnStmt = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
+                    .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
+                    .op = .Add,
+                    .rhs = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
+                        .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "y"}},
+                        .op = .Add,
+                        .rhs = &ast.Expr {.Lval = ast.Lval {.Var = "z"}}
+                    }}
+                }},
+            },
+            .closure = &env,
+        }
+    }});
+
+    // Prepare expression
+    const expr: ast.Expr = ast.Expr {.CallExpr = ast.CallExpr {
+        .id = &ast.Expr {.Lval = ast.Lval {.Var = "sum"}},
+        .args = &[_]*const ast.Expr {
+            &ast.Expr {.Lit = ast.Lit {.Int = 7}},
+            &ast.Expr {.Lit = ast.Lit {.Int = 13}},
+            &ast.Expr {.Lit = ast.Lit {.Int = -5}},
+        },
+    }};
+
+    // Evaluate statement
+    const r: ast.Lit = try interpreter.evalExpr(&expr, &env);
+
+    // Assert that function computes correctly
+    try std.testing.expectEqualDeep(r, ast.Lit {.Int = 15});
+}
+
+test "simple funcall no return" {
+    // Prepare environment
+    var env = venv.Env.new(std.testing.allocator);
+    defer env.deinit();
+
+    // Insert function into environment
+    env.insert("voidfun", venv.ObjectVal {.Var = ast.Lit {
+        .Callable = ast.Callable {
+            .params = &[_] ast.Var {},
+            .body = ast.Stmt {
+                .BlockStmt = &[_] ast.Stmt {},
+            },
+            .closure = &env,
+        }
+    }});
+
+    // Prepare expression
+    const expr: ast.Expr = ast.Expr {.CallExpr = ast.CallExpr {
+        .id = &ast.Expr {.Lval = ast.Lval {.Var = "voidfun"}},
+        .args = &[_]*const ast.Expr {},
+    }};
+
+    // Evaluate statement
+    const r: ast.Lit = try interpreter.evalExpr(&expr, &env);
+
+    // Assert that function returns void
+    try std.testing.expectEqualDeep(r, ast.Lit {.Void = {}});
+}
+
+
+test "function closure works" {
+    // Prepare environment
+    var env = venv.Env.new(std.testing.allocator);
+    defer env.deinit();
+
+    // Insert some variable x
+    env.insert("x", venv.ObjectVal {.Var = ast.Lit {.Int = 19}});
+
+    // Insert function into environment
+    env.insert("mulbyx", venv.ObjectVal {.Var = ast.Lit {
+        .Callable = ast.Callable {
+            .params = &[_] ast.Var {"other"},
+            .body = ast.Stmt {
+                .ReturnStmt = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
+                    .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "other"}},
+                    .op = .Mul,
+                    .rhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}}
+                }}
+            },
+            .closure = &env,
+        }
+    }});
+
+    // Prepare expression
+    const expr: ast.Expr = ast.Expr {.CallExpr = ast.CallExpr {
+        .id = &ast.Expr {.Lval = ast.Lval {.Var = "mulbyx"}},
+        .args = &[_]*const ast.Expr {
+            &ast.Expr {.Lit = ast.Lit {.Int = 3}}
+        },
+    }};
+
+    // Evaluate statement
+    const r: ast.Lit = try interpreter.evalExpr(&expr, &env);
+
+    // Assert that function computes correctly
+    try std.testing.expectEqualDeep(r, ast.Lit {.Int = 57});
+}
+
+
+test "function closure works 2" {
+    // Prepare environment
+    var env = venv.Env.new(std.testing.allocator);
+    defer env.deinit();
+
+    // Insert some variable x
+    env.insert("x", venv.ObjectVal {.Var = ast.Lit {.Int = 19}});
+
+    // Insert function into environment
+    env.insert("mulbyx", venv.ObjectVal {.Var = ast.Lit {
+        .Callable = ast.Callable {
+            .params = &[_] ast.Var {"other"},
+            .body = ast.Stmt {
+                .ReturnStmt = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
+                    .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "other"}},
+                    .op = .Mul,
+                    .rhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}}
+                }}
+            },
+            .closure = &env,
+        }
+    }});
+
+    // Prepare expression
+    const expr: ast.Expr = ast.Expr {.CallExpr = ast.CallExpr {
+        .id = &ast.Expr {.Lval = ast.Lval {.Var = "mulbyx"}},
+        .args = &[_]*const ast.Expr {
+            &ast.Expr {.Lval = ast.Lval {.Var = "x"}}
+        },
+    }};
+
+    // Evaluate statement
+    const r: ast.Lit = try interpreter.evalExpr(&expr, &env);
+
+    // Assert that function computes correctly
+    try std.testing.expectEqualDeep(r, ast.Lit {.Int = 361});
+}
+
+
+test "function argument shadow closure scope" {
+    // Prepare environment
+    var env = venv.Env.new(std.testing.allocator);
+    defer env.deinit();
+
+    // Insert some variable x
+    env.insert("x", venv.ObjectVal {.Var = ast.Lit {.Int = 19}});
+
+    // Insert function into environment
+    env.insert("mul", venv.ObjectVal {.Var = ast.Lit {
+        .Callable = ast.Callable {
+            .params = &[_] ast.Var {"x", "x2"},
+            .body = ast.Stmt {
+                .ReturnStmt = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
+                    .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
+                    .op = .Mul,
+                    .rhs = &ast.Expr {.Lval = ast.Lval {.Var = "x2"}}
+                }}
+            },
+            .closure = &env,
+        }
+    }});
+
+    // Prepare expression
+    const expr: ast.Expr = ast.Expr {.CallExpr = ast.CallExpr {
+        .id = &ast.Expr {.Lval = ast.Lval {.Var = "mul"}},
+        .args = &[_]*const ast.Expr {
+            &ast.Expr {.Lit = ast.Lit {.Int = 2}},
+            &ast.Expr {.Lval = ast.Lval {.Var = "x"}}
+        },
+    }};
+
+    // Evaluate statement
+    const r: ast.Lit = try interpreter.evalExpr(&expr, &env);
+
+    // Assert that function computes correctly
+    try std.testing.expectEqualDeep(r, ast.Lit {.Int = 38});
+}
+
+
+test "re-declaring outer variable in function local scope" {
+    // Prepare environment
+    var env = venv.Env.new(std.testing.allocator);
+    defer env.deinit();
+
+    // Insert some variable x
+    env.insert("x", venv.ObjectVal {.Var = ast.Lit {.Int = 19}});
+
+    // Insert function into environment
+    env.insert("return3", venv.ObjectVal {.Var = ast.Lit {
+        .Callable = ast.Callable {
+            .params = &[_] ast.Var {},
+            .body = ast.Stmt {
+                .BlockStmt = &[_]ast.Stmt {
+                    ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {
+                        &ast.Expr {.AssignExpr = ast.AssignExpr {
+                            .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
+                            .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 3}}
+                        }}
+                    }},
+                    ast.Stmt {.ReturnStmt = &ast.Expr {.Lval = ast.Lval {.Var = "x"}}}
+                }
+            },
+            .closure = &env,
+        }
+    }});
+
+    // Prepare expression
+    const expr: ast.Expr = ast.Expr {.CallExpr = ast.CallExpr {
+        .id = &ast.Expr {.Lval = ast.Lval {.Var = "return3"}},
+        .args = &[_]*const ast.Expr {},
+    }};
+
+    // Evaluate statement
+    const r: ast.Lit = try interpreter.evalExpr(&expr, &env);
+
+    // Assert that function computes correctly
+    try std.testing.expectEqualDeep(r, ast.Lit {.Int = 3});
+}
+
+
+test "wrong argument count 1" {
+    // Prepare environment
+    var env = venv.Env.new(std.testing.allocator);
+    defer env.deinit();
+
+    // Insert function into environment
+    env.insert("dummyfun", venv.ObjectVal {.Var = ast.Lit {
+        .Callable = ast.Callable {
+            .params = &[_] ast.Var {},
+            .body = ast.Stmt {.ReturnStmt = &ast.Expr {.Lit = ast.Lit {.Void = {}}}},
+            .closure = &env,
+        }
+    }});
+
+    // Prepare expression
+    const expr: ast.Expr = ast.Expr {.CallExpr = ast.CallExpr {
+        .id = &ast.Expr {.Lval = ast.Lval {.Var = "dummyfun"}},
+        .args = &[_]*const ast.Expr {
+            &ast.Expr {.Lit = ast.Lit {.Int = 1}}
+        },
+    }};
+
+    // Evaluate statement
+    const r: interpreter.EvalError!ast.Lit = interpreter.evalExpr(&expr, &env);
+
+    // Assert that function computes correctly
+    try std.testing.expectEqualDeep(interpreter.EvalError.WrongArgCount, r);
+}
+
+test "wrong argument count 2" {
+    // Prepare environment
+    var env = venv.Env.new(std.testing.allocator);
+    defer env.deinit();
+
+    // Insert function into environment
+    env.insert("dummyfun", venv.ObjectVal {.Var = ast.Lit {
+        .Callable = ast.Callable {
+            .params = &[_] ast.Var { "x", "y", "z" },
+            .body = ast.Stmt {.ReturnStmt = &ast.Expr {.Lit = ast.Lit {.Void = {}}}},
+            .closure = &env,
+        }
+    }});
+
+    // Prepare expression
+    const expr: ast.Expr = ast.Expr {.CallExpr = ast.CallExpr {
+        .id = &ast.Expr {.Lval = ast.Lval {.Var = "dummyfun"}},
+        .args = &[_]*const ast.Expr {
+            &ast.Expr {.Lit = ast.Lit {.Int = 1}},
+            &ast.Expr {.Lit = ast.Lit {.Int = 2}}
+        },
+    }};
+
+    // Evaluate statement
+    const r: interpreter.EvalError!ast.Lit = interpreter.evalExpr(&expr, &env);
+
+    // Assert that function computes correctly
+    try std.testing.expectEqualDeep(interpreter.EvalError.WrongArgCount, r);
+}
+
+test "recursion 1" {
+    // Prepare environment
+    var env = venv.Env.new(std.testing.allocator);
+    defer env.deinit();
+
+    // Insert function into environment
+    env.insert("fac", venv.ObjectVal {.Var = ast.Lit {
+        .Callable = ast.Callable {
+            .params = &[_] ast.Var {"x"},
+            .body = ast.Stmt {
+                .BlockStmt = &[_]ast.Stmt {
+                    ast.Stmt {.IfElseStmt = &ast.IfElseStmt {
+                        .cond = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
+                            .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
+                            .op = .Eq,
+                            .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 1}},
+                        }},
+                        .ifStmt = ast.Stmt {.ReturnStmt = &ast.Expr {.Lit = ast.Lit {.Int = 1}}},
+                        .elseStmt = null,
+                    }},
+                    ast.Stmt {.ReturnStmt = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
+                        .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
+                        .op = .Mul,
+                        .rhs = &ast.Expr {.CallExpr = ast.CallExpr {
+                            .id = &ast.Expr {.Lval = ast.Lval {.Var = "fac"}},
+                            .args = &[_]*const ast.Expr {
+                                &ast.Expr {.BinOpExpr = ast.BinOpExpr {
+                                    .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
+                                    .op = .Sub,
+                                    .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 1}},
+                                }}
+                            }
+                        }}
+                    }}}
+                }
+            },
+            .closure = &env,
+        }
+    }});
+
+    // Prepare expression
+    const expr: ast.Expr = ast.Expr {.CallExpr = ast.CallExpr {
+        .id = &ast.Expr {.Lval = ast.Lval {.Var = "fac"}},
+        .args = &[_]*const ast.Expr {
+            &ast.Expr {.Lit = ast.Lit {.Int = 1}}
+        },
+    }};
+
+    // Evaluate statement
+    const r: ast.Lit = try interpreter.evalExpr(&expr, &env);
+
+    // Assert that function computes correctly
+    try std.testing.expectEqualDeep(r, ast.Lit {.Int = 1});
+}
+
+
+test "recursion 2" {
+    // Prepare environment
+    var env = venv.Env.new(std.testing.allocator);
+    defer env.deinit();
+
+    // Insert function into environment
+    env.insert("fac", venv.ObjectVal {.Var = ast.Lit {
+        .Callable = ast.Callable {
+            .params = &[_] ast.Var {"x"},
+            .body = ast.Stmt {
+                .BlockStmt = &[_]ast.Stmt {
+                    ast.Stmt {.IfElseStmt = &ast.IfElseStmt {
+                        .cond = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
+                            .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
+                            .op = .Eq,
+                            .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 1}},
+                        }},
+                        .ifStmt = ast.Stmt {.ReturnStmt = &ast.Expr {.Lit = ast.Lit {.Int = 1}}},
+                        .elseStmt = null,
+                    }},
+                    ast.Stmt {.ReturnStmt = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
+                        .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
+                        .op = .Mul,
+                        .rhs = &ast.Expr {.CallExpr = ast.CallExpr {
+                            .id = &ast.Expr {.Lval = ast.Lval {.Var = "fac"}},
+                            .args = &[_]*const ast.Expr {
+                                &ast.Expr {.BinOpExpr = ast.BinOpExpr {
+                                    .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
+                                    .op = .Sub,
+                                    .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 1}},
+                                }}
+                            }
+                        }}
+                    }}}
+                }
+            },
+            .closure = &env,
+        }
+    }});
+
+    // Prepare expression
+    const expr: ast.Expr = ast.Expr {.CallExpr = ast.CallExpr {
+        .id = &ast.Expr {.Lval = ast.Lval {.Var = "fac"}},
+        .args = &[_]*const ast.Expr {
+            &ast.Expr {.Lit = ast.Lit {.Int = 4}}
+        },
+    }};
+
+    // Evaluate statement
+    const r: ast.Lit = try interpreter.evalExpr(&expr, &env);
+
+    // Assert that function computes correctly
+    try std.testing.expectEqualDeep(ast.Lit {.Int = 24}, r);
+}
+
+test "mutual recursion" {
+    // Prepare environment
+    var env = venv.Env.new(std.testing.allocator);
+    defer env.deinit();
+
+    // Insert functions into environment
+    env.insert("even", venv.ObjectVal {.Var = ast.Lit {
+        .Callable = ast.Callable {
+            .params = &[_] ast.Var {"x"},
+            .body = ast.Stmt {.IfElseStmt = &ast.IfElseStmt {
+                .cond = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
+                    .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
+                    .op = .Eq,
+                    .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 0}},
+                }},
+                .ifStmt = ast.Stmt {.ReturnStmt = &ast.Expr {.Lit = ast.Lit {.Bool = true}}},
+                .elseStmt = ast.Stmt { .IfElseStmt = &ast.IfElseStmt {
+                    .cond = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
+                        .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
+                        .op = .Gt,
+                        .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 0}},
+                    }},
+                    .ifStmt = ast.Stmt {.ReturnStmt = &ast.Expr {.CallExpr = ast.CallExpr {
+                        .id = &ast.Expr {.Lval = ast.Lval {.Var = "odd"}},
+                        .args = &[_]*const ast.Expr {
+                            &ast.Expr {.BinOpExpr = ast.BinOpExpr {
+                                .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
+                                .op = .Sub,
+                                .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 1}}
+                            }}
+                        }
+                    }}},
+                    .elseStmt = ast.Stmt {.ReturnStmt = &ast.Expr { .Lit = ast.Lit {.Bool = false}}}
+                }},
+            }},
+            .closure = &env,
+        }
+    }});
+
+    env.insert("odd", venv.ObjectVal {.Var = ast.Lit {
+        .Callable = ast.Callable {
+            .params = &[_] ast.Var {"x"},
+            .body = ast.Stmt {.IfElseStmt = &ast.IfElseStmt {
+                .cond = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
+                    .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
+                    .op = .Eq,
+                    .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 1}},
+                }},
+                .ifStmt = ast.Stmt {.ReturnStmt = &ast.Expr {.Lit = ast.Lit {.Bool = true}}},
+                .elseStmt = ast.Stmt { .IfElseStmt = &ast.IfElseStmt {
+                    .cond = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
+                        .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
+                        .op = .Gt,
+                        .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 1}},
+                    }},
+                    .ifStmt = ast.Stmt {.ReturnStmt = &ast.Expr {.CallExpr = ast.CallExpr {
+                        .id = &ast.Expr {.Lval = ast.Lval {.Var = "even"}},
+                        .args = &[_]*const ast.Expr {
+                            &ast.Expr {.BinOpExpr = ast.BinOpExpr {
+                                .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
+                                .op = .Sub,
+                                .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 1}}
+                            }}
+                        }
+                    }}},
+                    .elseStmt = ast.Stmt {.ReturnStmt = &ast.Expr { .Lit = ast.Lit {.Bool = false}}}
+                }},
+            }},
+            .closure = &env,
+        }
+    }});
+
+    // Prepare expressions
+    const expr1: ast.Expr = ast.Expr {.CallExpr = ast.CallExpr {
+        .id = &ast.Expr {.Lval = ast.Lval {.Var = "even"}},
+        .args = &[_]*const ast.Expr {
+            &ast.Expr {.Lit = ast.Lit {.Int = 4}}
+        },
+    }};
+
+    const expr2: ast.Expr = ast.Expr {.CallExpr = ast.CallExpr {
+        .id = &ast.Expr {.Lval = ast.Lval {.Var = "even"}},
+        .args = &[_]*const ast.Expr {
+            &ast.Expr {.Lit = ast.Lit {.Int = 5}}
+        },
+    }};
+
+    const expr3: ast.Expr = ast.Expr {.CallExpr = ast.CallExpr {
+        .id = &ast.Expr {.Lval = ast.Lval {.Var = "odd"}},
+        .args = &[_]*const ast.Expr {
+            &ast.Expr {.Lit = ast.Lit {.Int = 5}}
+        },
+    }};
+
+    const expr4: ast.Expr = ast.Expr {.CallExpr = ast.CallExpr {
+        .id = &ast.Expr {.Lval = ast.Lval {.Var = "odd"}},
+        .args = &[_]*const ast.Expr {
+            &ast.Expr {.Lit = ast.Lit {.Int = 4}}
+        },
+    }};
+
+    // Assert that function computes correctly
+    try std.testing.expectEqualDeep(ast.Lit {.Bool = true}, try interpreter.evalExpr(&expr1, &env));
+    try std.testing.expectEqualDeep(ast.Lit {.Bool = false}, try interpreter.evalExpr(&expr2, &env));
+    try std.testing.expectEqualDeep(ast.Lit {.Bool = true}, try interpreter.evalExpr(&expr3, &env));
+    try std.testing.expectEqualDeep(ast.Lit {.Bool = false}, try interpreter.evalExpr(&expr4, &env));
+}
