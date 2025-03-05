@@ -9,6 +9,7 @@ or
 run ~zig build run -- interactive~ to start the interactive REPL shell.
 
 * Example
+** Sequential Fibonacci sequence
 
 Computing the first =N= fibonacci numbers:
 #+begin_src
@@ -37,6 +38,34 @@ which results in output
 55
 89
 #+end_example
+** Recursive computation of Fibonacci numbers
+#+begin_src
+function fib(n) {
+    if n == 1 || n == 0 return 1
+    return fib(n-1) + fib(n-2)
+}
+
+print fib(10)
+#+end_src
+gives output
+#+begin_example
+89
+#+end_example
+** Functions as first-class values
+#+begin_src
+function f(a, b) return a + b * 3
+
+function mod_fib(mod, n) {
+    if n == 1 || n == 0 return 1
+    return mod(mod_fib(mod, n-1), mod_fib(mod, n-2))
+}
+
+print mod_fib(f, 10)
+#+end_src
+gives output
+#+begin_example
+2683
+#+end_example
 
 
 * Features
@@ -47,11 +76,12 @@ which results in output
 - Basic lexical scoping
 - ~break~ and ~continue~ statements
 - COMMA declarations, e.g. ~declare x = 1, y = 2, z = 3~
+- Function definitions and function calls
+- Functions as first-class values
 
 ** Not yet implemented
 - String types
 - Floating point types
-- Function calls
 - Lists
 - Structs
 - For-loops
