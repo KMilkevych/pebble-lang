@@ -1454,3 +1454,422 @@ test "comma print multiple comma error" {
 
     try std.testing.expectEqualDeep(parser.ParseError.ExpectedExpression, actual);
 }
+
+test "call expression no args" {
+    var tokens: std.ArrayList(Token) = .init(std.testing.allocator);
+    defer tokens.deinit();
+
+    try tokens.append(Token {.IDENT = "myfun"});
+    try tokens.append(Token {.LPAREN = {}});
+    try tokens.append(Token {.RPAREN = {}});
+    try tokens.append(Token {.EOF = {}});
+    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+
+    const result: *ast.Expr = try prs.parseExpr();
+    defer result.destroyAll(std.testing.allocator);
+
+
+    const expect: ast.Expr = ast.Expr {.CallExpr = ast.CallExpr {
+        .id = &ast.Expr {.Lval = ast.Lval {.Var = "myfun"}},
+        .args = &[_]*const ast.Expr {
+        }
+    }};
+
+    try std.testing.expectEqualDeep(expect, result.*);
+}
+
+test "call expression one arg" {
+    var tokens: std.ArrayList(Token) = .init(std.testing.allocator);
+    defer tokens.deinit();
+
+    try tokens.append(Token {.IDENT = "myfun"});
+    try tokens.append(Token {.LPAREN = {}});
+    try tokens.append(Token {.IDENT = "y"});
+    try tokens.append(Token {.RPAREN = {}});
+    try tokens.append(Token {.EOF = {}});
+    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+
+    const result: *ast.Expr = try prs.parseExpr();
+    defer result.destroyAll(std.testing.allocator);
+
+
+    const expect: ast.Expr = ast.Expr {.CallExpr = ast.CallExpr {
+        .id = &ast.Expr {.Lval = ast.Lval {.Var = "myfun"}},
+        .args = &[_]*const ast.Expr {
+            &ast.Expr {.Lval = ast.Lval {.Var = "y"}},
+        }
+    }};
+
+    try std.testing.expectEqualDeep(expect, result.*);
+}
+
+test "call expression two args" {
+    var tokens: std.ArrayList(Token) = .init(std.testing.allocator);
+    defer tokens.deinit();
+
+    try tokens.append(Token {.IDENT = "myfun"});
+    try tokens.append(Token {.LPAREN = {}});
+    try tokens.append(Token {.IDENT = "y"});
+    try tokens.append(Token {.COMMA = {}});
+    try tokens.append(Token {.IDENT = "somevar"});
+    try tokens.append(Token {.RPAREN = {}});
+    try tokens.append(Token {.EOF = {}});
+    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+
+    const result: *ast.Expr = try prs.parseExpr();
+    defer result.destroyAll(std.testing.allocator);
+
+
+    const expect: ast.Expr = ast.Expr {.CallExpr = ast.CallExpr {
+        .id = &ast.Expr {.Lval = ast.Lval {.Var = "myfun"}},
+        .args = &[_]*const ast.Expr {
+            &ast.Expr {.Lval = ast.Lval {.Var = "y"}},
+            &ast.Expr {.Lval = ast.Lval {.Var = "somevar"}},
+        }
+    }};
+
+    try std.testing.expectEqualDeep(expect, result.*);
+}
+
+test "call expression complex expressions as args" {
+    var tokens: std.ArrayList(Token) = .init(std.testing.allocator);
+    defer tokens.deinit();
+
+    try tokens.append(Token {.IDENT = "myfun"});
+    try tokens.append(Token {.LPAREN = {}});
+    try tokens.append(Token {.IDENT = "otherfun"});
+    try tokens.append(Token {.LPAREN = {}});
+    try tokens.append(Token {.RPAREN = {}});
+    try tokens.append(Token {.COMMA = {}});
+    try tokens.append(Token {.IDENT = "y"});
+    try tokens.append(Token {.PLUS = {}});
+    try tokens.append(Token {.INTLIT = 3});
+    try tokens.append(Token {.RPAREN = {}});
+    try tokens.append(Token {.EOF = {}});
+    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+
+    const result: *ast.Expr = try prs.parseExpr();
+    defer result.destroyAll(std.testing.allocator);
+
+
+    const expect: ast.Expr = ast.Expr {.CallExpr = ast.CallExpr {
+        .id = &ast.Expr {.Lval = ast.Lval {.Var = "myfun"}},
+        .args = &[_]*const ast.Expr {
+            &ast.Expr {.CallExpr = ast.CallExpr {
+                .id = &ast.Expr {.Lval = ast.Lval {.Var = "otherfun"}},
+                .args = &[_]*const ast.Expr {},
+            }},
+            &ast.Expr {.BinOpExpr = ast.BinOpExpr {
+                .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "y"}},
+                .op = .Add,
+                .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 3}}
+            }}
+        }
+    }};
+
+    try std.testing.expectEqualDeep(expect, result.*);
+}
+
+test "expression as function funcall" {
+    var tokens: std.ArrayList(Token) = .init(std.testing.allocator);
+    defer tokens.deinit();
+
+    try tokens.append(Token {.LPAREN = {}});
+    try tokens.append(Token {.IDENT = "x"});
+    try tokens.append(Token {.MUL = {}});
+    try tokens.append(Token {.INTLIT = 3});
+    try tokens.append(Token {.RPAREN = {}});
+    try tokens.append(Token {.LPAREN = {}});
+    try tokens.append(Token {.RPAREN = {}});
+    try tokens.append(Token {.EOF = {}});
+    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+
+    const result: *ast.Expr = try prs.parseExpr();
+    defer result.destroyAll(std.testing.allocator);
+
+
+    const expect: ast.Expr = ast.Expr {.CallExpr = ast.CallExpr {
+        .id = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
+            .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
+            .op = .Mul,
+            .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 3}}
+        }},
+        .args = &[_]*const ast.Expr {}
+    }};
+
+    try std.testing.expectEqualDeep(expect, result.*);
+}
+
+test "funcall funcall" {
+    var tokens: std.ArrayList(Token) = .init(std.testing.allocator);
+    defer tokens.deinit();
+
+    try tokens.append(Token {.IDENT = "myfun"});
+    try tokens.append(Token {.LPAREN = {}});
+    try tokens.append(Token {.RPAREN = {}});
+    try tokens.append(Token {.LPAREN = {}});
+    try tokens.append(Token {.RPAREN = {}});
+    try tokens.append(Token {.EOF = {}});
+    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+
+    const result: *ast.Expr = try prs.parseExpr();
+    defer result.destroyAll(std.testing.allocator);
+
+
+    const expect: ast.Expr = ast.Expr {.CallExpr = ast.CallExpr {
+        .id = &ast.Expr {.CallExpr = ast.CallExpr {
+            .id = &ast.Expr {.Lval = ast.Lval {.Var = "myfun"}},
+            .args = &[_]*const ast.Expr {},
+        }},
+        .args = &[_]*const ast.Expr {},
+    }};
+
+    try std.testing.expectEqualDeep(expect, result.*);
+}
+
+test "funcall funcall funcall" {
+    var tokens: std.ArrayList(Token) = .init(std.testing.allocator);
+    defer tokens.deinit();
+
+    try tokens.append(Token {.IDENT = "myfun"});
+    try tokens.append(Token {.LPAREN = {}});
+    try tokens.append(Token {.RPAREN = {}});
+    try tokens.append(Token {.LPAREN = {}});
+    try tokens.append(Token {.RPAREN = {}});
+    try tokens.append(Token {.LPAREN = {}});
+    try tokens.append(Token {.RPAREN = {}});
+    try tokens.append(Token {.EOF = {}});
+    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+
+    const result: *ast.Expr = try prs.parseExpr();
+    defer result.destroyAll(std.testing.allocator);
+
+
+    const expect: ast.Expr = ast.Expr {.CallExpr = ast.CallExpr {
+        .id = &ast.Expr {.CallExpr = ast.CallExpr {
+            .id = &ast.Expr {.CallExpr = ast.CallExpr {
+                .id = &ast.Expr {.Lval = ast.Lval {.Var = "myfun"}},
+                .args = &[_]*const ast.Expr {},
+            }},
+            .args = &[_]*const ast.Expr {},
+        }},
+        .args = &[_]*const ast.Expr {}
+    }};
+
+    try std.testing.expectEqualDeep(expect, result.*);
+}
+
+test "empty return statement" {
+
+    var tokens: std.ArrayList(Token) = std.ArrayList(Token).init(std.testing.allocator);
+    try tokens.append(Token {.RETURN = {}});
+    try tokens.append(Token {.LB = {}});
+    try tokens.append(Token {.DECLARE = {}});
+    try tokens.append(Token {.IDENT = "x"});
+    try tokens.append(Token {.EOF = {}});
+    defer tokens.deinit();
+
+    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+
+    const expect: ast.Stmt = ast.Stmt {.ReturnStmt = &ast.Expr {.Lit = ast.Lit {.Void = {}}}};
+
+    const actual: ast.Stmt = try prs.parseStmt();
+    defer actual.destroyAll(std.testing.allocator);
+
+    try std.testing.expectEqualDeep(expect, actual);
+
+}
+
+test "return statement with expression" {
+
+    var tokens: std.ArrayList(Token) = std.ArrayList(Token).init(std.testing.allocator);
+    try tokens.append(Token {.RETURN = {}});
+    try tokens.append(Token {.IDENT = "x"});
+    try tokens.append(Token {.PLUS = {}});
+    try tokens.append(Token {.IDENT = "x"});
+    try tokens.append(Token {.LB = {}});
+    try tokens.append(Token {.DECLARE = {}});
+    try tokens.append(Token {.IDENT = "x"});
+    try tokens.append(Token {.EOF = {}});
+    defer tokens.deinit();
+
+    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+
+    const expect: ast.Stmt = ast.Stmt {.ReturnStmt = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
+        .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
+        .op = .Add,
+        .rhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
+    }}};
+
+    const actual: ast.Stmt = try prs.parseStmt();
+    defer actual.destroyAll(std.testing.allocator);
+
+    try std.testing.expectEqualDeep(expect, actual);
+
+}
+
+
+test "empty return statement at the end" {
+
+    var tokens: std.ArrayList(Token) = std.ArrayList(Token).init(std.testing.allocator);
+    try tokens.append(Token {.RETURN = {}});
+    try tokens.append(Token {.EOF = {}});
+    defer tokens.deinit();
+
+    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+
+    const expect: ast.Stmt = ast.Stmt {.ReturnStmt = &ast.Expr {.Lit = ast.Lit {.Void = {}}}};
+
+    const actual: ast.Stmt = try prs.parseStmt();
+    defer actual.destroyAll(std.testing.allocator);
+
+    try std.testing.expectEqualDeep(expect, actual);
+
+}
+
+test "return statement with expression at the end" {
+
+    var tokens: std.ArrayList(Token) = std.ArrayList(Token).init(std.testing.allocator);
+    try tokens.append(Token {.RETURN = {}});
+    try tokens.append(Token {.IDENT = "x"});
+    try tokens.append(Token {.PLUS = {}});
+    try tokens.append(Token {.IDENT = "x"});
+    try tokens.append(Token {.EOF = {}});
+    defer tokens.deinit();
+
+    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+
+    const expect: ast.Stmt = ast.Stmt {.ReturnStmt = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
+        .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
+        .op = .Add,
+        .rhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
+    }}};
+
+    const actual: ast.Stmt = try prs.parseStmt();
+    defer actual.destroyAll(std.testing.allocator);
+
+    try std.testing.expectEqualDeep(expect, actual);
+
+}
+
+test "simple inline function definition" {
+
+    var tokens: std.ArrayList(Token) = std.ArrayList(Token).init(std.testing.allocator);
+    try tokens.append(Token {.FUN = {}});
+    try tokens.append(Token {.IDENT = "last"});
+    try tokens.append(Token {.LPAREN = {}});
+    try tokens.append(Token {.IDENT = "x"});
+    try tokens.append(Token {.COMMA = {}});
+    try tokens.append(Token {.IDENT = "y"});
+    try tokens.append(Token {.COMMA = {}});
+    try tokens.append(Token {.IDENT = "z"});
+    try tokens.append(Token {.RPAREN = {}});
+    try tokens.append(Token {.LB = {}});
+    try tokens.append(Token {.RETURN = {}});
+    try tokens.append(Token {.IDENT = "z"});
+    try tokens.append(Token {.EOF = {}});
+    defer tokens.deinit();
+
+    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+
+    const expect: ast.Stmt = ast.Stmt {.FunDefStmt = &ast.FunDefStmt {
+        .id = "last",
+        .params = &[_]ast.Var {"x", "y", "z"},
+        .body = ast.Stmt {.ReturnStmt = &ast.Expr {.Lval = ast.Lval {.Var = "z"}}}
+    }};
+
+    const actual: ast.Stmt = try prs.parseStmt();
+    defer actual.destroyAll(std.testing.allocator);
+
+    try std.testing.expectEqualDeep(expect, actual);
+}
+
+
+
+// test "function definition with trailing comma" {
+
+//     var tokens: std.ArrayList(Token) = std.ArrayList(Token).init(std.testing.allocator);
+//     try tokens.append(Token {.FUN = {}});
+//     try tokens.append(Token {.IDENT = "last"});
+//     try tokens.append(Token {.LPAREN = {}});
+//     try tokens.append(Token {.IDENT = "x"});
+//     try tokens.append(Token {.COMMA = {}});
+//     try tokens.append(Token {.IDENT = "y"});
+//     try tokens.append(Token {.COMMA = {}});
+//     try tokens.append(Token {.RPAREN = {}});
+//     try tokens.append(Token {.LB = {}});
+//     try tokens.append(Token {.RETURN = {}});
+//     try tokens.append(Token {.IDENT = "z"});
+//     try tokens.append(Token {.EOF = {}});
+//     defer tokens.deinit();
+
+//     var prs: parser.Parser = .new(tokens, std.testing.allocator);
+//     const res: parser.ParseError!ast.Stmt = prs.parseStmt();
+
+//     try std.testing.expectEqualDeep(parser.ParseError.ExpectedIdentifier, res);
+// }
+
+
+test "function definition no name" {
+
+    var tokens: std.ArrayList(Token) = std.ArrayList(Token).init(std.testing.allocator);
+    try tokens.append(Token {.FUN = {}});
+    try tokens.append(Token {.LPAREN = {}});
+    try tokens.append(Token {.IDENT = "x"});
+    try tokens.append(Token {.COMMA = {}});
+    try tokens.append(Token {.IDENT = "y"});
+    try tokens.append(Token {.COMMA = {}});
+    try tokens.append(Token {.RPAREN = {}});
+    try tokens.append(Token {.LB = {}});
+    try tokens.append(Token {.RETURN = {}});
+    try tokens.append(Token {.IDENT = "z"});
+    try tokens.append(Token {.EOF = {}});
+    defer tokens.deinit();
+
+    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+    const res: parser.ParseError!ast.Stmt = prs.parseStmt();
+
+    try std.testing.expectEqualDeep(parser.ParseError.ExpectedIdentifier, res);
+}
+
+
+test "function definition no body" {
+
+    var tokens: std.ArrayList(Token) = std.ArrayList(Token).init(std.testing.allocator);
+    try tokens.append(Token {.FUN = {}});
+    try tokens.append(Token {.IDENT = "afun"});
+    try tokens.append(Token {.LPAREN = {}});
+    try tokens.append(Token {.IDENT = "x"});
+    try tokens.append(Token {.COMMA = {}});
+    try tokens.append(Token {.IDENT = "y"});
+    try tokens.append(Token {.COMMA = {}});
+    try tokens.append(Token {.RPAREN = {}});
+    try tokens.append(Token {.EOF = {}});
+    defer tokens.deinit();
+
+    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+    const res: parser.ParseError!ast.Stmt = prs.parseStmt();
+
+    try std.testing.expectEqualDeep(parser.ParseError.ExpectedLineBreak, res);
+}
+
+test "function definition no body 2" {
+
+    var tokens: std.ArrayList(Token) = std.ArrayList(Token).init(std.testing.allocator);
+    try tokens.append(Token {.FUN = {}});
+    try tokens.append(Token {.IDENT = "afun"});
+    try tokens.append(Token {.LPAREN = {}});
+    try tokens.append(Token {.IDENT = "x"});
+    try tokens.append(Token {.COMMA = {}});
+    try tokens.append(Token {.IDENT = "y"});
+    try tokens.append(Token {.COMMA = {}});
+    try tokens.append(Token {.RPAREN = {}});
+    try tokens.append(Token {.LB = {}});
+    try tokens.append(Token {.EOF = {}});
+    defer tokens.deinit();
+
+    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+    const res: parser.ParseError!ast.Stmt = prs.parseStmt();
+
+    try std.testing.expectEqualDeep(parser.ParseError.ExpectedStatement, res);
+}

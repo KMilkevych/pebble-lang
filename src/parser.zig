@@ -13,6 +13,8 @@ pub const ParseError = error {
     ExpectedIf,
     ExpectedWhile,
     ExpectedExpression,
+    ExpectedIdentifier,
+    ExpectedStatement,
 };
 
 pub fn expectedTokenError(expected: Token) ParseError {
@@ -22,6 +24,7 @@ pub fn expectedTokenError(expected: Token) ParseError {
         .LB => ParseError.ExpectedLineBreak,
         .IF => ParseError.ExpectedIf,
         .WHILE => ParseError.ExpectedWhile,
+        .IDENT => ParseError.ExpectedIdentifier,
         else => unreachable
     };
 }
@@ -135,6 +138,58 @@ pub const Parser = struct {
             // Ensure next is operator with improved binding power
             // Make sure that there is a token
             const op_token: Token = if (self.peekToken()) |tok| tok else return ParseError.ExpectedTokenOrEOF;
+
+            // If postfix operator, we treat as postfix
+            if (op_token.getPostfixPrecedence()) |op_prec| {
+
+                // Make sure that we are binding stronger
+                if (op_prec < min_bp) break
+                else _ = self.nextToken() catch unreachable;
+
+                // Treat the next token (can only be parenthesis)
+                const r: ast.Expr = sw: switch (op_token) {
+                    .LPAREN => {
+
+                        // Parse expressions while possible
+                        var acc: ArrayList(*const ast.Expr) = .init(self.allocator);
+                        errdefer acc.deinit();
+                        errdefer for (acc.items) |expr| expr.destroyAll(self.allocator);
+
+                        // Keep parsing expressions while comma until rparen
+                        while (!std.meta.eql(self.peekToken(), Token {.RPAREN = {}})) {
+
+                            // Parse expression
+                            acc.append(try self.parseExprBp(0)) catch unreachable;
+
+                            // Peek the next token
+                            if (self.peekToken()) |tok| switch (tok) {
+                                .COMMA => _ = self.nextToken() catch unreachable,
+                                else => break
+                            } else break;
+                        }
+
+                        // Make sure call expression is closed
+                        try self.expectToken(Token {.RPAREN = {}});
+
+                        // Produce call expression
+                        break :sw ast.Expr {.CallExpr = ast.CallExpr {
+                            .id = lhs,
+                            .args = acc.toOwnedSlice() catch unreachable
+                        }};
+
+                    },
+                    // TODO: Allow other kinds of post-fix operators
+                    // like obj.property and arr[idx]
+                    else => unreachable,
+                };
+
+                // Allocate and assign expression
+                lhs = self.allocator.create(ast.Expr) catch unreachable;
+                lhs.* = r;
+
+                // Continue for next token
+                continue;
+            }
 
             // If infix operator, we treat it as an infix
             if (op_token.getInfixPrecedence()) |op_prec| {
@@ -286,6 +341,79 @@ pub const Parser = struct {
                 try self.expectTokenOrEOF(Token {.LB = {}});
                 break :blk ast.Stmt {.ContinueStmt = {}};
             },
+            .RETURN => {
+                try self.expectToken(Token {.RETURN = {}});
+
+                // Try to parse return expression
+                const maybe_expr: ?*ast.Expr = if (self.peekToken()) |tk| switch (tk) {
+                    .LB, .EOF => null,
+                    else => try self.parseExpr()
+                } else null;
+                try self.expectTokenOrEOF(Token {.LB = {}});
+
+                // Create the actual return expression
+                const expr: *ast.Expr = if (maybe_expr) |ex| ex else bk: {
+                    const ptr: *ast.Expr = self.allocator.create(ast.Expr) catch unreachable;
+                    ptr.* = ast.Expr {.Lit = ast.Lit {.Void = {}}};
+                    break :bk ptr;
+                };
+
+                errdefer expr.destroyAll(self.allocator);
+
+                // Return statement
+                break :blk ast.Stmt {.ReturnStmt = expr};
+            },
+            .FUN => {
+                try self.expectToken(Token {.FUN = {}});
+
+                // Parse the function identifier
+                const id: ast.Var = if (self.peekToken()) |tk| switch (tk) {
+                    .IDENT => |id| id,
+                    else => return expectedTokenError(Token {.IDENT = ""})
+                } else return expectedTokenError(Token {.IDENT = ""});
+                _ = try self.nextToken();
+
+                // Parse function parameters
+                var acc: ArrayList(ast.Var) = .init(self.allocator);
+                errdefer acc.deinit();
+                try self.expectToken(Token {.LPAREN = {}});
+
+                while (!std.meta.eql(self.peekToken(), Token {.RPAREN = {}})) {
+
+                    // Make sure next token is an identifier
+                    switch(self.peekToken().?) {
+                        .IDENT => |ident|{
+                            _ = try self.nextToken();
+                            acc.append(ident) catch unreachable;
+                        },
+                        else => return expectedTokenError(Token {.IDENT = ""})
+                    }
+
+                    // Continue if there is a COMMA, otherwise break loop
+                    if (self.peekToken()) |tk| switch (tk) {
+                        .COMMA => _ = self.nextToken() catch unreachable,
+                        else => break
+                    } else break;
+                }
+
+                try self.expectToken(Token {.RPAREN = {}});
+                try self.expectToken(Token {.LB = {}});
+
+                // Parse statement
+                const body: ast.Stmt = try self.parseStmt();
+
+                // NOTE: Since we end with a statement, we do not need to parse LB
+
+                // Produce function definition
+                const stmt: *ast.FunDefStmt = self.allocator.create(ast.FunDefStmt) catch unreachable;
+                stmt.* = ast.FunDefStmt {
+                    .id = id,
+                    .body = body,
+                    .params = acc.toOwnedSlice() catch unreachable
+                };
+                break :blk ast.Stmt {.FunDefStmt = stmt};
+
+            },
 
             // Block Statements
             .LCURLY => {
@@ -310,6 +438,7 @@ pub const Parser = struct {
 
             },
 
+            .EOF => ParseError.ExpectedStatement,
             // Otherwise treat as an expression statement
             else => {
                 const exp: *ast.Expr = try self.parseExpr();
