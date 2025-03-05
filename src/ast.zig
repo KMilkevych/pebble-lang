@@ -34,7 +34,7 @@ pub const Lit = union(enum) {
     Callable: Callable,
 
     pub fn destroyAll(self: *const Lit, allocator: std.mem.Allocator) void {
-        switch (self) {
+        switch (self.*) {
             .Int, .Bool, .Void => {},
             .Callable => |fun| fun.destroyAll(allocator)
         }

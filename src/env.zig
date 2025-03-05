@@ -44,6 +44,16 @@ pub const Env: type = struct {
     }
 
     pub fn deinit(self: *Self) void {
+
+        // Destroy every entry in the environment
+        // This is necessary, as some could be Callables with their own statements
+        var iterator = self.table.valueIterator();
+        while (iterator.next()) |val_ptr| switch (val_ptr.*) {
+            .Var => |lit| lit.destroyAll(self.allocator),
+            .Undefined => {},
+        };
+
+        // Deinitialize the table
         self.table.deinit();
     }
 

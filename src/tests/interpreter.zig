@@ -749,9 +749,9 @@ test "undefined variable in comma declaration" {
 }
 
 test "simple funcall" {
-    // Prepare environment
+    // Prepare environment NOTE: we only deinit the table not the environment here..
     var env = venv.Env.new(std.testing.allocator);
-    defer env.deinit();
+    defer env.table.deinit();
 
     // Insert function into environment
     env.insert("always1", venv.ObjectVal {.Var = ast.Lit {
@@ -780,7 +780,7 @@ test "simple funcall" {
 test "simple funcall one param" {
     // Prepare environment
     var env = venv.Env.new(std.testing.allocator);
-    defer env.deinit();
+    defer env.table.deinit();
 
     // Insert function into environment
     env.insert("double", venv.ObjectVal {.Var = ast.Lit {
@@ -815,7 +815,7 @@ test "simple funcall one param" {
 test "simple funcall three params" {
     // Prepare environment
     var env = venv.Env.new(std.testing.allocator);
-    defer env.deinit();
+    defer env.table.deinit();
 
     // Insert function into environment
     env.insert("sum", venv.ObjectVal {.Var = ast.Lit {
@@ -856,7 +856,7 @@ test "simple funcall three params" {
 test "simple funcall no return" {
     // Prepare environment
     var env = venv.Env.new(std.testing.allocator);
-    defer env.deinit();
+    defer env.table.deinit();
 
     // Insert function into environment
     env.insert("voidfun", venv.ObjectVal {.Var = ast.Lit {
@@ -886,7 +886,7 @@ test "simple funcall no return" {
 test "function closure works" {
     // Prepare environment
     var env = venv.Env.new(std.testing.allocator);
-    defer env.deinit();
+    defer env.table.deinit();
 
     // Insert some variable x
     env.insert("x", venv.ObjectVal {.Var = ast.Lit {.Int = 19}});
@@ -925,7 +925,7 @@ test "function closure works" {
 test "function closure works 2" {
     // Prepare environment
     var env = venv.Env.new(std.testing.allocator);
-    defer env.deinit();
+    defer env.table.deinit();
 
     // Insert some variable x
     env.insert("x", venv.ObjectVal {.Var = ast.Lit {.Int = 19}});
@@ -964,7 +964,7 @@ test "function closure works 2" {
 test "function argument shadow closure scope" {
     // Prepare environment
     var env = venv.Env.new(std.testing.allocator);
-    defer env.deinit();
+    defer env.table.deinit();
 
     // Insert some variable x
     env.insert("x", venv.ObjectVal {.Var = ast.Lit {.Int = 19}});
@@ -1004,7 +1004,7 @@ test "function argument shadow closure scope" {
 test "re-declaring outer variable in function local scope" {
     // Prepare environment
     var env = venv.Env.new(std.testing.allocator);
-    defer env.deinit();
+    defer env.table.deinit();
 
     // Insert some variable x
     env.insert("x", venv.ObjectVal {.Var = ast.Lit {.Int = 19}});
@@ -1045,7 +1045,7 @@ test "re-declaring outer variable in function local scope" {
 test "wrong argument count 1" {
     // Prepare environment
     var env = venv.Env.new(std.testing.allocator);
-    defer env.deinit();
+    defer env.table.deinit();
 
     // Insert function into environment
     env.insert("dummyfun", venv.ObjectVal {.Var = ast.Lit {
@@ -1074,7 +1074,7 @@ test "wrong argument count 1" {
 test "wrong argument count 2" {
     // Prepare environment
     var env = venv.Env.new(std.testing.allocator);
-    defer env.deinit();
+    defer env.table.deinit();
 
     // Insert function into environment
     env.insert("dummyfun", venv.ObjectVal {.Var = ast.Lit {
@@ -1104,7 +1104,7 @@ test "wrong argument count 2" {
 test "recursion 1" {
     // Prepare environment
     var env = venv.Env.new(std.testing.allocator);
-    defer env.deinit();
+    defer env.table.deinit();
 
     // Insert function into environment
     env.insert("fac", venv.ObjectVal {.Var = ast.Lit {
@@ -1160,7 +1160,7 @@ test "recursion 1" {
 test "recursion 2" {
     // Prepare environment
     var env = venv.Env.new(std.testing.allocator);
-    defer env.deinit();
+    defer env.table.deinit();
 
     // Insert function into environment
     env.insert("fac", venv.ObjectVal {.Var = ast.Lit {
@@ -1215,7 +1215,7 @@ test "recursion 2" {
 test "mutual recursion" {
     // Prepare environment
     var env = venv.Env.new(std.testing.allocator);
-    defer env.deinit();
+    defer env.table.deinit();
 
     // Insert functions into environment
     env.insert("even", venv.ObjectVal {.Var = ast.Lit {
