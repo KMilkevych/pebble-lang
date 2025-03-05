@@ -13,6 +13,8 @@ pub const ParseError = error {
     ExpectedIf,
     ExpectedWhile,
     ExpectedExpression,
+    ExpectedIdentifier,
+    ExpectedStatement,
 };
 
 pub fn expectedTokenError(expected: Token) ParseError {
@@ -22,6 +24,7 @@ pub fn expectedTokenError(expected: Token) ParseError {
         .LB => ParseError.ExpectedLineBreak,
         .IF => ParseError.ExpectedIf,
         .WHILE => ParseError.ExpectedWhile,
+        .IDENT => ParseError.ExpectedIdentifier,
         else => unreachable
     };
 }
@@ -360,6 +363,57 @@ pub const Parser = struct {
                 // Return statement
                 break :blk ast.Stmt {.ReturnStmt = expr};
             },
+            .FUN => {
+                try self.expectToken(Token {.FUN = {}});
+
+                // Parse the function identifier
+                const id: ast.Var = if (self.peekToken()) |tk| switch (tk) {
+                    .IDENT => |id| id,
+                    else => return expectedTokenError(Token {.IDENT = ""})
+                } else return expectedTokenError(Token {.IDENT = ""});
+                _ = try self.nextToken();
+
+                // Parse function parameters
+                var acc: ArrayList(ast.Var) = .init(self.allocator);
+                errdefer acc.deinit();
+                try self.expectToken(Token {.LPAREN = {}});
+
+                while (!std.meta.eql(self.peekToken(), Token {.RPAREN = {}})) {
+
+                    // Make sure next token is an identifier
+                    switch(self.peekToken().?) {
+                        .IDENT => |ident|{
+                            _ = try self.nextToken();
+                            acc.append(ident) catch unreachable;
+                        },
+                        else => return expectedTokenError(Token {.IDENT = ""})
+                    }
+
+                    // Continue if there is a COMMA, otherwise break loop
+                    if (self.peekToken()) |tk| switch (tk) {
+                        .COMMA => _ = self.nextToken() catch unreachable,
+                        else => break
+                    } else break;
+                }
+
+                try self.expectToken(Token {.RPAREN = {}});
+                try self.expectToken(Token {.LB = {}});
+
+                // Parse statement
+                const body: ast.Stmt = try self.parseStmt();
+
+                // NOTE: Since we end with a statement, we do not need to parse LB
+
+                // Produce function definition
+                const stmt: *ast.FunDefStmt = self.allocator.create(ast.FunDefStmt) catch unreachable;
+                stmt.* = ast.FunDefStmt {
+                    .id = id,
+                    .body = body,
+                    .params = acc.toOwnedSlice() catch unreachable
+                };
+                break :blk ast.Stmt {.FunDefStmt = stmt};
+
+            },
 
             // Block Statements
             .LCURLY => {
@@ -384,6 +438,7 @@ pub const Parser = struct {
 
             },
 
+            .EOF => ParseError.ExpectedStatement,
             // Otherwise treat as an expression statement
             else => {
                 const exp: *ast.Expr = try self.parseExpr();

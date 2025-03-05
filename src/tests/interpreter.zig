@@ -1319,3 +1319,41 @@ test "mutual recursion" {
     try std.testing.expectEqualDeep(ast.Lit {.Bool = true}, try interpreter.evalExpr(&expr3, &env));
     try std.testing.expectEqualDeep(ast.Lit {.Bool = false}, try interpreter.evalExpr(&expr4, &env));
 }
+
+
+test "function definition" {
+    // Prepare environment
+    var env = venv.Env.new(std.testing.allocator);
+    defer env.table.deinit();
+
+    // Insert function into environment
+    env.insert("dummyfun", venv.ObjectVal {.Var = ast.Lit {
+        .Callable = ast.Callable {
+            .params = &[_] ast.Var {},
+            .body = ast.Stmt {.ReturnStmt = &ast.Expr {.Lit = ast.Lit {.Void = {}}}},
+            .closure = &env,
+        }
+    }});
+
+    // Prepare expression
+    const stmt: ast.Stmt = ast.Stmt {.FunDefStmt = &ast.FunDefStmt {
+        .id = "last",
+        .params = &[_]ast.Var {"x", "y", "z"},
+        .body = ast.Stmt {.ReturnStmt = &ast.Expr {.Lval = ast.Lval {.Var = "z"}}}
+    }};
+
+    // Evaluate statement
+    _ = try interpreter.evalStmt(stmt, &env);
+
+    // Assert that function computes correctly
+    try std.testing.expectEqualDeep(
+        venv.ObjectVal {.Var = ast.Lit {
+            .Callable = ast.Callable {
+                .params = &[_] ast.Var {"x", "y", "z"},
+                .body = ast.Stmt {.ReturnStmt = &ast.Expr {.Lval = ast.Lval {.Var = "z"}}},
+                .closure = &env,
+            }
+        }},
+        env.lookup("last")
+    );
+}

@@ -10,6 +10,7 @@ pub const Callable = struct {
     pub fn destroyAll(self: *const Callable, allocator: std.mem.Allocator) void {
         allocator.free(self.params);
         self.body.destroyAll(allocator);
+        // allocator.destroy(self);
     }
 
     pub fn format(
@@ -344,6 +345,32 @@ pub const WhileStmt = struct {
 
 };
 
+pub const FunDefStmt = struct {
+    id: Var,
+    params: []const Var,
+    body: Stmt,
+
+    pub fn destroyAll(self: *const FunDefStmt, allocator: std.mem.Allocator) void {
+        allocator.free(self.params);
+        self.body.destroyAll(allocator);
+        allocator.destroy(self);
+    }
+
+    pub fn format(
+        self: FunDefStmt,
+        comptime fmt: []const u8,
+        options: std.fmt.FormatOptions,
+        writer: anytype
+    ) !void {
+        _ = options;
+        _ = fmt;
+        try writer.print("FUNCTION {s}(", .{self.id});
+        for (self.params) |param| try writer.print("{s},", .{param});
+        try writer.print(") {}", .{self.body});
+    }
+
+};
+
 
 pub const Stmt = union(enum) {
     DeclareStmt: []const *const Expr,
@@ -355,6 +382,7 @@ pub const Stmt = union(enum) {
     BreakStmt: void,
     ContinueStmt: void,
     ReturnStmt: *const Expr,
+    FunDefStmt: *const FunDefStmt,
 
     pub fn destroyAll(self: *const Stmt, allocator: std.mem.Allocator) void {
         switch (self.*) {
@@ -376,6 +404,7 @@ pub const Stmt = union(enum) {
             .BreakStmt => {},
             .ContinueStmt => {},
             .ReturnStmt => |expr| expr.destroyAll(allocator),
+            .FunDefStmt => |stmt| stmt.destroyAll(allocator),
         }
     }
 
@@ -409,6 +438,7 @@ pub const Stmt = union(enum) {
             .BreakStmt => try writer.print("BREAK\n", .{}),
             .ContinueStmt => try writer.print("CONTINUE\n", .{}),
             .ReturnStmt => |expr| try writer.print("RETURN {}\n", .{expr}),
+            .FunDefStmt => |stmt| try writer.print("{}", .{stmt}),
         };
     }
 };

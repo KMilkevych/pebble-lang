@@ -374,6 +374,21 @@ pub fn evalStmt(statement: ast.Stmt, env: *venv.Env) EvalError!StmtReturn {
         .BreakStmt => return StmtReturn {.Break = {}},
         .ContinueStmt => return StmtReturn {.Continue = {}},
         .ReturnStmt => |expr| return StmtReturn {.Return = try evalExpr(expr, env)},
+        .FunDefStmt => |stmt| {
+
+            // Insert function into environment
+            if (env.isDeclaredLocal(stmt.id)) return EvalError.IdentifierAlreadyDeclared;
+            env.insert(
+                stmt.id,
+                venv.ObjectVal {.Var = ast.Lit {.Callable = ast.Callable {
+                    .params = stmt.params,
+                    .body = stmt.body,
+                    .closure = env
+                }}}
+            );
+
+            return StmtReturn {.NoReturn = {}};
+        },
     }
 
     unreachable;
