@@ -22,6 +22,7 @@ const SemanticError = error {
     UnexpectedReturn,
     NotCallable,
     WrongArgCount,
+    InvalidUpcall,
 };
 
 pub const EvalError = TypeError || ArithmeticError || ValueError || SemanticError;
@@ -187,6 +188,12 @@ pub fn evalAssignExpr(expr: *const ast.AssignExpr, env: *venv.Env) EvalError!ast
 
     // Evaluate right-hand side
     const rhs: ast.Lit = try evalExpr(expr.rhs, env);
+
+    // Make sure that right-hand side is NOT a callable
+    switch (rhs) {
+        .Callable => return EvalError.InvalidUpcall,
+        else => {},
+    }
 
     // Perform assignment
     switch (lval) {
@@ -373,7 +380,14 @@ pub fn evalStmt(statement: ast.Stmt, env: *venv.Env) EvalError!StmtReturn {
         },
         .BreakStmt => return StmtReturn {.Break = {}},
         .ContinueStmt => return StmtReturn {.Continue = {}},
-        .ReturnStmt => |expr| return StmtReturn {.Return = try evalExpr(expr, env)},
+        .ReturnStmt => |expr| {
+            // Evaluate expression and make sure its not a Callable
+            const res: ast.Lit = try evalExpr(expr, env);
+            return switch (res) {
+                .Callable => EvalError.InvalidUpcall,
+                else => StmtReturn {.Return = try evalExpr(expr, env)},
+            };
+        },
         .FunDefStmt => |stmt| {
 
             // Insert function into environment

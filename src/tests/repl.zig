@@ -204,3 +204,84 @@ test "continue statement" {
     const objval: ?venv.ObjectVal = env.lookup("y");
     try std.testing.expectEqualDeep(venv.ObjectVal {.Var = ast.Lit {.Int = 1}}, objval);
 }
+
+test "closure 1 test" {
+
+
+    const input: []const u8 =
+        \\declare x = 7
+        \\function mul_by_x(y) return x * y
+        \\declare y = mul_by_x(3)
+        \\x = 11
+        \\declare z = mul_by_x(5)
+    ;
+
+    var lxr: lexer.Lexer = lexer.Lexer.new(input, std.testing.allocator);
+    const tokens: std.ArrayList(token.Token) = lxr.lex();
+    defer tokens.deinit();
+
+    var prsr: parser.Parser = parser.Parser.new(tokens, std.testing.allocator);
+    const proc: ast.Proc = try prsr.parseProcedure();
+    defer proc.destroyAll(std.testing.allocator);
+
+    var env = venv.Env.new(std.testing.allocator);
+    defer env.deinit();
+
+    _ = try interpreter.evalProc(proc, &env);
+
+    // Assert that x has been added into environment as undefined
+    try std.testing.expectEqualDeep(venv.ObjectVal {.Var = ast.Lit {.Int = 21}}, env.lookup("y"));
+    try std.testing.expectEqualDeep(venv.ObjectVal {.Var = ast.Lit {.Int = 55}}, env.lookup("z"));
+}
+
+
+test "first-class values test" {
+    const input: []const u8 =
+        \\function add(x, y) return x + y
+        \\function apply(op, x, y) return op(x, y)
+        \\declare x = apply(add, 3, 7)
+    ;
+
+    var lxr: lexer.Lexer = lexer.Lexer.new(input, std.testing.allocator);
+    const tokens: std.ArrayList(token.Token) = lxr.lex();
+    defer tokens.deinit();
+
+    var prsr: parser.Parser = parser.Parser.new(tokens, std.testing.allocator);
+    const proc: ast.Proc = try prsr.parseProcedure();
+    defer proc.destroyAll(std.testing.allocator);
+
+    var env = venv.Env.new(std.testing.allocator);
+    defer env.deinit();
+
+    _ = try interpreter.evalProc(proc, &env);
+
+    // Assert that x has been added into environment as undefined
+    try std.testing.expectEqualDeep(venv.ObjectVal {.Var = ast.Lit {.Int = 10}}, env.lookup("x"));
+}
+
+
+test "prohibit upcalling" {
+    const input: []const u8 =
+        \\function make_function() {
+        \\  function voidfun() {}
+        \\  return voidfun
+        \\}
+        \\declare f = make_function()
+    ;
+
+    var lxr: lexer.Lexer = lexer.Lexer.new(input, std.testing.allocator);
+    const tokens: std.ArrayList(token.Token) = lxr.lex();
+    defer tokens.deinit();
+
+    var prsr: parser.Parser = parser.Parser.new(tokens, std.testing.allocator);
+    const proc: ast.Proc = try prsr.parseProcedure();
+    defer proc.destroyAll(std.testing.allocator);
+
+    var env = venv.Env.new(std.testing.allocator);
+    defer env.deinit();
+
+    const r: interpreter.EvalError!void = interpreter.evalProc(proc, &env);
+
+    // Assert that x has been added into environment as undefined
+    try std.testing.expectEqualDeep(interpreter.EvalError.InvalidUpcall, r);
+}
