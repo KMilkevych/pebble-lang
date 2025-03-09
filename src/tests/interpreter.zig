@@ -232,14 +232,10 @@ test "smart scoped assignment" {
                     .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
                     .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 20}},
                 }}},
-                ast.Stmt {.PrintStmt = &[_]*const ast.Expr {&ast.Expr {.Lval = ast.Lval {.Var = "x"}}}}
             }},
             .elseStmt = ast.Stmt {.BlockStmt = &[_]ast.Stmt {
-                ast.Stmt {.PrintStmt = &[_]*const ast.Expr {&ast.Expr {.Lit = ast.Lit {.Int = 1}}}}
             }}
         }},
-
-        ast.Stmt {.PrintStmt = &[_]*const ast.Expr {&ast.Expr {.Lval = ast.Lval {.Var = "x"}}}}
     }};
 
     // Evaluate statement to error for z
@@ -275,14 +271,10 @@ test "smart scoped declaration" {
                     .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
                     .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 20}},
                 }}}},
-                ast.Stmt {.PrintStmt = &[_]*const ast.Expr {&ast.Expr {.Lval = ast.Lval {.Var = "x"}}}}
             }},
             .elseStmt = ast.Stmt {.BlockStmt = &[_]ast.Stmt {
-                ast.Stmt {.PrintStmt = &[_]*const ast.Expr {&ast.Expr {.Lit = ast.Lit {.Int = 1}}}}
             }}
         }},
-
-        ast.Stmt {.PrintStmt = &[_]*const ast.Expr {&ast.Expr {.Lval = ast.Lval {.Var = "x"}}}}
     }};
 
     // Evaluate statement to error for z
