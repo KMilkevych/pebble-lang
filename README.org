@@ -1,14 +1,16 @@
 #+title: pebble-lang
 
+* Prerequisites
+- Requires Zig version =0.14.0= stable
+
 * Usage
 
-Run ~zig build run -- compile filename~ to execute the interpreter pipeline on the contents of =filename=
+Run ~zig build run -- run filename~ to execute the interpreter pipeline on the contents of =filename=
 
 or
 
-run ~zig build run -- interactive~ to start the interactive REPL shell.
-
-* Example
+run ~zig build run -- interactive~ to start the interactive REPL shell which supports expression evaluation and simple statements.
+* Examples
 ** Sequential Fibonacci sequence
 
 Computing the first =N= fibonacci numbers:
@@ -38,20 +40,7 @@ which results in output
 55
 89
 #+end_example
-** Recursive computation of Fibonacci numbers
-#+begin_src
-function fib(n) {
-    if n == 1 || n == 0 return 1
-    return fib(n-1) + fib(n-2)
-}
-
-print fib(10)
-#+end_src
-gives output
-#+begin_example
-89
-#+end_example
-** Functions as first-class values
+** Function down-calling
 #+begin_src
 function f(a, b) return a + b * 3
 
@@ -67,6 +56,19 @@ gives output
 2683
 #+end_example
 
+** Recursive computation of Fibonacci numbers
+#+begin_src
+function fib(n) {
+    if n == 1 || n == 0 return 1
+    return fib(n-1) + fib(n-2)
+}
+
+print fib(10)
+#+end_src
+gives output
+#+begin_example
+89
+#+end_example
 
 * Features
 ** Implemented
@@ -77,7 +79,7 @@ gives output
 - ~break~ and ~continue~ statements
 - COMMA declarations, e.g. ~declare x = 1, y = 2, z = 3~
 - Function definitions and function calls
-- Functions as first-class values
+- Higher-order functions (passing functions as parameters)
 
 ** Not yet implemented
 - String types
@@ -86,3 +88,7 @@ gives output
 - Structs
 - For-loops
 - INPUT statements
+- Anonymous functions, e.g. lambda expressions
+
+** Not planned
+- Function up-calling (returning functions)

@@ -19,8 +19,8 @@ pub fn main() !void {
         // Read command argument
         if (argsIterator.next()) |cmd| {
 
-            if (std.mem.eql(u8, cmd, "compile")) {
-                if (argsIterator.next()) |file| try compile(file)
+            if (std.mem.eql(u8, cmd, "run")) {
+                if (argsIterator.next()) |file| try run(file)
                 else try std.io.getStdOut()
                     .writer()
                     .print("Expected filename\n", .{});
@@ -36,7 +36,7 @@ pub fn main() !void {
 
 }
 
-fn compile(loc: [:0]const u8) !void {
+fn run(loc: [:0]const u8) !void {
 
     var file = try std.fs.cwd().openFile(loc, .{});
     defer file.close();
@@ -56,15 +56,11 @@ fn compile(loc: [:0]const u8) !void {
     var tokens: std.ArrayList(token.Token) = lxr.lex();
     defer tokens.deinit();
 
-    // DEBUG: Prin tokens
-    // for (tokens.items) |tok| std.debug.print("{}\n", .{tok});
-
     // Create parser
     var prsr: parser.Parser = parser.Parser.new(tokens, allocator);
 
     // Parse all statements into a procedure
     const proc: ast.Proc = try prsr.parseProcedure();
-    // std.debug.print("PROCEDURE: {}\n", .{proc});
 
     // Evaluate all
     try interpreter.evalProc(proc, &env);
@@ -109,7 +105,6 @@ fn interactive() !void {
             },
         };
 
-        // try outw.print("{}\n", .{tree.*});
         if (res) |r| try outw.print("=> {}\n", .{r});
     }
 }

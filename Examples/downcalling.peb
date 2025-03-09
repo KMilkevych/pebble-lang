@@ -1,0 +1,8 @@
+function f(a, b) return a + b * 3
+
+function mod_fib(mod, n) {
+         if n == 1 || n == 0 return 1
+         return mod(mod_fib(mod, n-1), mod_fib(mod, n-2))
+}
+
+print mod_fib(f, 10)
