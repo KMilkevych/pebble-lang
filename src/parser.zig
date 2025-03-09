@@ -48,7 +48,7 @@ pub const Parser = struct {
     }
 
     fn nextToken(self: *Self) ParseError!Token {
-        return if (self.tokens.popOrNull()) |tok| tok
+        return if (self.tokens.pop()) |tok| tok
         else ParseError.ExpectedTokenOrEOF;
     }
 
