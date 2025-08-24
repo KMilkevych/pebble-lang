@@ -358,9 +358,8 @@ pub fn evalStmt(statement: ast.Stmt, env: *venv.Env) EvalError!StmtReturn {
     switch (statement) {
         .ExprStmt => |expr| {
 
-            // Evaluate and destroy underlying expression
-            var lit: ast.Lit = try evalExpr(expr, env);
-            lit.destroyAll(env.allocator);
+            // Evaluate the underlying expression
+            _ = try evalExpr(expr, env);
             return StmtReturn {.NoReturn = {}};
         },
         .DeclareStmt => |exprs| {

@@ -2027,3 +2027,66 @@ test "property not on list" {
     // Assert that function computes correctly
     try std.testing.expectEqualDeep(r, interpreter.EvalError.InvalidProperty);
 }
+
+test "list overwrite with list" {
+    // Prepare environment
+    var env = venv.Env.new(std.testing.allocator);
+    defer env.deinit();
+
+    // Prepare procedure
+    const proc: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
+
+        ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {
+            &ast.Expr {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
+                .id = &ast.Expr {.Lval = ast.Lval {.Var = "list"}},
+                .idx = &ast.Expr {.Lit = ast.Lit {.Int = 1}}
+            }}}
+        }},
+
+        ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {
+            &ast.Expr {.AssignExpr = ast.AssignExpr {
+                .lhs = &ast.Expr {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
+                    .id = &ast.Expr {.Lval = ast.Lval {.Var = "lst"}},
+                    .idx = &ast.Expr {.Lit = ast.Lit {.Int = 1}}
+                }}},
+                .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 3}}
+            }}}
+        },
+
+        ast.Stmt {.ExprStmt = &ast.Expr {
+            .AssignExpr = ast.AssignExpr {
+                .lhs = &ast.Expr {.Lval = ast.Lval {
+                    .Var = "list"
+                }},
+                .rhs = &ast.Expr {.Lval = ast.Lval {
+                    .Var = "lst"
+                }}
+            }}
+        }
+
+    }};
+
+    const items = try std.testing.allocator.alloc(ast.Lit, 1);
+    defer std.testing.allocator.free(items);
+    for (items) |*item| item.* = ast.Lit {.Int = 3};
+
+    const ptr = try std.testing.allocator.create(ast.List);
+    defer std.testing.allocator.destroy(ptr);
+    ptr.* = ast.List {
+        .items = items,
+        .len = 1,
+        .refs = 2
+    };
+
+    // Make sure that y is set with updated x
+    _ = try interpreter.evalProc(proc, &env);
+
+    try std.testing.expectEqualDeep(
+        venv.ObjectVal {.Var = ast.Lit {.List = ptr}},
+        env.lookup("lst")
+    );
+    try std.testing.expectEqualDeep(
+        venv.ObjectVal {.Var = ast.Lit {.List = ptr}},
+        env.lookup("list")
+    );
+}
