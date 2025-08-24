@@ -36,7 +36,7 @@ pub const Env: type = struct {
         // This is necessary, as some could be Callables with their own statements
         var iterator = self.table.valueIterator();
         while (iterator.next()) |val_ptr| switch (val_ptr.*) {
-            .Var => |lit| lit.destroyAll(self.allocator),
+            .Var => |*lit| lit.destroyAll(self.allocator),
             .Undefined => {},
         };
 

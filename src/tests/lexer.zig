@@ -1513,3 +1513,56 @@ test "inline simple function definition with return" {
 
     try std.testing.expectEqualDeep(expected, tokens.items);
 }
+
+test "single make" {
+    const input =
+        \\make list[10]
+    ;
+
+    var lx = lexer.Lexer.new(input, std.testing.allocator);
+
+    const tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit();
+
+    const expected: []const Token = &[_]Token{
+        Token {.MAKE = {}},
+        Token {.IDENT = "list"},
+        Token {.LBRACK = {}},
+        Token {.INTLIT = 10},
+        Token {.RBRACK = {}},
+        Token {.EOF = {}}
+    };
+
+    try std.testing.expectEqualDeep(expected, tokens.items);
+}
+
+test "multiline multi make" {
+    const input =
+        \\make list[10], anotherlist[5]
+        \\print 10
+    ;
+
+    var lx = lexer.Lexer.new(input, std.testing.allocator);
+
+    const tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit();
+
+    const expected: []const Token = &[_]Token{
+        Token {.MAKE = {}},
+        Token {.IDENT = "list"},
+        Token {.LBRACK = {}},
+        Token {.INTLIT = 10},
+        Token {.RBRACK = {}},
+        Token {.COMMA = {}},
+        Token {.IDENT = "anotherlist"},
+        Token {.LBRACK = {}},
+        Token {.INTLIT = 5},
+        Token {.RBRACK = {}},
+        Token {.LB = {}},
+        Token {.PRINT = {}},
+        Token {.INTLIT = 10},
+        Token {.EOF = {}}
+    };
+
+    try std.testing.expectEqualDeep(expected, tokens.items);
+}

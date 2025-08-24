@@ -8,11 +8,13 @@ pub const Callable = struct {
     closure: *venv.Env,
 
     pub fn destroyAll(self: *const Callable, allocator: std.mem.Allocator) void {
+
         _ = self;
         _ = allocator;
 
         // BUG: This *shoud* result in memory leaks
         // but so far testing haven't caught it..
+        // This will be destroyed when the corresponding FunDeclStatement is destroyed
 
         // allocator.free(self.params);
         // self.body.destroyAll(allocator);
@@ -29,7 +31,46 @@ pub const Callable = struct {
         _ = options;
         try writer.print("(", .{});
         for (self.params) |param| try writer.print("{s},", .{param});
-        try writer.print(") => {}\n", .{self.body});
+        try writer.print(") => {}", .{self.body});
+    }
+
+};
+
+pub const List = struct {
+
+    len: usize,
+    items: []Lit,
+
+    refs: u32 = 1,
+
+    pub fn makeReference(self: *List) *List {
+
+        self.refs = self.refs + 1;
+        return self;
+    }
+
+    pub fn destroyAll(self: *List, allocator: std.mem.Allocator) void {
+
+        // Use reference-counting
+        self.refs = self.refs - 1;
+        if (self.refs <= 0) {
+            for (self.items) |*item| item.destroyAll(allocator);
+            allocator.free(self.items);
+            allocator.destroy(self);
+        }
+    }
+
+    pub fn format(
+        self: List,
+        comptime fmt: []const u8,
+        options: std.fmt.FormatOptions,
+        writer: anytype
+    ) !void {
+        _ = fmt;
+        _ = options;
+        try writer.print("[", .{});
+        for (self.items) |item| try writer.print("{s},", .{item});
+        try writer.print("]", .{});
     }
 
 };
@@ -39,11 +80,13 @@ pub const Lit = union(enum) {
     Bool: bool,
     Void: void,
     Callable: Callable,
+    List: *List,
 
-    pub fn destroyAll(self: *const Lit, allocator: std.mem.Allocator) void {
+    pub fn destroyAll(self: *Lit, allocator: std.mem.Allocator) void {
         switch (self.*) {
             .Int, .Bool, .Void => {},
-            .Callable => |fun| fun.destroyAll(allocator)
+            .Callable => |fun| fun.destroyAll(allocator),
+            .List => |lst| lst.destroyAll(allocator),
         }
     }
 
@@ -60,17 +103,46 @@ pub const Lit = union(enum) {
             .Bool => |v| try writer.print("{}", .{v}),
             .Void => try writer.print("{{}}", .{}),
             .Callable => |f| try writer.print("{}", .{f}),
+            .List => |l| try writer.print("{}", .{l}),
         }
     }
 };
 
 pub const Var: type = []const u8;
 
+pub const ListIndex: type = struct {
+    id: *const Expr,
+    idx: *const Expr,
+
+    pub fn destroyAll(self: *const ListIndex, allocator: std.mem.Allocator) void {
+        self.id.destroyAll(allocator);
+        self.idx.destroyAll(allocator);
+    }
+
+    pub fn format(
+        self: ListIndex,
+        comptime fmt: []const u8,
+        options: std.fmt.FormatOptions,
+        writer: anytype
+    ) !void {
+        _ = fmt;
+        _ = options;
+        try writer.print("{s}[{}]", .{self.id, self.idx});
+    }
+};
+
 pub const Lval = union(enum) {
     Var: Var,
+    ListIndex: ListIndex,
 
-    // TODO: Add array index and field lookup
+    // TODO: Add field lookup
 
+    pub fn destroyAll(self: *const Lval, allocator: std.mem.Allocator) void {
+        switch (self.*) {
+            .Var => {},
+            .ListIndex => |l| l.destroyAll(allocator),
+        }
+    }
 
     pub fn format(
         self: Lval,
@@ -81,7 +153,8 @@ pub const Lval = union(enum) {
         _ = fmt;
         _ = options;
         switch(self) {
-            .Var => |v| try writer.print("{s}", .{v})
+            .Var => |v| try writer.print("{s}", .{v}),
+            .ListIndex => |l| try writer.print("{s}", .{l})
         }
     }
 };
@@ -278,7 +351,7 @@ pub const Expr = union(enum) {
             .BinOpExpr => |*expr| expr.destroyAll(allocator),
             .UnOpExpr => |*expr| expr.destroyAll(allocator),
             .Lit => {},
-            .Lval => {}, // TODO: Figure out if this needs implementation
+            .Lval => |*lval| lval.destroyAll(allocator),
             .AssignExpr => |*expr| expr.destroyAll(allocator),
             .CallExpr => |*expr| expr.destroyAll(allocator),
         }
@@ -389,6 +462,7 @@ pub const Stmt = union(enum) {
     ContinueStmt: void,
     ReturnStmt: *const Expr,
     FunDefStmt: *const FunDefStmt,
+    MakeStmt: []const *const Expr,
 
     pub fn destroyAll(self: *const Stmt, allocator: std.mem.Allocator) void {
         switch (self.*) {
@@ -411,6 +485,10 @@ pub const Stmt = union(enum) {
             .ContinueStmt => {},
             .ReturnStmt => |expr| expr.destroyAll(allocator),
             .FunDefStmt => |stmt| stmt.destroyAll(allocator),
+            .MakeStmt => |exprs| {
+                for (exprs) |expr| expr.destroyAll(allocator);
+                allocator.free(exprs);
+            },
         }
     }
 
@@ -445,6 +523,11 @@ pub const Stmt = union(enum) {
             .ContinueStmt => try writer.print("CONTINUE\n", .{}),
             .ReturnStmt => |expr| try writer.print("RETURN {}\n", .{expr}),
             .FunDefStmt => |stmt| try writer.print("{}", .{stmt}),
+            .MakeStmt => |exprs| {
+                try writer.print("MAKE ", .{});
+                for (exprs) |expr| try writer.print("{}, ", .{expr});
+                try writer.print("\n", .{});
+            },
         };
     }
 };

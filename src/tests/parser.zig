@@ -1873,3 +1873,286 @@ test "function definition no body 2" {
 
     try std.testing.expectEqualDeep(parser.ParseError.ExpectedStatement, res);
 }
+
+test "make statement" {
+
+    var tokens: std.ArrayList(Token) = std.ArrayList(Token).init(std.testing.allocator);
+    try tokens.append(Token {.MAKE = {}});
+    try tokens.append(Token {.IDENT = "list"});
+    try tokens.append(Token {.LBRACK = {}});
+    try tokens.append(Token {.INTLIT = 1});
+    try tokens.append(Token {.RBRACK = {}});
+    try tokens.append(Token {.EOF = {}});
+    defer tokens.deinit();
+
+    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+
+    const expect: ast.Stmt = ast.Stmt {.MakeStmt = &[_]*const ast.Expr {
+        &ast.Expr {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
+            .id = &ast.Expr {.Lval = ast.Lval {.Var = "list"}},
+            .idx = &ast.Expr {.Lit = ast.Lit {.Int = 1}}
+        }}},
+    }};
+
+    const actual: ast.Stmt = try prs.parseStmt();
+    defer actual.destroyAll(std.testing.allocator);
+
+    try std.testing.expectEqualDeep(expect, actual);
+}
+
+test "multi make statement" {
+
+    var tokens: std.ArrayList(Token) = std.ArrayList(Token).init(std.testing.allocator);
+    try tokens.append(Token {.MAKE = {}});
+    try tokens.append(Token {.IDENT = "list"});
+    try tokens.append(Token {.LBRACK = {}});
+    try tokens.append(Token {.INTLIT = 1});
+    try tokens.append(Token {.RBRACK = {}});
+    try tokens.append(Token {.COMMA = {}});
+    try tokens.append(Token {.IDENT = "otherlist"});
+    try tokens.append(Token {.LBRACK = {}});
+    try tokens.append(Token {.INTLIT = 7});
+    try tokens.append(Token {.RBRACK = {}});
+    try tokens.append(Token {.EOF = {}});
+    defer tokens.deinit();
+
+    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+
+    const expect: ast.Stmt = ast.Stmt {.MakeStmt = &[_]*const ast.Expr {
+        &ast.Expr {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
+            .id = &ast.Expr {.Lval = ast.Lval {.Var = "list"}},
+            .idx = &ast.Expr {.Lit = ast.Lit {.Int = 1}}
+        }}},
+        &ast.Expr {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
+            .id = &ast.Expr {.Lval = ast.Lval {.Var = "otherlist"}},
+            .idx = &ast.Expr {.Lit = ast.Lit {.Int = 7}}
+        }}},
+    }};
+
+    const actual: ast.Stmt = try prs.parseStmt();
+    defer actual.destroyAll(std.testing.allocator);
+
+    try std.testing.expectEqualDeep(expect, actual);
+}
+
+test "list index expression" {
+
+    var tokens: std.ArrayList(Token) = .init(std.testing.allocator);
+    defer tokens.deinit();
+
+    try tokens.append(Token {.IDENT = "lst"});
+    try tokens.append(Token {.LBRACK = {}});
+    try tokens.append(Token {.INTLIT = 3});
+    try tokens.append(Token {.RBRACK = {}});
+    try tokens.append(Token {.EOF = {}});
+    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+
+    const result: *ast.Expr = try prs.parseExpr();
+    defer result.destroyAll(std.testing.allocator);
+
+
+    const expect: ast.Expr = ast.Expr {.Lval = ast.Lval {
+        .ListIndex = ast.ListIndex {
+            .id = &ast.Expr {.Lval = ast.Lval {.Var = "lst"}},
+            .idx = &ast.Expr {.Lit = ast.Lit {.Int = 3}}
+        }
+    }};
+
+    try std.testing.expectEqualDeep(expect, result.*);
+}
+
+test "complex list index expression" {
+
+    var tokens: std.ArrayList(Token) = .init(std.testing.allocator);
+    defer tokens.deinit();
+
+    try tokens.append(Token {.IDENT = "lst"});
+    try tokens.append(Token {.LBRACK = {}});
+    try tokens.append(Token {.INTLIT = 3});
+    try tokens.append(Token {.MUL = {}});
+    try tokens.append(Token {.LPAREN = {}});
+    try tokens.append(Token {.INTLIT = 1});
+    try tokens.append(Token {.PLUS = {}});
+    try tokens.append(Token {.INTLIT = 4});
+    try tokens.append(Token {.RPAREN = {}});
+    try tokens.append(Token {.RBRACK = {}});
+    try tokens.append(Token {.EOF = {}});
+    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+
+    const result: *ast.Expr = try prs.parseExpr();
+    defer result.destroyAll(std.testing.allocator);
+
+
+    const expect: ast.Expr = ast.Expr {.Lval = ast.Lval {
+        .ListIndex = ast.ListIndex {
+            .id = &ast.Expr {.Lval = ast.Lval {.Var = "lst"}},
+            .idx = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
+                .lhs = &ast.Expr {.Lit = ast.Lit {.Int = 3}},
+                .op = .Mul,
+                .rhs = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
+                    .lhs = &ast.Expr {.Lit = ast.Lit {.Int = 1}},
+                    .op = .Add,
+                    .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 4}}
+                }}
+            }}
+        }
+    }};
+
+    try std.testing.expectEqualDeep(expect, result.*);
+}
+
+test "double list index expression" {
+
+    var tokens: std.ArrayList(Token) = .init(std.testing.allocator);
+    defer tokens.deinit();
+
+    try tokens.append(Token {.IDENT = "lst"});
+    try tokens.append(Token {.LBRACK = {}});
+    try tokens.append(Token {.INTLIT = 3});
+    try tokens.append(Token {.RBRACK = {}});
+    try tokens.append(Token {.LBRACK = {}});
+    try tokens.append(Token {.INTLIT = 1});
+    try tokens.append(Token {.RBRACK = {}});
+    try tokens.append(Token {.EOF = {}});
+    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+
+    const result: *ast.Expr = try prs.parseExpr();
+    defer result.destroyAll(std.testing.allocator);
+
+
+    const expect: ast.Expr = ast.Expr {.Lval = ast.Lval {
+        .ListIndex = ast.ListIndex {
+            .id = &ast.Expr {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
+                .id = &ast.Expr {.Lval = ast.Lval {.Var = "lst"}},
+                .idx = &ast.Expr {.Lit = ast.Lit {.Int = 3}}
+            }}},
+            .idx = &ast.Expr {.Lit = ast.Lit {.Int = 1}}
+        }
+    }};
+
+    try std.testing.expectEqualDeep(expect, result.*);
+}
+
+test "list index assignment" {
+
+    var tokens: std.ArrayList(Token) = .init(std.testing.allocator);
+    defer tokens.deinit();
+
+    try tokens.append(Token {.IDENT = "lst"});
+    try tokens.append(Token {.LBRACK = {}});
+    try tokens.append(Token {.INTLIT = 3});
+    try tokens.append(Token {.RBRACK = {}});
+    try tokens.append(Token {.EQ = {}});
+    try tokens.append(Token {.INTLIT = 1});
+    try tokens.append(Token {.EOF = {}});
+    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+
+    const result: *ast.Expr = try prs.parseExpr();
+    defer result.destroyAll(std.testing.allocator);
+
+
+    const expect: ast.Expr = ast.Expr {.AssignExpr = ast.AssignExpr {
+        .lhs = &ast.Expr {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
+            .id = &ast.Expr {.Lval = ast.Lval {.Var = "lst"}},
+            .idx = &ast.Expr {.Lit = ast.Lit {.Int = 3}}
+        }}},
+        .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 1}}
+    }};
+
+    try std.testing.expectEqualDeep(expect, result.*);
+}
+
+test "list index in parentheses" {
+
+    var tokens: std.ArrayList(Token) = .init(std.testing.allocator);
+    defer tokens.deinit();
+
+    try tokens.append(Token {.IDENT = "lst"});
+    try tokens.append(Token {.LBRACK = {}});
+    try tokens.append(Token {.LPAREN = {}});
+    try tokens.append(Token {.IDENT = "lst"});
+    try tokens.append(Token {.LBRACK = {}});
+    try tokens.append(Token {.INTLIT = 1});
+    try tokens.append(Token {.RBRACK = {}});
+    try tokens.append(Token {.RPAREN = {}});
+    try tokens.append(Token {.RBRACK = {}});
+    try tokens.append(Token {.EOF = {}});
+    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+
+    const result: *ast.Expr = try prs.parseExpr();
+    defer result.destroyAll(std.testing.allocator);
+
+
+    const expect: ast.Expr = ast.Expr { .Lval = ast.Lval {
+        .ListIndex = ast.ListIndex {
+            .id = &ast.Expr {.Lval = ast.Lval {.Var = "lst"}},
+            .idx = &ast.Expr {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
+                .id = &ast.Expr {.Lval = ast.Lval {.Var = "lst"}},
+                .idx = &ast.Expr {.Lit = ast.Lit {.Int = 1}}
+        }}}
+
+    }}};
+
+    try std.testing.expectEqualDeep(expect, result.*);
+}
+
+test "print list index statement" {
+
+    var tokens: std.ArrayList(Token) = std.ArrayList(Token).init(std.testing.allocator);
+    try tokens.append(Token {.PRINT = {}});
+    try tokens.append(Token {.IDENT = "list"});
+    try tokens.append(Token {.LBRACK = {}});
+    try tokens.append(Token {.INTLIT = 1});
+    try tokens.append(Token {.RBRACK = {}});
+    try tokens.append(Token {.EOF = {}});
+    defer tokens.deinit();
+
+    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+
+    const expect: ast.Stmt = ast.Stmt {.PrintStmt = &[_]*const ast.Expr {
+        &ast.Expr {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
+            .id = &ast.Expr {.Lval = ast.Lval {.Var = "list"}},
+            .idx = &ast.Expr {.Lit = ast.Lit {.Int = 1}}
+        }}},
+    }};
+
+    const actual: ast.Stmt = try prs.parseStmt();
+    defer actual.destroyAll(std.testing.allocator);
+
+    try std.testing.expectEqualDeep(expect, actual);
+}
+
+test "print multi list index statement" {
+
+    var tokens: std.ArrayList(Token) = std.ArrayList(Token).init(std.testing.allocator);
+    try tokens.append(Token {.PRINT = {}});
+    try tokens.append(Token {.IDENT = "lst"});
+    try tokens.append(Token {.LBRACK = {}});
+    try tokens.append(Token {.INTLIT = 1});
+    try tokens.append(Token {.RBRACK = {}});
+    try tokens.append(Token {.COMMA = {}});
+    try tokens.append(Token {.IDENT = "lst"});
+    try tokens.append(Token {.LBRACK = {}});
+    try tokens.append(Token {.INTLIT = 7});
+    try tokens.append(Token {.RBRACK = {}});
+    try tokens.append(Token {.EOF = {}});
+    defer tokens.deinit();
+
+    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+
+    const expect: ast.Stmt = ast.Stmt {.PrintStmt = &[_]*const ast.Expr {
+        &ast.Expr {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
+            .id = &ast.Expr {.Lval = ast.Lval {.Var = "lst"}},
+            .idx = &ast.Expr {.Lit = ast.Lit {.Int = 1}}
+        }}},
+        &ast.Expr {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
+            .id = &ast.Expr {.Lval = ast.Lval {.Var = "lst"}},
+            .idx = &ast.Expr {.Lit = ast.Lit {.Int = 7}}
+        }}},
+    }};
+
+    const actual: ast.Stmt = try prs.parseStmt();
+    defer actual.destroyAll(std.testing.allocator);
+
+    try std.testing.expectEqualDeep(expect, actual);
+}

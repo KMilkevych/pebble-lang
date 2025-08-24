@@ -24,6 +24,7 @@ pub const TokenType: type = enum {
     LCURLY,
     RCURLY,
     DECLARE,
+    MAKE,
     PRINT,
     IF,
     ELSE,
@@ -72,6 +73,7 @@ pub const Token: type = union(TokenType) {
 
     // Keywords
     DECLARE: void,
+    MAKE: void,
     PRINT: void,
     IF: void,
     ELSE: void,
@@ -122,6 +124,7 @@ pub const Token: type = union(TokenType) {
             .LTE      => try writer.print("[LTE     ]:", .{}),
             .GTE      => try writer.print("[GTE     ]:", .{}),
             .DECLARE  => try writer.print("[DECLARE ]:", .{}),
+            .MAKE     => try writer.print("[MAKE    ]:", .{}),
             .PRINT    => try writer.print("[PRINT   ]:", .{}),
             .IF       => try writer.print("[IF      ]:", .{}),
             .ELSE     => try writer.print("[ELSE    ]:", .{}),
@@ -171,6 +174,7 @@ pub const Token: type = union(TokenType) {
         return switch(self) {
             // TODO: Implement arr[idx] and object.field operators
             .LPAREN => 15,
+            .LBRACK => 17,
             else => null
         };
     }
