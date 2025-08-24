@@ -2201,3 +2201,67 @@ test "declare multi list with initialization" {
 
     try std.testing.expectEqualDeep(expect, actual);
 }
+
+test "property access" {
+
+    var tokens: std.ArrayList(Token) = .init(std.testing.allocator);
+    defer tokens.deinit();
+
+    try tokens.append(Token {.IDENT = "lst"});
+    try tokens.append(Token {.DOT = {}});
+    try tokens.append(Token {.IDENT = "size"});
+    try tokens.append(Token {.EOF = {}});
+    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+
+    const result: *ast.Expr = try prs.parseExpr();
+    defer result.destroyAll(std.testing.allocator);
+
+
+    const expect: ast.Expr = ast.Expr { .Lval = ast.Lval {
+        .PropertyAccess = ast.PropertyAccess {
+            .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "lst"}},
+            .prop = &ast.Expr {.Lval = ast.Lval {.Var = "size"}}
+        }}
+    };
+
+    try std.testing.expectEqualDeep(expect, result.*);
+}
+
+test "multi property access" {
+
+    var tokens: std.ArrayList(Token) = .init(std.testing.allocator);
+    defer tokens.deinit();
+
+    try tokens.append(Token {.IDENT = "obj"});
+    try tokens.append(Token {.DOT = {}});
+    try tokens.append(Token {.IDENT = "prop1"});
+    try tokens.append(Token {.DOT = {}});
+    try tokens.append(Token {.IDENT = "prop2"});
+    try tokens.append(Token {.DOT = {}});
+    try tokens.append(Token {.IDENT = "prop3"});
+    try tokens.append(Token {.EOF = {}});
+    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+
+    const result: *ast.Expr = try prs.parseExpr();
+    defer result.destroyAll(std.testing.allocator);
+
+
+    const expect: ast.Expr = ast.Expr { .Lval = ast.Lval {
+        .PropertyAccess = ast.PropertyAccess {
+            .lhs = &ast.Expr {.Lval = ast.Lval {
+                .PropertyAccess = ast.PropertyAccess {
+                    .lhs = &ast.Expr {.Lval = ast.Lval {
+                        .PropertyAccess = ast.PropertyAccess {
+                            .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "obj"}},
+                            .prop = &ast.Expr {.Lval = ast.Lval {.Var = "prop1"}}
+                        }
+                    }},
+                    .prop = &ast.Expr {.Lval = ast.Lval {.Var = "prop2"}}
+                }
+            }},
+            .prop = &ast.Expr {.Lval = ast.Lval {.Var = "prop3"}}
+        }}
+    };
+
+    try std.testing.expectEqualDeep(expect, result.*);
+}

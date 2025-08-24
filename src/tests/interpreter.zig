@@ -1938,3 +1938,92 @@ test "multi list declaration with initialization" {
         env.lookup("list")
     );
 }
+
+test "list size" {
+    // Prepare environment
+    var env = venv.Env.new(std.testing.allocator);
+    defer env.deinit();
+
+    // Insert function into environment
+    const items_ptr = try std.testing.allocator.alloc(ast.Lit, 10);
+    const ptr = try std.testing.allocator.create(ast.List);
+    ptr.* = ast.List {
+        .items = items_ptr,
+        .len = 10
+    };
+
+    env.insert("list", venv.ObjectVal {.Var = ast.Lit {
+        .List = ptr
+    }});
+
+    // Prepare expression
+    const expr: ast.Expr = ast.Expr { .Lval = ast.Lval {
+        .PropertyAccess = ast.PropertyAccess {
+            .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "list"}},
+            .prop = &ast.Expr {.Lval = ast.Lval {.Var = "size"}}
+        }}
+    };
+
+    // Evaluate statement
+    const r: ast.Lit = try interpreter.evalExpr(&expr, &env);
+
+    // Assert that function computes correctly
+    try std.testing.expectEqualDeep(r, ast.Lit {.Int = 10});
+}
+
+test "list invalid property" {
+    // Prepare environment
+    var env = venv.Env.new(std.testing.allocator);
+    defer env.deinit();
+
+    // Insert function into environment
+    const items_ptr = try std.testing.allocator.alloc(ast.Lit, 10);
+    const ptr = try std.testing.allocator.create(ast.List);
+    ptr.* = ast.List {
+        .items = items_ptr,
+        .len = 10
+    };
+
+    env.insert("list", venv.ObjectVal {.Var = ast.Lit {
+        .List = ptr
+    }});
+
+    // Prepare expression
+    const expr: ast.Expr = ast.Expr { .Lval = ast.Lval {
+        .PropertyAccess = ast.PropertyAccess {
+            .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "list"}},
+            .prop = &ast.Expr {.Lval = ast.Lval {.Var = "sz"}}
+        }}
+    };
+
+    // Evaluate statement
+    const r: interpreter.EvalError!ast.Lit = interpreter.evalExpr(&expr, &env);
+
+    // Assert that function computes correctly
+    try std.testing.expectEqualDeep(r, interpreter.EvalError.InvalidProperty);
+}
+
+test "property not on list" {
+    // Prepare environment
+    var env = venv.Env.new(std.testing.allocator);
+    defer env.deinit();
+
+    // Insert function into environment
+    env.insert("var", venv.ObjectVal {.Var = ast.Lit {
+        .Int = 1
+    }});
+
+    // Prepare expression
+    const expr: ast.Expr = ast.Expr { .Lval = ast.Lval {
+        .PropertyAccess = ast.PropertyAccess {
+            .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "var"}},
+            .prop = &ast.Expr {.Lval = ast.Lval {.Var = "size"}}
+        }}
+    };
+
+    // Evaluate statement
+    const r: interpreter.EvalError!ast.Lit = interpreter.evalExpr(&expr, &env);
+
+    // Assert that function computes correctly
+    try std.testing.expectEqualDeep(r, interpreter.EvalError.InvalidProperty);
+}

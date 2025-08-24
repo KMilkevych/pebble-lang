@@ -127,20 +127,41 @@ pub const ListIndex: type = struct {
     ) !void {
         _ = fmt;
         _ = options;
-        try writer.print("{s}[{}]", .{self.id, self.idx});
+        try writer.print("{}[{}]", .{self.id, self.idx});
+    }
+};
+
+pub const PropertyAccess: type = struct {
+    lhs: *const Expr,
+    prop: *const Expr,
+
+    pub fn destroyAll(self: *const PropertyAccess, allocator: std.mem.Allocator) void {
+        self.lhs.destroyAll(allocator);
+        self.prop.destroyAll(allocator);
+    }
+
+    pub fn format(
+        self: PropertyAccess,
+        comptime fmt: []const u8,
+        options: std.fmt.FormatOptions,
+        writer: anytype
+    ) !void {
+        _ = fmt;
+        _ = options;
+        try writer.print("{}.{}", .{self.lhs, self.prop});
     }
 };
 
 pub const Lval = union(enum) {
     Var: Var,
     ListIndex: ListIndex,
-
-    // TODO: Add field lookup
+    PropertyAccess: PropertyAccess,
 
     pub fn destroyAll(self: *const Lval, allocator: std.mem.Allocator) void {
         switch (self.*) {
             .Var => {},
             .ListIndex => |l| l.destroyAll(allocator),
+            .PropertyAccess => |p| p.destroyAll(allocator),
         }
     }
 
@@ -154,7 +175,8 @@ pub const Lval = union(enum) {
         _ = options;
         switch(self) {
             .Var => |v| try writer.print("{s}", .{v}),
-            .ListIndex => |l| try writer.print("{s}", .{l})
+            .ListIndex => |l| try writer.print("{}", .{l}),
+            .PropertyAccess => |p| try writer.print("{}", .{p})
         }
     }
 };

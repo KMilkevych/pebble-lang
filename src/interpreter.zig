@@ -16,6 +16,7 @@ const ValueError = error {
     UnexpectedVoidValue,
     IndexOutOfBounds,
     InvalidSize,
+    InvalidProperty,
 };
 const SemanticError = error {
     IdentifierAlreadyDeclared,
@@ -27,6 +28,7 @@ const SemanticError = error {
     InvalidUpcall,
     NotList,
     ListReference,
+    ReadOnlyProperty,
 };
 
 pub const EvalError = TypeError || ArithmeticError || ValueError || SemanticError;
@@ -80,6 +82,28 @@ pub fn evalLval(lval: ast.Lval, env: *venv.Env) EvalError!ast.Lit {
 
             // Lookup by index
             return list.items[@as(usize, @intCast(index))];
+        },
+        .PropertyAccess => |p| {
+
+            // Evalutate property
+            const id: []const u8 = switch (p.prop.*) {
+                .Lval => |lv| switch (lv) {
+                    .Var => |v| v,
+                    else => return EvalError.InvalidProperty
+                },
+                else => return EvalError.InvalidProperty
+            };
+
+            // Evaluate left-hand-side
+            const lhs: ast.Lit = try evalExpr(p.lhs, env);
+            switch (lhs) {
+                .List => |l| {
+                    if (std.mem.eql(u8, id, "size")) return ast.Lit {.Int = @intCast(l.len)}
+                    else return EvalError.InvalidProperty;
+                },
+                else => return EvalError.InvalidProperty
+            }
+
         }
     };
 }
@@ -273,6 +297,7 @@ pub fn evalAssignExpr(expr: *const ast.AssignExpr, env: *venv.Env) EvalError!ast
             // Perform assignment
             lst.items[@as(usize, @intCast(idx))] = rhs;
         },
+        .PropertyAccess => return EvalError.ReadOnlyProperty // TODO: Implement real properties
     }
 
     return rhs;
@@ -379,7 +404,7 @@ pub fn evalStmt(statement: ast.Stmt, env: *venv.Env) EvalError!StmtReturn {
                         const id: ast.Var = switch (li.id.*) {
                             .Lval => |lv| switch (lv) {
                                 .Var => |v| v,
-                                .ListIndex => return EvalError.NotIdentifier,
+                                .ListIndex, .PropertyAccess => return EvalError.NotIdentifier,
                             },
                             else => return EvalError.NotIdentifier
                         };
@@ -431,7 +456,8 @@ pub fn evalStmt(statement: ast.Stmt, env: *venv.Env) EvalError!StmtReturn {
                             // Use reflection-like code to built initialization
                             _ = try evalExpr(&exp, env);
                         }
-                    }
+                    },
+                    .PropertyAccess => return EvalError.InvalidProperty
                 }
             }
 
