@@ -462,7 +462,6 @@ pub const Stmt = union(enum) {
     ContinueStmt: void,
     ReturnStmt: *const Expr,
     FunDefStmt: *const FunDefStmt,
-    MakeStmt: []const *const Expr,
 
     pub fn destroyAll(self: *const Stmt, allocator: std.mem.Allocator) void {
         switch (self.*) {
@@ -485,10 +484,6 @@ pub const Stmt = union(enum) {
             .ContinueStmt => {},
             .ReturnStmt => |expr| expr.destroyAll(allocator),
             .FunDefStmt => |stmt| stmt.destroyAll(allocator),
-            .MakeStmt => |exprs| {
-                for (exprs) |expr| expr.destroyAll(allocator);
-                allocator.free(exprs);
-            },
         }
     }
 
@@ -523,11 +518,6 @@ pub const Stmt = union(enum) {
             .ContinueStmt => try writer.print("CONTINUE\n", .{}),
             .ReturnStmt => |expr| try writer.print("RETURN {}\n", .{expr}),
             .FunDefStmt => |stmt| try writer.print("{}", .{stmt}),
-            .MakeStmt => |exprs| {
-                try writer.print("MAKE ", .{});
-                for (exprs) |expr| try writer.print("{}, ", .{expr});
-                try writer.print("\n", .{});
-            },
         };
     }
 };

@@ -1410,7 +1410,7 @@ test "make statement test" {
     // Prepare procedure
     const proc: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
 
-        ast.Stmt {.MakeStmt = &[_]*const ast.Expr {
+        ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {
             &ast.Expr {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
                 .id = &ast.Expr {.Lval = ast.Lval {.Var = "lst"}},
                 .idx = &ast.Expr {.Lit = ast.Lit {.Int = 1}}
@@ -1446,7 +1446,7 @@ test "multi make statement test" {
     // Prepare procedure
     const proc: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
 
-        ast.Stmt {.MakeStmt = &[_]*const ast.Expr {
+        ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {
             &ast.Expr {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
                 .id = &ast.Expr {.Lval = ast.Lval {.Var = "list"}},
                 .idx = &ast.Expr {.Lit = ast.Lit {.Int = 1}}
@@ -1502,7 +1502,7 @@ test "list mutation" {
     // Prepare procedure
     const proc: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
 
-        ast.Stmt {.MakeStmt = &[_]*const ast.Expr {
+        ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {
             &ast.Expr {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
                 .id = &ast.Expr {.Lval = ast.Lval {.Var = "lst"}},
                 .idx = &ast.Expr {.Lit = ast.Lit {.Int = 3}}
@@ -1551,7 +1551,7 @@ test "list referencing" {
     // Prepare procedure
     const proc: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
 
-        ast.Stmt {.MakeStmt = &[_]*const ast.Expr {
+        ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {
             &ast.Expr {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
                 .id = &ast.Expr {.Lval = ast.Lval {.Var = "lst"}},
                 .idx = &ast.Expr {.Lit = ast.Lit {.Int = 3}}
@@ -1608,7 +1608,7 @@ test "list referencing 2" {
     // Prepare procedure
     const proc: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
 
-        ast.Stmt {.MakeStmt = &[_]*const ast.Expr {
+        ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {
             &ast.Expr {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
                 .id = &ast.Expr {.Lval = ast.Lval {.Var = "lst"}},
                 .idx = &ast.Expr {.Lit = ast.Lit {.Int = 3}}
@@ -1665,7 +1665,7 @@ test "list overwrite" {
     // Prepare procedure
     const proc: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
 
-        ast.Stmt {.MakeStmt = &[_]*const ast.Expr {
+        ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {
             &ast.Expr {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
                 .id = &ast.Expr {.Lval = ast.Lval {.Var = "lst"}},
                 .idx = &ast.Expr {.Lit = ast.Lit {.Int = 3}}
@@ -1711,7 +1711,7 @@ test "list function mutation" {
             }}
         }}},
 
-        ast.Stmt {.MakeStmt = &[_]*const ast.Expr {
+        ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {
             &ast.Expr {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
                 .id = &ast.Expr {.Lval = ast.Lval {.Var = "mylist"}},
                 .idx = &ast.Expr {.Lit = ast.Lit {.Int = 10}}
@@ -1764,7 +1764,7 @@ test "list function return" {
             .id = "f",
             .params = &[_]ast.Var {},
             .body = ast.Stmt {.BlockStmt = &[_]ast.Stmt {
-                ast.Stmt {.MakeStmt = &[_]*const ast.Expr {
+                ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {
                     &ast.Expr {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
                         .id = &ast.Expr {.Lval = ast.Lval {.Var = "lst"}},
                         .idx = &ast.Expr {.Lit = ast.Lit {.Int = 10}}
@@ -1825,7 +1825,7 @@ test "nested list function return" {
                     .id = "g",
                     .params = &[_]ast.Var {},
                     .body = ast.Stmt {.BlockStmt = &[_]ast.Stmt {
-                        ast.Stmt {.MakeStmt = &[_]*const ast.Expr {
+                        ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {
                             &ast.Expr {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
                                 .id = &ast.Expr {.Lval = ast.Lval {.Var = "lst"}},
                                 .idx = &ast.Expr {.Lit = ast.Lit {.Int = 10}}

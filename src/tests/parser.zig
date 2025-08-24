@@ -1877,7 +1877,7 @@ test "function definition no body 2" {
 test "make statement" {
 
     var tokens: std.ArrayList(Token) = std.ArrayList(Token).init(std.testing.allocator);
-    try tokens.append(Token {.MAKE = {}});
+    try tokens.append(Token {.DECLARE = {}});
     try tokens.append(Token {.IDENT = "list"});
     try tokens.append(Token {.LBRACK = {}});
     try tokens.append(Token {.INTLIT = 1});
@@ -1887,7 +1887,7 @@ test "make statement" {
 
     var prs: parser.Parser = .new(tokens, std.testing.allocator);
 
-    const expect: ast.Stmt = ast.Stmt {.MakeStmt = &[_]*const ast.Expr {
+    const expect: ast.Stmt = ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {
         &ast.Expr {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
             .id = &ast.Expr {.Lval = ast.Lval {.Var = "list"}},
             .idx = &ast.Expr {.Lit = ast.Lit {.Int = 1}}
@@ -1903,7 +1903,7 @@ test "make statement" {
 test "multi make statement" {
 
     var tokens: std.ArrayList(Token) = std.ArrayList(Token).init(std.testing.allocator);
-    try tokens.append(Token {.MAKE = {}});
+    try tokens.append(Token {.DECLARE = {}});
     try tokens.append(Token {.IDENT = "list"});
     try tokens.append(Token {.LBRACK = {}});
     try tokens.append(Token {.INTLIT = 1});
@@ -1918,7 +1918,7 @@ test "multi make statement" {
 
     var prs: parser.Parser = .new(tokens, std.testing.allocator);
 
-    const expect: ast.Stmt = ast.Stmt {.MakeStmt = &[_]*const ast.Expr {
+    const expect: ast.Stmt = ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {
         &ast.Expr {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
             .id = &ast.Expr {.Lval = ast.Lval {.Var = "list"}},
             .idx = &ast.Expr {.Lit = ast.Lit {.Int = 1}}

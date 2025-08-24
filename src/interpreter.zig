@@ -356,28 +356,82 @@ pub fn evalStmt(statement: ast.Stmt, env: *venv.Env) EvalError!StmtReturn {
                     else => return EvalError.NotIdentifier
                 };
 
-                // Evalute left-hand side lval to an identifier
-                // TODO: This can also be array indexing, object field/property, etc.
-                const id: []const u8 = switch (try lhs) {
-                    .Var => |id| id,
-                    .ListIndex => return EvalError.NotIdentifier
-                };
+                switch (try lhs) {
+                    .Var => |id| {
 
-                // Do error checking
-                if (env.isDeclaredLocal(id)) return EvalError.IdentifierAlreadyDeclared;
+                        // Do error checking
+                        if (env.isDeclaredLocal(id)) return EvalError.IdentifierAlreadyDeclared;
 
-                // Add lhs identifier to environment
-                env.insert(id, venv.ObjectVal {.Undefined = {}});
+                        // Add lhs identifier to environment
+                        env.insert(id, venv.ObjectVal {.Undefined = {}});
 
-                // Evaluate assignment expression if exists
-                // TODO: Try to manually evaluate the assignment expression to fix
-                // declare x = 10
-                // { declare x = x + 1 }
-                // bug
-                switch (expr.*) {
-                    .AssignExpr => |*exp| _ = try evalAssignExpr(exp, env),
-                    .Lval => {},
-                    else => unreachable // Sensible here
+                        // Evalute assignment expression
+                        switch (expr.*) {
+                            .AssignExpr => |*exp| _ = try evalAssignExpr(exp, env),
+                            .Lval => {},
+                            else => unreachable // Sensible here
+                        }
+
+                    },
+                    .ListIndex => |li| {
+
+                        // Make sure that id is a Var
+                        const id: ast.Var = switch (li.id.*) {
+                            .Lval => |lv| switch (lv) {
+                                .Var => |v| v,
+                                .ListIndex => return EvalError.NotIdentifier,
+                            },
+                            else => return EvalError.NotIdentifier
+                        };
+
+                        // Do error checking
+                        if (env.isDeclaredLocal(id)) return EvalError.IdentifierAlreadyDeclared;
+
+                        // Evaluate index (size)
+                        const size: i64 = switch (try evalExpr(li.idx, env)) {
+                            .Int => |i| i,
+                            .Bool, .Callable, .Void, .List => return EvalError.MismatchedType,
+                        };
+
+                        // Do size checking
+                        if (size < 0) return EvalError.InvalidSize;
+
+                        // Add identifier to environment
+                        const items_ptr = env.allocator.alloc(ast.Lit, @as(usize, @intCast(size))) catch unreachable;
+                        const ptr = env.allocator.create(ast.List) catch unreachable;
+
+                        ptr.* = ast.List {
+                            .len = @as(usize, @intCast(size)),
+                            .items = items_ptr,
+                        };
+                        env.insert(id, venv.ObjectVal {.Var = ast.Lit {.List = ptr}});
+
+                        // Check based on expression, if we get value
+                        const val: ast.Lit = switch (expr.*) {
+                            .AssignExpr => |as| try evalExpr(as.rhs, env),
+                            .Lval => ast.Lit {.Void = {}},
+                            else => unreachable
+                        };
+
+                        // Initialize list with values
+                        var idx: i64 = 0;
+                        while (idx < size) : (idx += 1) {
+                            const exp: ast.Expr = ast.Expr {
+                                .AssignExpr = ast.AssignExpr {
+                                    .lhs = &ast.Expr {
+                                        .Lval = ast.Lval {.ListIndex = ast.ListIndex {
+                                            .id = li.id,
+                                            .idx = &ast.Expr {.Lit = ast.Lit {.Int = idx}}
+                                        }}
+                                    },
+                                    .rhs = &ast.Expr {.Lit = val}
+                                }
+                            };
+
+                            // Use reflection-like code to built initialization
+                            _ = try evalExpr(&exp, env);
+                        }
+                    }
                 }
             }
 
@@ -486,56 +540,6 @@ pub fn evalStmt(statement: ast.Stmt, env: *venv.Env) EvalError!StmtReturn {
 
             return StmtReturn {.NoReturn = {}};
         },
-        .MakeStmt => |exprs| {
-
-            for (exprs) |expr| {
-
-                // Make sure each expression is a ListIndexExpr
-                const obj: ast.ListIndex = switch (expr.*) {
-                    .Lval => |lval| switch (lval) {
-                        .Var => return EvalError.NotList,
-                        .ListIndex => |li| li,
-                    },
-                    else => return EvalError.NotList
-                };
-
-                // Make sure that id is a Var
-                const id: ast.Var = switch (obj.id.*) {
-                    .Lval => |lv| switch (lv) {
-                        .Var => |v| v,
-                        .ListIndex => return EvalError.NotIdentifier,
-                    },
-                    else => return EvalError.NotIdentifier
-                };
-
-                // Do error checking
-                if (env.isDeclaredLocal(id)) return EvalError.IdentifierAlreadyDeclared;
-
-                // Evaluate index (size)
-                const size: i64 = switch (try evalExpr(obj.idx, env)) {
-                    .Int => |i| i,
-                    .Bool, .Callable, .Void, .List => return EvalError.MismatchedType,
-                };
-
-                // Do size checking
-                if (size < 0) return EvalError.InvalidSize;
-
-                // Add identifier to environment
-                const items_ptr = env.allocator.alloc(ast.Lit, @as(usize, @intCast(size))) catch unreachable;
-                const ptr = env.allocator.create(ast.List) catch unreachable;
-
-                ptr.* = ast.List {
-                    .len = @as(usize, @intCast(size)),
-                    .items = items_ptr,
-                };
-                env.insert(id, venv.ObjectVal {.Var = ast.Lit {.List = ptr}});
-
-                // Initialize with void values..
-                for (items_ptr) |*item| item.* = ast.Lit {.Void = {}};
-            }
-
-            return StmtReturn {.NoReturn = {}};
-        }
     }
 
     unreachable;
