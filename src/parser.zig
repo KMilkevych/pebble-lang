@@ -178,8 +178,21 @@ pub const Parser = struct {
                         }};
 
                     },
-                    // TODO: Allow other kinds of post-fix operators
-                    // like obj.property and arr[idx]
+                    .LBRACK => {
+
+                        // Parse single expression
+                        const exp = try self.parseExprBp(0);
+                        try self.expectToken(Token {.RBRACK = {}});
+
+                        // Produce list index expression
+                        break :sw ast.Expr {.Lval = ast.Lval {
+                            .ListIndex = ast.ListIndex {
+                                .id = lhs,
+                                .idx = exp
+                            }
+                        }};
+                    },
+
                     else => unreachable,
                 };
 
@@ -211,6 +224,10 @@ pub const Parser = struct {
                         .lhs = lhs,
                         .rhs = rhs
                     }},
+                    .DOT => ast.Expr {.Lval = ast.Lval {.PropertyAccess = ast.PropertyAccess {
+                        .lhs = lhs,
+                        .prop = rhs
+                    }}},
                     else => ast.Expr {.BinOpExpr = ast.BinOpExpr {
                         .lhs = lhs,
                         .op = ast.BinOp.from_token(op_token).?,

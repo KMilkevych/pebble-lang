@@ -34,6 +34,7 @@ pub const TokenType: type = enum {
     FUN,
     LB,
     COMMA,
+    DOT,
     EOF,
     ERROR,
     ILLEGAL
@@ -84,6 +85,7 @@ pub const Token: type = union(TokenType) {
     // Utility
     LB: void,
     COMMA: void,
+    DOT: void,
     EOF: void,
     ERROR: []const u8,
     ILLEGAL: u8,
@@ -100,6 +102,7 @@ pub const Token: type = union(TokenType) {
             .EOF      => try writer.print("[EOF     ]:", .{}),
             .LB       => try writer.print("[LB      ]:", .{}),
             .COMMA    => try writer.print("[COMMA   ]:", .{}),
+            .DOT      => try writer.print("[DOT     ]:", .{}),
             .ERROR    => |val| try writer.print("[ERROR   ]: {s}", .{val}),
             .ILLEGAL  => |val| try writer.print("[ILLEGAL ]: {c}", .{val}),
             .LPAREN   => try writer.print("[LPAREN  ]:", .{}),
@@ -155,6 +158,8 @@ pub const Token: type = union(TokenType) {
             .PLUS, .MINUS => InfixPrecedence {.left = 9, .right = 10},
             .MUL, .DIV    => InfixPrecedence {.left = 11, .right = 12},
 
+            .DOT => InfixPrecedence {.left = 19, .right = 20},
+
             // Some are not operators
             else => null
         };
@@ -169,8 +174,8 @@ pub const Token: type = union(TokenType) {
 
     pub fn getPostfixPrecedence(self: Token) ?u8 {
         return switch(self) {
-            // TODO: Implement arr[idx] and object.field operators
             .LPAREN => 15,
+            .LBRACK => 17,
             else => null
         };
     }

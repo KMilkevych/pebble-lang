@@ -1513,3 +1513,124 @@ test "inline simple function definition with return" {
 
     try std.testing.expectEqualDeep(expected, tokens.items);
 }
+
+test "single make" {
+    const input =
+        \\declare list[10]
+    ;
+
+    var lx = lexer.Lexer.new(input, std.testing.allocator);
+
+    const tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit();
+
+    const expected: []const Token = &[_]Token{
+        Token {.DECLARE = {}},
+        Token {.IDENT = "list"},
+        Token {.LBRACK = {}},
+        Token {.INTLIT = 10},
+        Token {.RBRACK = {}},
+        Token {.EOF = {}}
+    };
+
+    try std.testing.expectEqualDeep(expected, tokens.items);
+}
+
+test "multiline multi make" {
+    const input =
+        \\declare list[10], anotherlist[5]
+        \\print 10
+    ;
+
+    var lx = lexer.Lexer.new(input, std.testing.allocator);
+
+    const tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit();
+
+    const expected: []const Token = &[_]Token{
+        Token {.DECLARE = {}},
+        Token {.IDENT = "list"},
+        Token {.LBRACK = {}},
+        Token {.INTLIT = 10},
+        Token {.RBRACK = {}},
+        Token {.COMMA = {}},
+        Token {.IDENT = "anotherlist"},
+        Token {.LBRACK = {}},
+        Token {.INTLIT = 5},
+        Token {.RBRACK = {}},
+        Token {.LB = {}},
+        Token {.PRINT = {}},
+        Token {.INTLIT = 10},
+        Token {.EOF = {}}
+    };
+
+    try std.testing.expectEqualDeep(expected, tokens.items);
+}
+
+test "property access" {
+    const input =
+        \\mylist.size
+    ;
+
+    var lx = lexer.Lexer.new(input, std.testing.allocator);
+
+    const tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit();
+
+    const expected: []const Token = &[_]Token{
+        Token {.IDENT = "mylist"},
+        Token {.DOT = {}},
+        Token {.IDENT = "size"},
+        Token {.EOF = {}}
+    };
+
+    try std.testing.expectEqualDeep(expected, tokens.items);
+}
+
+test "multi property access" {
+    const input =
+        \\obj.prop1.prop2
+    ;
+
+    var lx = lexer.Lexer.new(input, std.testing.allocator);
+
+    const tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit();
+
+    const expected: []const Token = &[_]Token{
+        Token {.IDENT = "obj"},
+        Token {.DOT = {}},
+        Token {.IDENT = "prop1"},
+        Token {.DOT = {}},
+        Token {.IDENT = "prop2"},
+        Token {.EOF = {}}
+    };
+
+    try std.testing.expectEqualDeep(expected, tokens.items);
+}
+
+test "multiline property access not allowed" {
+    const input =
+        \\obj
+        \\  .prop1
+        \\  .prop2
+    ;
+
+    var lx = lexer.Lexer.new(input, std.testing.allocator);
+
+    const tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit();
+
+    const expected: []const Token = &[_]Token{
+        Token {.IDENT = "obj"},
+        Token {.LB = {}},
+        Token {.DOT = {}},
+        Token {.IDENT = "prop1"},
+        Token {.LB = {}},
+        Token {.DOT = {}},
+        Token {.IDENT = "prop2"},
+        Token {.EOF = {}}
+    };
+
+    try std.testing.expectEqualDeep(expected, tokens.items);
+}

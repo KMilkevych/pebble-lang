@@ -14,6 +14,9 @@ const ArithmeticError = error {
 const ValueError = error {
     UndefinedVariable,
     UnexpectedVoidValue,
+    IndexOutOfBounds,
+    InvalidSize,
+    InvalidProperty,
 };
 const SemanticError = error {
     IdentifierAlreadyDeclared,
@@ -23,6 +26,9 @@ const SemanticError = error {
     NotCallable,
     WrongArgCount,
     InvalidUpcall,
+    NotList,
+    ListReference,
+    ReadOnlyProperty,
 };
 
 pub const EvalError = TypeError || ArithmeticError || ValueError || SemanticError;
@@ -35,7 +41,7 @@ pub const StmtReturn: type = union(enum) {
 };
 
 // Functions
-pub fn evalLval(lval: ast.Lval, env: *venv.Env) ValueError!ast.Lit {
+pub fn evalLval(lval: ast.Lval, env: *venv.Env) EvalError!ast.Lit {
     return switch (lval) {
         .Var => |v| {
 
@@ -50,10 +56,53 @@ pub fn evalLval(lval: ast.Lval, env: *venv.Env) ValueError!ast.Lit {
                     .Int => |ival| ast.Lit {.Int = ival},
                     .Bool => |bval| ast.Lit {.Bool = bval},
                     .Void => ValueError.UnexpectedVoidValue,
-                    .Callable => |fun| ast.Lit {.Callable = fun}
+                    .Callable => |fun| ast.Lit {.Callable = fun},
+                    .List => |lst| ast.Lit {.List = lst},
                 },
                 .Undefined => EvalError.UndefinedVariable
             };
+
+        },
+        .ListIndex => |l| {
+
+            // Evaluate identifier (should lookup in environment..)
+            const list: ast.List = switch (try evalExpr(l.id, env)) {
+                .List => |lst| lst.*,
+                .Int, .Bool, .Void, .Callable => return EvalError.NotList
+            };
+
+            // Evaluate index
+            const index: i64 = switch (try evalExpr(l.idx, env)) {
+                .Int => |i| i,
+                .Bool, .Void, .Callable, .List => return EvalError.MismatchedType
+            };
+
+            // Make sure index is within bounds
+            if (index < 0 or index >= list.len) return EvalError.IndexOutOfBounds;
+
+            // Lookup by index
+            return list.items[@as(usize, @intCast(index))];
+        },
+        .PropertyAccess => |p| {
+
+            // Evalutate property
+            const id: []const u8 = switch (p.prop.*) {
+                .Lval => |lv| switch (lv) {
+                    .Var => |v| v,
+                    else => return EvalError.InvalidProperty
+                },
+                else => return EvalError.InvalidProperty
+            };
+
+            // Evaluate left-hand-side
+            const lhs: ast.Lit = try evalExpr(p.lhs, env);
+            switch (lhs) {
+                .List => |l| {
+                    if (std.mem.eql(u8, id, "size")) return ast.Lit {.Int = @intCast(l.len)}
+                    else return EvalError.InvalidProperty;
+                },
+                else => return EvalError.InvalidProperty
+            }
 
         }
     };
@@ -70,23 +119,23 @@ pub fn evalBinOpExpr(expr: *const ast.BinOpExpr, env: *venv.Env) EvalError!ast.L
         .Add => switch (lhs) {
             .Int => |l| switch (rhs) {
                 .Int => |r| ast.Lit {.Int = l + r},
-                .Bool, .Callable, .Void => TypeError.MismatchedType,
+                .Bool, .Callable, .Void, .List => TypeError.MismatchedType,
             },
-            .Bool, .Callable, .Void => TypeError.MismatchedType,
+            .Bool, .Callable, .Void, .List => TypeError.MismatchedType,
         },
         .Sub => switch (lhs) {
             .Int => |l| switch (rhs) {
                 .Int => |r| ast.Lit {.Int = l - r},
-                .Bool, .Callable, .Void => TypeError.MismatchedType,
+                .Bool, .Callable, .Void, .List => TypeError.MismatchedType,
             },
-            .Bool, .Callable, .Void => TypeError.MismatchedType,
+            .Bool, .Callable, .Void, .List => TypeError.MismatchedType,
         },
         .Mul => switch (lhs) {
             .Int => |l| switch (rhs) {
                 .Int => |r| ast.Lit {.Int = l * r},
-                .Bool, .Callable, .Void => TypeError.MismatchedType,
+                .Bool, .Callable, .Void, .List => TypeError.MismatchedType,
             },
-            .Bool, .Callable, .Void => TypeError.MismatchedType,
+            .Bool, .Callable, .Void, .List => TypeError.MismatchedType,
         },
         .Div => switch (lhs) {
             .Int => |l| switch (rhs) {
@@ -94,64 +143,68 @@ pub fn evalBinOpExpr(expr: *const ast.BinOpExpr, env: *venv.Env) EvalError!ast.L
                     if (r == 0) return ArithmeticError.DivisionByZero;
                     return ast.Lit {.Int = @divFloor(l, r)};
                 },
-                .Bool, .Callable, .Void => TypeError.MismatchedType,
+                .Bool, .Callable, .Void, .List => TypeError.MismatchedType,
             },
-            .Bool, .Callable, .Void => TypeError.MismatchedType,
+            .Bool, .Callable, .Void, .List => TypeError.MismatchedType,
         },
         .And => switch (lhs) {
             .Bool => |l| switch (rhs) {
                 .Bool => |r| ast.Lit {.Bool = l and r},
-                .Int, .Callable, .Void => TypeError.MismatchedType,
+                .Int, .Callable, .Void, .List => TypeError.MismatchedType,
             },
-            .Int, .Callable, .Void => TypeError.MismatchedType,
+            .Int, .Callable, .Void, .List => TypeError.MismatchedType,
         },
         .Or => switch (lhs) {
             .Bool => |l| switch (rhs) {
                 .Bool => |r| ast.Lit {.Bool = l or r},
-                .Int, .Callable, .Void => TypeError.MismatchedType,
+                .Int, .Callable, .Void, .List => TypeError.MismatchedType,
             },
-            .Int, .Callable, .Void => TypeError.MismatchedType,
+            .Int, .Callable, .Void, .List => TypeError.MismatchedType,
         },
         .Eq => switch (lhs) {
             .Bool => |l| switch (rhs) {
                 .Bool => |r| ast.Lit {.Bool = l == r},
-                .Int, .Callable, .Void => ast.Lit {.Bool = false},
+                .Int, .Callable, .Void, .List => ast.Lit {.Bool = false},
             },
             .Int => |l| switch (rhs) {
-                .Bool, .Callable, .Void => ast.Lit {.Bool = false},
+                .Bool, .Callable, .Void, .List => ast.Lit {.Bool = false},
                 .Int => |r| ast.Lit {.Bool = l == r}
             },
             .Callable => |l| switch (rhs) {
                 .Callable => |r| ast.Lit {.Bool = std.meta.eql(l, r)},
-                .Int, .Bool, .Void => ast.Lit {.Bool = false},
+                .Int, .Bool, .Void, .List => ast.Lit {.Bool = false},
+            },
+            .List => |l| switch (rhs) {
+                .Int, .Bool, .Callable, .Void => ast.Lit {.Bool = false},
+                .List => |r| ast.Lit {.Bool = std.meta.eql(l.items, r.items)},
             },
             .Void => ast.Lit {.Bool = false},
         },
         .Lt => switch (lhs) {
-            .Bool, .Callable, .Void => TypeError.MismatchedType,
+            .Bool, .Callable, .Void, .List => TypeError.MismatchedType,
             .Int => |l| switch (rhs) {
-                .Bool, .Callable, .Void => TypeError.MismatchedType,
+                .Bool, .Callable, .Void, .List => TypeError.MismatchedType,
                 .Int => |r| ast.Lit {.Bool = l < r}
             }
         },
         .Gt => switch (lhs) {
-            .Bool, .Callable, .Void => TypeError.MismatchedType,
+            .Bool, .Callable, .Void, .List => TypeError.MismatchedType,
             .Int => |l| switch (rhs) {
-                .Bool, .Callable, .Void => TypeError.MismatchedType,
+                .Bool, .Callable, .Void, .List => TypeError.MismatchedType,
                 .Int => |r| ast.Lit {.Bool = l > r}
             }
         },
         .Lte => switch (lhs) {
-            .Bool, .Callable, .Void => TypeError.MismatchedType,
+            .Bool, .Callable, .Void, .List => TypeError.MismatchedType,
             .Int => |l| switch (rhs) {
-                .Bool, .Callable, .Void => TypeError.MismatchedType,
+                .Bool, .Callable, .Void, .List => TypeError.MismatchedType,
                 .Int => |r| ast.Lit {.Bool = l <= r}
             }
         },
         .Gte => switch (lhs) {
-            .Bool, .Callable, .Void => TypeError.MismatchedType,
+            .Bool, .Callable, .Void, .List => TypeError.MismatchedType,
             .Int => |l| switch (rhs) {
-                .Bool, .Callable, .Void => TypeError.MismatchedType,
+                .Bool, .Callable, .Void, .List => TypeError.MismatchedType,
                 .Int => |r| ast.Lit {.Bool = l >= r}
             }
         },
@@ -166,12 +219,12 @@ pub fn evalUnOpExpr(expr: *const ast.UnOpExpr, env: *venv.Env) EvalError!ast.Lit
     // Evaluate operator
     return switch (expr.op) {
         .Not => switch (lit) {
-            .Int, .Callable, .Void => TypeError.MismatchedType,
+            .Int, .Callable, .Void, .List => TypeError.MismatchedType,
             .Bool => |val| ast.Lit { .Bool = !val },
         },
         .Neg => switch (lit) {
             .Int => |val| ast.Lit { .Int = -val },
-            .Bool, .Callable, .Void => TypeError.MismatchedType,
+            .Bool, .Callable, .Void, .List => TypeError.MismatchedType,
         },
     };
 }
@@ -187,11 +240,16 @@ pub fn evalAssignExpr(expr: *const ast.AssignExpr, env: *venv.Env) EvalError!ast
     };
 
     // Evaluate right-hand side
-    const rhs: ast.Lit = try evalExpr(expr.rhs, env);
+    var rhs: ast.Lit = try evalExpr(expr.rhs, env);
 
-    // Make sure that right-hand side is NOT a callable
+    // Treat for errors (prevent callables, or make reference)
+    // also prevent extra references from callexpressions
     switch (rhs) {
         .Callable => return EvalError.InvalidUpcall,
+        .List => |lst| switch (expr.rhs.*) {
+            .CallExpr => {},
+            else => rhs = ast.Lit {.List = lst.makeReference()}
+        },
         else => {},
     }
 
@@ -199,8 +257,47 @@ pub fn evalAssignExpr(expr: *const ast.AssignExpr, env: *venv.Env) EvalError!ast
     switch (lval) {
         .Var => |id| {
             if (!env.isDeclaredGlobal(id)) return EvalError.UndefinedVariable;
+
+            // Destroy existing value
+            switch (env.lookup(id) orelse unreachable) {
+                .Undefined => {},
+                .Var => |v| switch (v) {
+                    .List => |l| l.destroyAll(env.allocator),
+                    .Callable => |c| c.destroyAll(env.allocator),
+                    .Int, .Bool, .Void => {}
+                }
+            }
+
+            // Insert new value
             env.insertScoping(id, venv.ObjectVal {.Var = rhs});
-        }
+        },
+        .ListIndex => |lidx| {
+
+            // Make sure that left-hand side is a list
+            const lst: ast.List = switch (try evalExpr(lidx.id, env)) {
+                .List => |l| l.*,
+                .Int, .Bool, .Void, .Callable => return EvalError.NotList
+            };
+
+            // Evaluate index
+            const idx: i64 = switch (try evalExpr(lidx.idx, env)) {
+                .Int => |i| i,
+                .Bool, .Void, .Callable, .List => return EvalError.MismatchedType,
+            };
+
+            // Bounds checking
+            if (idx < 0 or idx >= lst.len) return EvalError.IndexOutOfBounds;
+
+            // Destroy existing value
+            switch (lst.items[@as(usize, @intCast(idx))]) {
+                .List, .Callable => lst.items[@as(usize, @intCast(idx))].destroyAll(env.allocator),
+                .Int, .Bool, .Void => {}
+            }
+
+            // Perform assignment
+            lst.items[@as(usize, @intCast(idx))] = rhs;
+        },
+        .PropertyAccess => return EvalError.ReadOnlyProperty // TODO: Implement real properties
     }
 
     return rhs;
@@ -211,7 +308,7 @@ pub fn evalCallExpr(expr: *const ast.CallExpr, env: *venv.Env) EvalError!ast.Lit
     // Evaluate identifier
     const callable: ast.Callable = switch(try evalExpr(expr.id, env)) {
         .Callable => |fun| fun,
-        .Int, .Bool, .Void => return EvalError.NotCallable,
+        .Int, .Bool, .Void, .List => return EvalError.NotCallable,
     };
 
     // Create a scoped environment based on function closure
@@ -223,7 +320,11 @@ pub fn evalCallExpr(expr: *const ast.CallExpr, env: *venv.Env) EvalError!ast.Lit
     for (callable.params, expr.args) |id, arg| {
 
         // NOTE: Evaluating in current environment, not in closure or scoped
-        const r: ast.Lit = try evalExpr(arg, env);
+        var r: ast.Lit = try evalExpr(arg, env);
+        switch (r) {
+            .List => |l| r = ast.Lit {.List = l.makeReference()},
+            else => {}
+        }
 
         // Bind in environment directly
         // NOTE: Can also declare and then insertScoped
@@ -257,7 +358,7 @@ pub fn evalStmt(statement: ast.Stmt, env: *venv.Env) EvalError!StmtReturn {
     switch (statement) {
         .ExprStmt => |expr| {
 
-            // Evaluate and return underlying expression
+            // Evaluate the underlying expression
             _ = try evalExpr(expr, env);
             return StmtReturn {.NoReturn = {}};
         },
@@ -279,27 +380,83 @@ pub fn evalStmt(statement: ast.Stmt, env: *venv.Env) EvalError!StmtReturn {
                     else => return EvalError.NotIdentifier
                 };
 
-                // Evalute left-hand side lval to an identifier
-                // TODO: This can also be array indexing, object field/property, etc.
-                const id: []const u8 = switch (try lhs) {
-                    .Var => |id| id
-                };
+                switch (try lhs) {
+                    .Var => |id| {
 
-                // Do error checking
-                if (env.isDeclaredLocal(id)) return EvalError.IdentifierAlreadyDeclared;
+                        // Do error checking
+                        if (env.isDeclaredLocal(id)) return EvalError.IdentifierAlreadyDeclared;
 
-                // Add lhs identifier to environment
-                env.insert(id, venv.ObjectVal {.Undefined = {}});
+                        // Add lhs identifier to environment
+                        env.insert(id, venv.ObjectVal {.Undefined = {}});
 
-                // Evaluate assignment expression if exists
-                // TODO: Try to manually evaluate the assignment expression to fix
-                // declare x = 10
-                // { declare x = x + 1 }
-                // bug
-                switch (expr.*) {
-                    .AssignExpr => |*exp| _ = try evalAssignExpr(exp, env),
-                    .Lval => {},
-                    else => unreachable // Sensible here
+                        // Evalute assignment expression
+                        switch (expr.*) {
+                            .AssignExpr => |*exp| _ = try evalAssignExpr(exp, env),
+                            .Lval => {},
+                            else => unreachable // Sensible here
+                        }
+
+                    },
+                    .ListIndex => |li| {
+
+                        // Make sure that id is a Var
+                        const id: ast.Var = switch (li.id.*) {
+                            .Lval => |lv| switch (lv) {
+                                .Var => |v| v,
+                                .ListIndex, .PropertyAccess => return EvalError.NotIdentifier,
+                            },
+                            else => return EvalError.NotIdentifier
+                        };
+
+                        // Do error checking
+                        if (env.isDeclaredLocal(id)) return EvalError.IdentifierAlreadyDeclared;
+
+                        // Evaluate index (size)
+                        const size: i64 = switch (try evalExpr(li.idx, env)) {
+                            .Int => |i| i,
+                            .Bool, .Callable, .Void, .List => return EvalError.MismatchedType,
+                        };
+
+                        // Do size checking
+                        if (size < 0) return EvalError.InvalidSize;
+
+                        // Add identifier to environment
+                        const items_ptr = env.allocator.alloc(ast.Lit, @as(usize, @intCast(size))) catch unreachable;
+                        const ptr = env.allocator.create(ast.List) catch unreachable;
+
+                        ptr.* = ast.List {
+                            .len = @as(usize, @intCast(size)),
+                            .items = items_ptr,
+                        };
+                        env.insert(id, venv.ObjectVal {.Var = ast.Lit {.List = ptr}});
+
+                        // Check based on expression, if we get value
+                        const val: ast.Lit = switch (expr.*) {
+                            .AssignExpr => |as| try evalExpr(as.rhs, env),
+                            .Lval => ast.Lit {.Void = {}},
+                            else => unreachable
+                        };
+
+                        // Initialize list with values
+                        var idx: i64 = 0;
+                        while (idx < size) : (idx += 1) {
+                            const exp: ast.Expr = ast.Expr {
+                                .AssignExpr = ast.AssignExpr {
+                                    .lhs = &ast.Expr {
+                                        .Lval = ast.Lval {.ListIndex = ast.ListIndex {
+                                            .id = li.id,
+                                            .idx = &ast.Expr {.Lit = ast.Lit {.Int = idx}}
+                                        }}
+                                    },
+                                    .rhs = &ast.Expr {.Lit = val}
+                                }
+                            };
+
+                            // Use reflection-like code to built initialization
+                            _ = try evalExpr(&exp, env);
+                        }
+                    },
+                    .PropertyAccess => return EvalError.InvalidProperty
                 }
             }
 
@@ -334,7 +491,7 @@ pub fn evalStmt(statement: ast.Stmt, env: *venv.Env) EvalError!StmtReturn {
 
             // Check condition
             const res: bool = switch (try evalExpr(stmt.cond, env)) {
-                .Int, .Callable, .Void => return TypeError.MismatchedType,
+                .Int, .Callable, .Void, .List => return TypeError.MismatchedType,
                 .Bool => |b| b,
             };
 
@@ -357,7 +514,7 @@ pub fn evalStmt(statement: ast.Stmt, env: *venv.Env) EvalError!StmtReturn {
 
                 // Check condition
                 const res: bool = switch (try evalExpr(stmt.cond, env)) {
-                    .Int, .Callable, .Void => return TypeError.MismatchedType,
+                    .Int, .Callable, .Void, .List => return TypeError.MismatchedType,
                     .Bool => |b| b,
                 };
 
@@ -382,10 +539,15 @@ pub fn evalStmt(statement: ast.Stmt, env: *venv.Env) EvalError!StmtReturn {
         .ContinueStmt => return StmtReturn {.Continue = {}},
         .ReturnStmt => |expr| {
             // Evaluate expression and make sure its not a Callable
+            // If expr is a CallExpr, we do not make extra list reference
             const res: ast.Lit = try evalExpr(expr, env);
             return switch (res) {
                 .Callable => EvalError.InvalidUpcall,
-                else => StmtReturn {.Return = try evalExpr(expr, env)},
+                .List => |l| switch (expr.*) {
+                    .CallExpr => StmtReturn {.Return = res},
+                    else => StmtReturn {.Return = ast.Lit {.List = l.makeReference()}},
+                },
+                else => StmtReturn {.Return = res},
             };
         },
         .FunDefStmt => |stmt| {
