@@ -1873,3 +1873,68 @@ test "nested list function return" {
         env.lookup("mylist")
     );
 }
+
+test "multi list declaration with initialization" {
+
+    // Prepare environment
+    var env = venv.Env.new(std.testing.allocator);
+    defer env.deinit();
+
+    // Prepare procedure
+    const proc: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
+
+        ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {
+            &ast.Expr {.AssignExpr = ast.AssignExpr {
+                .lhs = &ast.Expr {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
+                    .id = &ast.Expr {.Lval = ast.Lval {.Var = "lst"}},
+                    .idx = &ast.Expr {.Lit = ast.Lit {.Int = 1}}
+                }}},
+                .rhs = &ast.Expr {.Lit = ast.Lit {.Int = -1}}
+            }},
+            &ast.Expr {.AssignExpr = ast.AssignExpr {
+                .lhs = &ast.Expr {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
+                    .id = &ast.Expr {.Lval = ast.Lval {.Var = "list"}},
+                    .idx = &ast.Expr {.Lit = ast.Lit {.Int = 5}}
+                }}},
+                .rhs = &ast.Expr {.Lval = ast.Lval {.Var = "lst"}}
+            }},
+        }}
+
+    }};
+
+    // Prepare expected list
+    const items1 = try std.testing.allocator.alloc(ast.Lit, 1);
+    defer std.testing.allocator.free(items1);
+    for (items1) |*item| item.* = ast.Lit {.Int = -1};
+
+    const ptr1 = try std.testing.allocator.create(ast.List);
+    defer std.testing.allocator.destroy(ptr1);
+    ptr1.* = ast.List {
+        .items = items1,
+        .len = 1,
+        .refs = 6
+    };
+
+    const items2 = try std.testing.allocator.alloc(ast.Lit, 5);
+    defer std.testing.allocator.free(items2);
+    for (items2) |*item| item.* = ast.Lit {.List = ptr1};
+
+    const ptr2 = try std.testing.allocator.create(ast.List);
+    defer std.testing.allocator.destroy(ptr2);
+    ptr2.* = ast.List {
+        .items = items2,
+        .len = 5,
+        .refs = 1
+    };
+
+    // Make sure that y is set with updated x
+    _ = try interpreter.evalProc(proc, &env);
+    try std.testing.expectEqualDeep(
+        venv.ObjectVal {.Var = ast.Lit {.List = ptr1}},
+        env.lookup("lst")
+    );
+    try std.testing.expectEqualDeep(
+        venv.ObjectVal {.Var = ast.Lit {.List = ptr2}},
+        env.lookup("list")
+    );
+}

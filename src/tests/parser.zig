@@ -2156,3 +2156,48 @@ test "print multi list index statement" {
 
     try std.testing.expectEqualDeep(expect, actual);
 }
+
+test "declare multi list with initialization" {
+
+    var tokens: std.ArrayList(Token) = std.ArrayList(Token).init(std.testing.allocator);
+    try tokens.append(Token {.DECLARE = {}});
+    try tokens.append(Token {.IDENT = "lst"});
+    try tokens.append(Token {.LBRACK = {}});
+    try tokens.append(Token {.INTLIT = 1});
+    try tokens.append(Token {.RBRACK = {}});
+    try tokens.append(Token {.EQ = {}});
+    try tokens.append(Token {.INTLIT = -1});
+    try tokens.append(Token {.COMMA = {}});
+    try tokens.append(Token {.IDENT = "list"});
+    try tokens.append(Token {.LBRACK = {}});
+    try tokens.append(Token {.INTLIT = 5});
+    try tokens.append(Token {.RBRACK = {}});
+    try tokens.append(Token {.EQ = {}});
+    try tokens.append(Token {.IDENT = "lst"});
+    try tokens.append(Token {.EOF = {}});
+    defer tokens.deinit();
+
+    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+
+    const expect: ast.Stmt = ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {
+        &ast.Expr {.AssignExpr = ast.AssignExpr {
+            .lhs = &ast.Expr {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
+                .id = &ast.Expr {.Lval = ast.Lval {.Var = "lst"}},
+                .idx = &ast.Expr {.Lit = ast.Lit {.Int = 1}}
+            }}},
+            .rhs = &ast.Expr {.Lit = ast.Lit {.Int = -1}}
+        }},
+        &ast.Expr {.AssignExpr = ast.AssignExpr {
+            .lhs = &ast.Expr {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
+                .id = &ast.Expr {.Lval = ast.Lval {.Var = "list"}},
+                .idx = &ast.Expr {.Lit = ast.Lit {.Int = 5}}
+            }}},
+            .rhs = &ast.Expr {.Lval = ast.Lval {.Var = "lst"}}
+        }},
+    }};
+
+    const actual: ast.Stmt = try prs.parseStmt();
+    defer actual.destroyAll(std.testing.allocator);
+
+    try std.testing.expectEqualDeep(expect, actual);
+}
