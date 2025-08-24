@@ -69,6 +69,34 @@ gives output
 #+begin_example
 89
 #+end_example
+** Lists
+#+begin_src
+function copy(dst, src) {
+    declare idx = 0
+    while idx < src.size {
+        dst[idx] = src[idx]
+        idx = idx + 1
+    }
+}
+
+function append(list, item) {
+    declare tmp[list.size + 1]
+    copy(tmp, list)
+    tmp[list.size] = item
+    return tmp
+}
+
+declare mylist[4] = 0
+print mylist
+
+mylist = append(mylist, 1)
+print mylist
+#+end_src
+gives output
+#+begin_example
+[0,0,0,0,]
+[0,0,0,0,1,]
+#+end_example
 
 * Features
 ** Implemented
@@ -80,11 +108,11 @@ gives output
 - COMMA declarations, e.g. ~declare x = 1, y = 2, z = 3~
 - Function definitions and function calls
 - Higher-order functions (passing functions as parameters)
+- Lists with dynamic types
 
 ** Not yet implemented
 - String types
 - Floating point types
-- Lists
 - Structs
 - For-loops
 - INPUT statements
