@@ -359,7 +359,13 @@ pub fn evalStmt(statement: ast.Stmt, env: *venv.Env) EvalError!StmtReturn {
         .ExprStmt => |expr| {
 
             // Evaluate the underlying expression
-            _ = try evalExpr(expr, env);
+            // NOTE: Inner-most return statement in CallExpr creates list reference
+            // which needs to be discarded for an ExprStmt
+            var lit: ast.Lit = try evalExpr(expr, env);
+            switch (expr.*) {
+                .AssignExpr => {},
+                .CallExpr, .BinOpExpr, .UnOpExpr, .Lit, .Lval => lit.destroyAll(env.allocator),
+            }
             return StmtReturn {.NoReturn = {}};
         },
         .DeclareStmt => |exprs| {

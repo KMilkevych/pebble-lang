@@ -2090,3 +2090,166 @@ test "list overwrite with list" {
         env.lookup("list")
     );
 }
+
+test "list function return unused" {
+
+    // Prepare environment
+    var env = venv.Env.new(std.testing.allocator);
+    defer env.deinit();
+
+    // Prepare procedure
+    const proc: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
+
+        ast.Stmt {.FunDefStmt = &ast.FunDefStmt {
+            .id = "f",
+            .params = &[_]ast.Var {},
+            .body = ast.Stmt {.BlockStmt = &[_]ast.Stmt {
+                ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {
+                    &ast.Expr {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
+                        .id = &ast.Expr {.Lval = ast.Lval {.Var = "lst"}},
+                        .idx = &ast.Expr {.Lit = ast.Lit {.Int = 10}}
+                    }}}
+                }},
+                ast.Stmt {.ReturnStmt = &ast.Expr {.Lval = ast.Lval {.Var = "lst"}}}
+            }}
+        }},
+
+        ast.Stmt {.ExprStmt =
+            &ast.Expr {.CallExpr = ast.CallExpr {
+                .id = &ast.Expr {.Lval = ast.Lval {.Var = "f"}},
+                .args = &[_]*const ast.Expr {}
+            }}
+        },
+
+    }};
+
+
+    // Make sure that y is set with updated x
+    _ = try interpreter.evalProc(proc, &env);
+}
+
+test "nested list function return unused" {
+
+    // Prepare environment
+    var env = venv.Env.new(std.testing.allocator);
+    defer env.deinit();
+
+    // Prepare procedure
+    const proc: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
+
+        ast.Stmt {.FunDefStmt = &ast.FunDefStmt {
+            .id = "f",
+            .params = &[_]ast.Var {},
+            .body = ast.Stmt {.BlockStmt = &[_]ast.Stmt {
+                ast.Stmt {.FunDefStmt = &ast.FunDefStmt {
+                    .id = "g",
+                    .params = &[_]ast.Var {},
+                    .body = ast.Stmt {.BlockStmt = &[_]ast.Stmt {
+                        ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {
+                            &ast.Expr {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
+                                .id = &ast.Expr {.Lval = ast.Lval {.Var = "lst"}},
+                                .idx = &ast.Expr {.Lit = ast.Lit {.Int = 10}}
+                            }}}
+                        }},
+                        ast.Stmt {.ReturnStmt = &ast.Expr {.Lval = ast.Lval {.Var = "lst"}}}
+                    }}
+                }},
+                ast.Stmt {.ReturnStmt = &ast.Expr{.CallExpr = ast.CallExpr {
+                    .id = &ast.Expr {.Lval = ast.Lval {.Var = "g"}},
+                    .args = &[_]*const ast.Expr {}
+                }}}
+            }}
+        }},
+
+        ast.Stmt {.ExprStmt =
+            &ast.Expr {.CallExpr = ast.CallExpr {
+                .id = &ast.Expr {.Lval = ast.Lval {.Var = "f"}},
+                .args = &[_]*const ast.Expr {}
+            }}
+        },
+
+    }};
+
+    // Make sure that y is set with updated x
+    _ = try interpreter.evalProc(proc, &env);
+}
+
+test "nested list function return assignexpr" {
+
+    // Prepare environment
+    var env = venv.Env.new(std.testing.allocator);
+    defer env.deinit();
+
+    // Prepare procedure
+    const proc: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
+
+        ast.Stmt {.FunDefStmt = &ast.FunDefStmt {
+            .id = "f",
+            .params = &[_]ast.Var {},
+            .body = ast.Stmt {.BlockStmt = &[_]ast.Stmt {
+                ast.Stmt {.FunDefStmt = &ast.FunDefStmt {
+                    .id = "g",
+                    .params = &[_]ast.Var {},
+                    .body = ast.Stmt {.BlockStmt = &[_]ast.Stmt {
+                        ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {
+                            &ast.Expr {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
+                                .id = &ast.Expr {.Lval = ast.Lval {.Var = "lst"}},
+                                .idx = &ast.Expr {.Lit = ast.Lit {.Int = 10}}
+                            }}},
+
+                            &ast.Expr {.Lval = ast.Lval {.Var = "var"}}
+                        }},
+                        ast.Stmt {.ReturnStmt = &ast.Expr {
+                            .AssignExpr = ast.AssignExpr {
+                                .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "var"}},
+                                .rhs = &ast.Expr {.Lval = ast.Lval {.Var = "lst"}}
+                            }
+                        }}
+                    }}
+                }},
+                ast.Stmt {.ReturnStmt = &ast.Expr{.CallExpr = ast.CallExpr {
+                    .id = &ast.Expr {.Lval = ast.Lval {.Var = "g"}},
+                    .args = &[_]*const ast.Expr {}
+                }}}
+            }}
+        }},
+
+        ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {
+            &ast.Expr {.AssignExpr = ast.AssignExpr {
+                .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "mylist"}},
+                .rhs = &ast.Expr {.CallExpr = ast.CallExpr {
+                    .id = &ast.Expr {.Lval = ast.Lval {.Var = "f"}},
+                    .args = &[_]*const ast.Expr {}
+                }}
+            }}
+        }},
+
+        ast.Stmt {.ExprStmt =
+            &ast.Expr {.CallExpr = ast.CallExpr {
+                .id = &ast.Expr {.Lval = ast.Lval {.Var = "f"}},
+                .args = &[_]*const ast.Expr {}
+            }}
+        },
+
+    }};
+
+    // Prepare expected list
+    const items = try std.testing.allocator.alloc(ast.Lit, 10);
+    defer std.testing.allocator.free(items);
+    for (items) |*item| item.* = ast.Lit {.Void = {}};
+
+    const ptr = try std.testing.allocator.create(ast.List);
+    defer std.testing.allocator.destroy(ptr);
+    ptr.* = ast.List {
+        .items = items,
+        .len = 10,
+        .refs = 1
+    };
+
+    // Make sure that y is set with updated x
+    _ = try interpreter.evalProc(proc, &env);
+    try std.testing.expectEqualDeep(
+        venv.ObjectVal {.Var = ast.Lit {.List = ptr}},
+        env.lookup("mylist")
+    );
+}
