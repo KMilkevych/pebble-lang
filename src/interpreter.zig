@@ -472,8 +472,9 @@ pub fn evalStmt(statement: ast.Stmt, env: *venv.Env) EvalError!StmtReturn {
             for (exprs) |expr| {
                 // Evaluate expression and print resulting literal
                 // TODO: Use parameterized writer and remove unreachable
-                const res: ast.Lit = try evalExpr(expr, env);
+                var res: ast.Lit = try evalExpr(expr, env);
                 std.io.getStdOut().writer().print("{} ", .{res}) catch unreachable;
+                res.destroyAll(env.allocator);
             }
             std.io.getStdOut().writer().print("\n", .{}) catch unreachable;
             return StmtReturn {.NoReturn = {}};
@@ -496,10 +497,13 @@ pub fn evalStmt(statement: ast.Stmt, env: *venv.Env) EvalError!StmtReturn {
         .IfElseStmt => |stmt| {
 
             // Check condition
-            const res: bool = switch (try evalExpr(stmt.cond, env)) {
+            var cond_res: ast.Lit = try evalExpr(stmt.cond, env);
+            const res: bool = switch (cond_res) {
                 .Int, .Callable, .Void, .List => return TypeError.MismatchedType,
                 .Bool => |b| b,
             };
+
+            cond_res.destroyAll(env.allocator);
 
             // Construct scoped environment
             var scopedEnv = env.newScoped();
@@ -519,10 +523,13 @@ pub fn evalStmt(statement: ast.Stmt, env: *venv.Env) EvalError!StmtReturn {
             while (true) {
 
                 // Check condition
-                const res: bool = switch (try evalExpr(stmt.cond, env)) {
+                var cond_lit: ast.Lit = try evalExpr(stmt.cond, env);
+                const res: bool = switch (cond_lit) {
                     .Int, .Callable, .Void, .List => return TypeError.MismatchedType,
                     .Bool => |b| b,
                 };
+
+                cond_lit.destroyAll(env.allocator);
 
                 if (!res) break;
 

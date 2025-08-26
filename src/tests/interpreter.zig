@@ -2253,3 +2253,39 @@ test "nested list function return assignexpr" {
         env.lookup("mylist")
     );
 }
+
+test "list function return print statement" {
+
+    // Prepare environment
+    var env = venv.Env.new(std.testing.allocator);
+    defer env.deinit();
+
+    // Prepare procedure
+    const proc: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
+
+        ast.Stmt {.FunDefStmt = &ast.FunDefStmt {
+            .id = "f",
+            .params = &[_]ast.Var {},
+            .body = ast.Stmt {.BlockStmt = &[_]ast.Stmt {
+                ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {
+                    &ast.Expr {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
+                        .id = &ast.Expr {.Lval = ast.Lval {.Var = "lst"}},
+                        .idx = &ast.Expr {.Lit = ast.Lit {.Int = 10}}
+                    }}}
+                }},
+                ast.Stmt {.ReturnStmt = &ast.Expr {.Lval = ast.Lval {.Var = "lst"}}}
+            }}
+        }},
+
+        ast.Stmt {.PrintStmt = &[_]*const ast.Expr {
+            &ast.Expr {.CallExpr = ast.CallExpr {
+                .id = &ast.Expr {.Lval = ast.Lval {.Var = "f"}},
+                .args = &[_]*const ast.Expr {}
+            }}
+        }},
+
+    }};
+
+    // Make sure that y is set with updated x
+    _ = try interpreter.evalProc(proc, &env);
+}
