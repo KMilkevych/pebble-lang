@@ -108,7 +108,8 @@ gives output
 - COMMA declarations, e.g. ~declare x = 1, y = 2, z = 3~
 - Function definitions and function calls
 - Higher-order functions (passing functions as parameters)
-- Lists with dynamic types
+- Lists with dynamic types using ~declare lst[size]~ syntax
+- Comments prefixed with ~;~ or ~#~
 
 ** Not yet implemented
 - String types
@@ -117,6 +118,7 @@ gives output
 - For-loops
 - INPUT statements
 - Anonymous functions, e.g. lambda expressions
+- Pass by reference
 
 ** Not planned
 - Function up-calling (returning functions)
