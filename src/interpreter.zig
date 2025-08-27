@@ -42,7 +42,7 @@ pub const StmtReturn: type = union(enum) {
 
 // Functions
 pub fn evalLval(lval: ast.Lval, env: *venv.Env) EvalError!ast.Lit {
-    return switch (lval) {
+    const lit: ast.Lit = sw: switch (lval) {
         .Var => |v| {
 
             // Lookup in environment
@@ -50,26 +50,27 @@ pub fn evalLval(lval: ast.Lval, env: *venv.Env) EvalError!ast.Lit {
             const value: venv.ObjectVal = env.lookup(v).?;
 
             // Evalue to a literal based on value
-            return switch(value) {
+            break :sw switch(value) {
                 .Var => |val| switch (val) {
                     // TODO: Figure out if this is needed as objectvals store literals
                     .Int => |ival| ast.Lit {.Int = ival},
                     .Bool => |bval| ast.Lit {.Bool = bval},
-                    .Void => ValueError.UnexpectedVoidValue,
+                    .Void => return ValueError.UnexpectedVoidValue,
                     .Callable => |fun| ast.Lit {.Callable = fun},
-                    .List => |lst| ast.Lit {.List = lst},
+                    .List => |lst| ast.Lit {.List = lst.makeReference()},
                 },
-                .Undefined => EvalError.UndefinedVariable
+                .Undefined => return EvalError.UndefinedVariable
             };
 
         },
         .ListIndex => |l| {
 
             // Evaluate identifier (should lookup in environment..)
-            const list: ast.List = switch (try evalExpr(l.id, env)) {
+            var list: ast.List = switch (try evalExpr(l.id, env)) {
                 .List => |lst| lst.*,
                 .Int, .Bool, .Void, .Callable => return EvalError.NotList
             };
+            list.destroyAll(env.allocator);
 
             // Evaluate index
             const index: i64 = switch (try evalExpr(l.idx, env)) {
@@ -80,8 +81,12 @@ pub fn evalLval(lval: ast.Lval, env: *venv.Env) EvalError!ast.Lit {
             // Make sure index is within bounds
             if (index < 0 or index >= list.len) return EvalError.IndexOutOfBounds;
 
-            // Lookup by index
-            return list.items[@as(usize, @intCast(index))];
+            // Lookup by index and return
+            const lit: ast.Lit = list.items[@as(usize, @intCast(index))];
+            break :sw switch (lit) {
+                .List => |lst| ast.Lit {.List = lst.makeReference()},
+                else => lit
+            };
         },
         .PropertyAccess => |p| {
 
@@ -95,10 +100,11 @@ pub fn evalLval(lval: ast.Lval, env: *venv.Env) EvalError!ast.Lit {
             };
 
             // Evaluate left-hand-side
-            const lhs: ast.Lit = try evalExpr(p.lhs, env);
+            var lhs: ast.Lit = try evalExpr(p.lhs, env);
+            defer lhs.destroyAll(env.allocator);
             switch (lhs) {
                 .List => |l| {
-                    if (std.mem.eql(u8, id, "size")) return ast.Lit {.Int = @intCast(l.len)}
+                    if (std.mem.eql(u8, id, "size")) break :sw ast.Lit {.Int = @intCast(l.len)}
                     else return EvalError.InvalidProperty;
                 },
                 else => return EvalError.InvalidProperty
@@ -106,6 +112,9 @@ pub fn evalLval(lval: ast.Lval, env: *venv.Env) EvalError!ast.Lit {
 
         }
     };
+
+    // Create reference on evaluation
+    return lit;
 }
 
 pub fn evalBinOpExpr(expr: *const ast.BinOpExpr, env: *venv.Env) EvalError!ast.Lit {
@@ -214,7 +223,8 @@ pub fn evalBinOpExpr(expr: *const ast.BinOpExpr, env: *venv.Env) EvalError!ast.L
 pub fn evalUnOpExpr(expr: *const ast.UnOpExpr, env: *venv.Env) EvalError!ast.Lit {
 
     // Evaluate operand
-    const lit = try evalExpr(expr.rhs, env);
+    var lit = try evalExpr(expr.rhs, env);
+    defer lit.destroyAll(env.allocator);
 
     // Evaluate operator
     return switch (expr.op) {
@@ -240,18 +250,7 @@ pub fn evalAssignExpr(expr: *const ast.AssignExpr, env: *venv.Env) EvalError!ast
     };
 
     // Evaluate right-hand side
-    var rhs: ast.Lit = try evalExpr(expr.rhs, env);
-
-    // Treat for errors (prevent callables, or make reference)
-    // also prevent extra references from callexpressions
-    switch (rhs) {
-        .Callable => return EvalError.InvalidUpcall,
-        .List => |lst| switch (expr.rhs.*) {
-            .CallExpr => {},
-            else => rhs = ast.Lit {.List = lst.makeReference()}
-        },
-        else => {},
-    }
+    const rhs: ast.Lit = try evalExpr(expr.rhs, env);
 
     // Perform assignment
     switch (lval) {
@@ -274,10 +273,12 @@ pub fn evalAssignExpr(expr: *const ast.AssignExpr, env: *venv.Env) EvalError!ast
         .ListIndex => |lidx| {
 
             // Make sure that left-hand side is a list
-            const lst: ast.List = switch (try evalExpr(lidx.id, env)) {
-                .List => |l| l.*,
+            // NOTE: this creates an additional reference
+            var lst: *ast.List = switch (try evalExpr(lidx.id, env)) {
+                .List => |l| l,
                 .Int, .Bool, .Void, .Callable => return EvalError.NotList
             };
+            lst.destroyAll(env.allocator);
 
             // Evaluate index
             const idx: i64 = switch (try evalExpr(lidx.idx, env)) {
@@ -300,7 +301,10 @@ pub fn evalAssignExpr(expr: *const ast.AssignExpr, env: *venv.Env) EvalError!ast
         .PropertyAccess => return EvalError.ReadOnlyProperty // TODO: Implement real properties
     }
 
-    return rhs;
+    return switch (rhs) {
+        .List => |l| ast.Lit {.List = l.makeReference()},
+        else => rhs,
+    };
 }
 
 pub fn evalCallExpr(expr: *const ast.CallExpr, env: *venv.Env) EvalError!ast.Lit {
@@ -320,11 +324,7 @@ pub fn evalCallExpr(expr: *const ast.CallExpr, env: *venv.Env) EvalError!ast.Lit
     for (callable.params, expr.args) |id, arg| {
 
         // NOTE: Evaluating in current environment, not in closure or scoped
-        var r: ast.Lit = try evalExpr(arg, env);
-        switch (r) {
-            .List => |l| r = ast.Lit {.List = l.makeReference()},
-            else => {}
-        }
+        const r: ast.Lit = try evalExpr(arg, env);
 
         // Bind in environment directly
         // NOTE: Can also declare and then insertScoped
@@ -346,7 +346,13 @@ pub fn evalExpr(expr: *const ast.Expr, env: *venv.Env) EvalError!ast.Lit {
         .BinOpExpr => |ex| evalBinOpExpr(&ex, env),
         .UnOpExpr => |ex| evalUnOpExpr(&ex, env),
         .Lval => |lval| evalLval(lval, env),
-        .Lit => |lit| lit,
+
+        // NOTE: We create an extra reference here, assuming this is bottom level
+        .Lit => |lit| switch (lit) {
+            .List => |l| ast.Lit {.List = l.makeReference()},
+            else => lit
+        },
+
         .AssignExpr => |ex| evalAssignExpr(&ex, env),
         .CallExpr => |ex| evalCallExpr(&ex, env),
     };
@@ -362,10 +368,8 @@ pub fn evalStmt(statement: ast.Stmt, env: *venv.Env) EvalError!StmtReturn {
             // NOTE: Inner-most return statement in CallExpr creates list reference
             // which needs to be discarded for an ExprStmt
             var lit: ast.Lit = try evalExpr(expr, env);
-            switch (expr.*) {
-                .AssignExpr => {},
-                .CallExpr, .BinOpExpr, .UnOpExpr, .Lit, .Lval => lit.destroyAll(env.allocator),
-            }
+            lit.destroyAll(env.allocator);
+
             return StmtReturn {.NoReturn = {}};
         },
         .DeclareStmt => |exprs| {
@@ -397,7 +401,10 @@ pub fn evalStmt(statement: ast.Stmt, env: *venv.Env) EvalError!StmtReturn {
 
                         // Evalute assignment expression
                         switch (expr.*) {
-                            .AssignExpr => |*exp| _ = try evalAssignExpr(exp, env),
+                            .AssignExpr => |*exp| {
+                                var val: ast.Lit = try evalAssignExpr(exp, env);
+                                val.destroyAll(env.allocator);
+                            },
                             .Lval => {},
                             else => unreachable // Sensible here
                         }
@@ -436,30 +443,31 @@ pub fn evalStmt(statement: ast.Stmt, env: *venv.Env) EvalError!StmtReturn {
                         };
                         env.insert(id, venv.ObjectVal {.Var = ast.Lit {.List = ptr}});
 
-                        // Check based on expression, if we get value
-                        const val: ast.Lit = switch (expr.*) {
+                        // Evaluate right-hand side and destroy if exists
+                        var val: ast.Lit = switch (expr.*) {
                             .AssignExpr => |as| try evalExpr(as.rhs, env),
                             .Lval => ast.Lit {.Void = {}},
                             else => unreachable
                         };
+                        defer val.destroyAll(env.allocator);
 
                         // Initialize list with values
                         var idx: i64 = 0;
                         while (idx < size) : (idx += 1) {
-                            const exp: ast.Expr = ast.Expr {
-                                .AssignExpr = ast.AssignExpr {
-                                    .lhs = &ast.Expr {
-                                        .Lval = ast.Lval {.ListIndex = ast.ListIndex {
-                                            .id = li.id,
-                                            .idx = &ast.Expr {.Lit = ast.Lit {.Int = idx}}
-                                        }}
-                                    },
-                                    .rhs = &ast.Expr {.Lit = val}
-                                }
+
+                            const exp: ast.AssignExpr = ast.AssignExpr {
+                                .lhs = &ast.Expr {
+                                    .Lval = ast.Lval {.ListIndex = ast.ListIndex {
+                                        .id = li.id,
+                                        .idx = &ast.Expr {.Lit = ast.Lit {.Int = idx}}
+                                    }}
+                                },
+                                .rhs = &ast.Expr {.Lit = val}
                             };
 
-                            // Use reflection-like code to built initialization
-                            _ = try evalExpr(&exp, env);
+                            // Use reflection-like code to build initialization
+                            var lit: ast.Lit = try evalAssignExpr(&exp, env);
+                            lit.destroyAll(env.allocator);
                         }
                     },
                     .PropertyAccess => return EvalError.InvalidProperty
@@ -556,10 +564,6 @@ pub fn evalStmt(statement: ast.Stmt, env: *venv.Env) EvalError!StmtReturn {
             const res: ast.Lit = try evalExpr(expr, env);
             return switch (res) {
                 .Callable => EvalError.InvalidUpcall,
-                .List => |l| switch (expr.*) {
-                    .CallExpr => StmtReturn {.Return = res},
-                    else => StmtReturn {.Return = ast.Lit {.List = l.makeReference()}},
-                },
                 else => StmtReturn {.Return = res},
             };
         },

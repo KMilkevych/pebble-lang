@@ -1413,20 +1413,20 @@ test "make statement test" {
         ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {
             &ast.Expr {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
                 .id = &ast.Expr {.Lval = ast.Lval {.Var = "lst"}},
-                .idx = &ast.Expr {.Lit = ast.Lit {.Int = 1}}
+                .idx = &ast.Expr {.Lit = ast.Lit {.Int = 4}}
             }}},
         }},
 
     }};
 
-    var items = try std.testing.allocator.alloc(ast.Lit, 1);
+    const items = try std.testing.allocator.alloc(ast.Lit, 4);
     defer std.testing.allocator.free(items);
-    items[0] = ast.Lit {.Void = {}};
+    for (items) |*item| item.* = ast.Lit {.Void = {}};
 
     const ptr = try std.testing.allocator.create(ast.List);
     defer std.testing.allocator.destroy(ptr);
     ptr.* = ast.List {
-        .len = 1,
+        .len = 4,
         .items = items
     };
 
