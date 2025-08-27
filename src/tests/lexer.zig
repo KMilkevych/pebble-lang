@@ -1634,3 +1634,74 @@ test "multiline property access not allowed" {
 
     try std.testing.expectEqualDeep(expected, tokens.items);
 }
+
+test "line comment" {
+    const input =
+        \\ # this is a comment
+        \\ ; this is another comment
+        \\ declare x = 0
+    ;
+
+    var lx = lexer.Lexer.new(input, std.testing.allocator);
+
+    const tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit();
+
+    const expected: []const Token = &[_]Token{
+        Token {.DECLARE = {}},
+        Token {.IDENT = "x"},
+        Token {.EQ = {}},
+        Token {.INTLIT = 0},
+        Token {.EOF = {}}
+    };
+
+    try std.testing.expectEqualDeep(expected, tokens.items);
+}
+
+test "after line comment" {
+    const input =
+        \\ declare x = 0 ; this is a descriptive comment
+        \\ print x # this is another descriptive comment
+    ;
+
+    var lx = lexer.Lexer.new(input, std.testing.allocator);
+
+    const tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit();
+
+    const expected: []const Token = &[_]Token{
+        Token {.DECLARE = {}},
+        Token {.IDENT = "x"},
+        Token {.EQ = {}},
+        Token {.INTLIT = 0},
+        Token {.LB = {}},
+        Token {.PRINT = {}},
+        Token {.IDENT = "x"},
+        Token {.EOF = {}}
+    };
+
+    try std.testing.expectEqualDeep(expected, tokens.items);
+}
+
+test "inline comment" {
+    const input =
+        \\ declare my_;variable = 0 <-- inline comment
+        \\ print my_#variable print 0
+    ;
+
+    var lx = lexer.Lexer.new(input, std.testing.allocator);
+
+    const tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit();
+
+    const expected: []const Token = &[_]Token{
+        Token {.DECLARE = {}},
+        Token {.IDENT = "my_"},
+        Token {.LB = {}},
+        Token {.PRINT = {}},
+        Token {.IDENT = "my_"},
+        Token {.EOF = {}}
+    };
+
+    try std.testing.expectEqualDeep(expected, tokens.items);
+}

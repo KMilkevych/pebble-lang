@@ -18,6 +18,7 @@ const is_operator_digit: [256]bool = createLU("+-/*|&()[]{}=!<>\n,.");
 const is_ident_digit: [256]bool = createLU(
     "abcdefghijklmnopqrstuvwxyz_ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 );
+const is_comment_digit: [256]bool = createLU(";#");
 
 fn contains(arr: []const []const u8, item: []const u8) bool {
     for (arr) |v| if (std.mem.eql(u8, v, item)) return true;
@@ -119,6 +120,16 @@ pub const Lexer = struct {
 
     fn inputBackSlice(self: *Self, charcount: usize) []const u8 {
         return self.input[(self.pos - charcount)..self.pos];
+    }
+
+    fn lexComment(self: *Self) error{EndOfFile}!void {
+        var c = try self.topdigit();
+        while (c != '\n') {
+            c = self.advance() catch |err| switch (err) {
+                error.EndOfFile => break,
+                else => unreachable
+            };
+        }
     }
 
     fn lexInt(self: *Self) !token.Token {
@@ -240,6 +251,9 @@ pub const Lexer = struct {
             tok = self.lexOperator() catch unreachable;
         } else if (is_ident_digit[c]) {
             tok = self.lexIdent() catch unreachable;
+        } else if (is_comment_digit[c]) {
+            self.lexComment() catch unreachable;
+            tok = self.lexToken();
         } else {
             // This is RAW token produce
             tok = token.Token {.ILLEGAL = c};

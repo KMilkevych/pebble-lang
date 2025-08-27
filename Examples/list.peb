@@ -1,0 +1,20 @@
+function copy(dst, src) {
+    declare idx = 0
+    while idx < src.size {
+        dst[idx] = src[idx]
+        idx = idx + 1
+    }
+}
+
+function append(list, item) {
+    declare tmp[list.size + 1]
+    copy(tmp, list)
+    tmp[list.size] = item
+    return tmp
+}
+
+declare mylist[4] = 0
+print mylist
+
+mylist = append(mylist, 1)
+print mylistt
