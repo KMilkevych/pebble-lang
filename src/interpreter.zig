@@ -340,6 +340,26 @@ pub fn evalCallExpr(expr: *const ast.CallExpr, env: *venv.Env) EvalError!ast.Lit
     };
 }
 
+pub fn evalListExpr(exprs: []const *const ast.Expr, env: *venv.Env) EvalError!ast.Lit {
+
+    // Create accumulator for contents
+    var acc: std.ArrayList(ast.Lit) = .init(env.allocator);
+    errdefer acc.deinit();
+    errdefer for (acc.items) |*item| item.destroyAll(env.allocator);
+
+    // Evaluate each entry
+    for (exprs) |expr| acc.append(try evalExpr(expr, env)) catch unreachable;
+
+    // Create a list literal
+    const ptr = env.allocator.create(ast.List) catch unreachable;
+    ptr.* = ast.List {
+        .len = acc.items.len,
+        .items = acc.toOwnedSlice() catch unreachable,
+    };
+
+    return ast.Lit {.List = ptr};
+}
+
 
 pub fn evalExpr(expr: *const ast.Expr, env: *venv.Env) EvalError!ast.Lit {
     return switch (expr.*) {
@@ -355,6 +375,7 @@ pub fn evalExpr(expr: *const ast.Expr, env: *venv.Env) EvalError!ast.Lit {
 
         .AssignExpr => |ex| evalAssignExpr(&ex, env),
         .CallExpr => |ex| evalCallExpr(&ex, env),
+        .ListExpr => |ex| evalListExpr(ex, env),
     };
 }
 

@@ -69,7 +69,7 @@ pub const List = struct {
         _ = fmt;
         _ = options;
         try writer.print("[", .{});
-        for (self.items) |item| try writer.print("{s},", .{item});
+        for (self.items) |item| try writer.print("{},", .{item});
         try writer.print("]", .{});
     }
 
@@ -367,6 +367,7 @@ pub const Expr = union(enum) {
     Lval: Lval,
     AssignExpr: AssignExpr,
     CallExpr: CallExpr,
+    ListExpr: []const *const Expr,
 
     pub fn destroyAll(self: *const Expr, allocator: std.mem.Allocator) void {
         switch (self.*) {
@@ -376,6 +377,10 @@ pub const Expr = union(enum) {
             .Lval => |*lval| lval.destroyAll(allocator),
             .AssignExpr => |*expr| expr.destroyAll(allocator),
             .CallExpr => |*expr| expr.destroyAll(allocator),
+            .ListExpr => |exprs| {
+                for (exprs) |expr| expr.destroyAll(allocator);
+                allocator.free(exprs);
+            }
         }
         allocator.destroy(self);
     }
@@ -393,6 +398,11 @@ pub const Expr = union(enum) {
             .Lval => |lval| lval.format(fmt, options, writer),
             .AssignExpr => |expr| expr.format(fmt, options, writer),
             .CallExpr => |expr| expr.format(fmt, options, writer),
+            .ListExpr => |exprs| {
+                try writer.print("<", .{});
+                for (exprs) |expr| try writer.print("{},", .{expr});
+                try writer.print(">", .{});
+            }
         };
     }
 };

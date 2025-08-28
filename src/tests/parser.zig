@@ -669,9 +669,7 @@ test "unfinished expression" {
     var prs: parser.Parser = .new(tokens, std.testing.allocator);
 
     const result: parser.ParseError!*ast.Expr = prs.parseExpr();
-
-    const expect: parser.ParseError = parser.ParseError.ExpectedExpression;
-    try std.testing.expectEqualDeep(expect, result);
+    try std.testing.expectEqualDeep(parser.ParseError.ExpectedExpression, result);
 }
 
 test "expect token or EOF" {
@@ -2264,4 +2262,123 @@ test "multi property access" {
     };
 
     try std.testing.expectEqualDeep(expect, result.*);
+}
+
+test "list immediate expression" {
+
+    var tokens: std.ArrayList(Token) = .init(std.testing.allocator);
+    defer tokens.deinit();
+
+    try tokens.append(Token {.DECLARE = {}});
+    try tokens.append(Token {.IDENT = "x"});
+    try tokens.append(Token {.LB = {}});
+    try tokens.append(Token {.IDENT = "x"});
+    try tokens.append(Token {.EQ = {}});
+    try tokens.append(Token {.LT = {}});
+    try tokens.append(Token {.INTLIT = 1});
+    try tokens.append(Token {.COMMA = {}});
+    try tokens.append(Token {.INTLIT = 2});
+    try tokens.append(Token {.COMMA = {}});
+    try tokens.append(Token {.INTLIT = 3});
+    try tokens.append(Token {.GT = {}});
+    try tokens.append(Token {.EOF = {}});
+    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+
+    const result: ast.Proc = try prs.parseProcedure();
+    defer result.destroyAll(std.testing.allocator);
+
+
+    const expect: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
+
+        ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {&ast.Expr {.Lval = ast.Lval {.Var = "x"}}}},
+
+        ast.Stmt {.ExprStmt = &ast.Expr {.AssignExpr = ast.AssignExpr {
+            .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
+            .rhs = &ast.Expr {.ListExpr = &[_]*const ast.Expr {
+                &ast.Expr {.Lit = ast.Lit {.Int = 1}},
+                &ast.Expr {.Lit = ast.Lit {.Int = 2}},
+                &ast.Expr {.Lit = ast.Lit {.Int = 3}},
+            }}
+        }}},
+
+    }};
+
+    try std.testing.expectEqualDeep(expect, result);
+}
+
+test "nested list immediate expression" {
+
+    var tokens: std.ArrayList(Token) = .init(std.testing.allocator);
+    defer tokens.deinit();
+
+    try tokens.append(Token {.DECLARE = {}});
+    try tokens.append(Token {.IDENT = "x"});
+    try tokens.append(Token {.LB = {}});
+    try tokens.append(Token {.IDENT = "x"});
+    try tokens.append(Token {.EQ = {}});
+    try tokens.append(Token {.LT = {}});
+    try tokens.append(Token {.LT = {}});
+    try tokens.append(Token {.LT = {}});
+    try tokens.append(Token {.INTLIT = 1});
+    try tokens.append(Token {.COMMA = {}});
+    try tokens.append(Token {.INTLIT = 2});
+    try tokens.append(Token {.COMMA = {}});
+    try tokens.append(Token {.INTLIT = 3});
+    try tokens.append(Token {.GT = {}});
+    try tokens.append(Token {.GT = {}});
+    try tokens.append(Token {.GT = {}});
+    try tokens.append(Token {.EOF = {}});
+    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+
+    const result: ast.Proc = try prs.parseProcedure();
+    defer result.destroyAll(std.testing.allocator);
+
+
+    const expect: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
+
+        ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {&ast.Expr {.Lval = ast.Lval {.Var = "x"}}}},
+
+        ast.Stmt {.ExprStmt = &ast.Expr {.AssignExpr = ast.AssignExpr {
+            .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
+            .rhs = &ast.Expr {.ListExpr = &[_]*const ast.Expr {
+                &ast.Expr {.ListExpr = &[_]*const ast.Expr {
+                    &ast.Expr {.ListExpr = &[_]*const ast.Expr {
+                        &ast.Expr {.Lit = ast.Lit {.Int = 1}},
+                        &ast.Expr {.Lit = ast.Lit {.Int = 2}},
+                        &ast.Expr {.Lit = ast.Lit {.Int = 3}},
+                    }}
+                }}
+            }}
+        }}},
+
+    }};
+
+    try std.testing.expectEqualDeep(expect, result);
+}
+
+test "list immediate unmatched brackets" {
+
+    var tokens: std.ArrayList(Token) = .init(std.testing.allocator);
+    defer tokens.deinit();
+
+    try tokens.append(Token {.DECLARE = {}});
+    try tokens.append(Token {.IDENT = "x"});
+    try tokens.append(Token {.LB = {}});
+    try tokens.append(Token {.IDENT = "x"});
+    try tokens.append(Token {.EQ = {}});
+    try tokens.append(Token {.LT = {}});
+    try tokens.append(Token {.LT = {}});
+    try tokens.append(Token {.INTLIT = 1});
+    try tokens.append(Token {.COMMA = {}});
+    try tokens.append(Token {.INTLIT = 2});
+    try tokens.append(Token {.COMMA = {}});
+    try tokens.append(Token {.INTLIT = 3});
+    try tokens.append(Token {.GT = {}});
+    try tokens.append(Token {.EOF = {}});
+    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+
+    const result: parser.ParseError!ast.Proc = prs.parseProcedure();
+
+    const expect: parser.ParseError = parser.ParseError.ExpectedAngleClose;
+    try std.testing.expectEqualDeep(expect, result);
 }
