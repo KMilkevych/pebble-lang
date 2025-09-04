@@ -2382,3 +2382,356 @@ test "list immediate unmatched brackets" {
     const expect: parser.ParseError = parser.ParseError.ExpectedAngleClose;
     try std.testing.expectEqualDeep(expect, result);
 }
+
+test "list immediates binary expression" {
+
+    var tokens: std.ArrayList(Token) = .init(std.testing.allocator);
+    defer tokens.deinit();
+
+    try tokens.append(Token {.LT = {}});
+    try tokens.append(Token {.INTLIT = 1});
+    try tokens.append(Token {.COMMA = {}});
+    try tokens.append(Token {.INTLIT = 2});
+    try tokens.append(Token {.COMMA = {}});
+    try tokens.append(Token {.INTLIT = 3});
+    try tokens.append(Token {.GT = {}});
+    try tokens.append(Token {.DEQ = {}});
+    try tokens.append(Token {.LT = {}});
+    try tokens.append(Token {.INTLIT = 1});
+    try tokens.append(Token {.COMMA = {}});
+    try tokens.append(Token {.INTLIT = 2});
+    try tokens.append(Token {.COMMA = {}});
+    try tokens.append(Token {.INTLIT = 3});
+    try tokens.append(Token {.GT = {}});
+    try tokens.append(Token {.EOF = {}});
+    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+
+    const result: *ast.Expr = try prs.parseExpr();
+    defer result.destroyAll(std.testing.allocator);
+
+    const expect = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
+        .lhs = &ast.Expr {.ListExpr = &[_]*const ast.Expr {
+            &ast.Expr {.Lit = ast.Lit {.Int = 1}},
+            &ast.Expr {.Lit = ast.Lit {.Int = 2}},
+            &ast.Expr {.Lit = ast.Lit {.Int = 3}},
+        }},
+        .op = .Eq,
+        .rhs = &ast.Expr {.ListExpr = &[_]*const ast.Expr {
+            &ast.Expr {.Lit = ast.Lit {.Int = 1}},
+            &ast.Expr {.Lit = ast.Lit {.Int = 2}},
+            &ast.Expr {.Lit = ast.Lit {.Int = 3}},
+        }},
+    }};
+    try std.testing.expectEqualDeep(expect, result);
+}
+
+
+test "list immediates binary expression lt" {
+
+    var tokens: std.ArrayList(Token) = .init(std.testing.allocator);
+    defer tokens.deinit();
+
+    // <1, 2, 3> < <1, 2, 3>
+    try tokens.append(Token {.LT = {}});
+    try tokens.append(Token {.INTLIT = 1});
+    try tokens.append(Token {.COMMA = {}});
+    try tokens.append(Token {.INTLIT = 2});
+    try tokens.append(Token {.COMMA = {}});
+    try tokens.append(Token {.INTLIT = 3});
+    try tokens.append(Token {.GT = {}});
+    try tokens.append(Token {.LT = {}});
+    try tokens.append(Token {.LT = {}});
+    try tokens.append(Token {.INTLIT = 1});
+    try tokens.append(Token {.COMMA = {}});
+    try tokens.append(Token {.INTLIT = 2});
+    try tokens.append(Token {.COMMA = {}});
+    try tokens.append(Token {.INTLIT = 3});
+    try tokens.append(Token {.GT = {}});
+    try tokens.append(Token {.EOF = {}});
+    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+
+    const result: *ast.Expr = try prs.parseExpr();
+    defer result.destroyAll(std.testing.allocator);
+
+    const expect = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
+        .lhs = &ast.Expr {.ListExpr = &[_]*const ast.Expr {
+            &ast.Expr {.Lit = ast.Lit {.Int = 1}},
+            &ast.Expr {.Lit = ast.Lit {.Int = 2}},
+            &ast.Expr {.Lit = ast.Lit {.Int = 3}},
+        }},
+        .op = .Lt,
+        .rhs = &ast.Expr {.ListExpr = &[_]*const ast.Expr {
+            &ast.Expr {.Lit = ast.Lit {.Int = 1}},
+            &ast.Expr {.Lit = ast.Lit {.Int = 2}},
+            &ast.Expr {.Lit = ast.Lit {.Int = 3}},
+        }},
+    }};
+    try std.testing.expectEqualDeep(expect, result);
+}
+
+test "list immediates binary expression gt" {
+
+    var tokens: std.ArrayList(Token) = .init(std.testing.allocator);
+    defer tokens.deinit();
+
+    // <1,2,3> > <1,2,3>
+    try tokens.append(Token {.LT = {}});
+    try tokens.append(Token {.INTLIT = 1});
+    try tokens.append(Token {.COMMA = {}});
+    try tokens.append(Token {.INTLIT = 2});
+    try tokens.append(Token {.COMMA = {}});
+    try tokens.append(Token {.INTLIT = 3});
+    try tokens.append(Token {.GT = {}});
+    try tokens.append(Token {.GT = {}});
+    try tokens.append(Token {.LT = {}});
+    try tokens.append(Token {.INTLIT = 1});
+    try tokens.append(Token {.COMMA = {}});
+    try tokens.append(Token {.INTLIT = 2});
+    try tokens.append(Token {.COMMA = {}});
+    try tokens.append(Token {.INTLIT = 3});
+    try tokens.append(Token {.GT = {}});
+    try tokens.append(Token {.EOF = {}});
+    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+
+    const result: *ast.Expr = try prs.parseExpr();
+    defer result.destroyAll(std.testing.allocator);
+
+    const expect = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
+        .lhs = &ast.Expr {.ListExpr = &[_]*const ast.Expr {
+            &ast.Expr {.Lit = ast.Lit {.Int = 1}},
+            &ast.Expr {.Lit = ast.Lit {.Int = 2}},
+            &ast.Expr {.Lit = ast.Lit {.Int = 3}},
+        }},
+        .op = .Gt,
+        .rhs = &ast.Expr {.ListExpr = &[_]*const ast.Expr {
+            &ast.Expr {.Lit = ast.Lit {.Int = 1}},
+            &ast.Expr {.Lit = ast.Lit {.Int = 2}},
+            &ast.Expr {.Lit = ast.Lit {.Int = 3}},
+        }},
+    }};
+    try std.testing.expectEqualDeep(expect, result);
+}
+
+test "list immediates call expression" {
+
+    var tokens: std.ArrayList(Token) = .init(std.testing.allocator);
+    defer tokens.deinit();
+
+    try tokens.append(Token {.IDENT = "f"});
+    try tokens.append(Token {.LPAREN = {}});
+    try tokens.append(Token {.LT = {}});
+    try tokens.append(Token {.INTLIT = 1});
+    try tokens.append(Token {.COMMA = {}});
+    try tokens.append(Token {.INTLIT = 2});
+    try tokens.append(Token {.COMMA = {}});
+    try tokens.append(Token {.INTLIT = 3});
+    try tokens.append(Token {.GT = {}});
+    try tokens.append(Token {.COMMA = {}});
+    try tokens.append(Token {.LT = {}});
+    try tokens.append(Token {.INTLIT = 1});
+    try tokens.append(Token {.COMMA = {}});
+    try tokens.append(Token {.INTLIT = 2});
+    try tokens.append(Token {.COMMA = {}});
+    try tokens.append(Token {.INTLIT = 3});
+    try tokens.append(Token {.GT = {}});
+    try tokens.append(Token {.RPAREN = {}});
+    try tokens.append(Token {.EOF = {}});
+    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+
+    const result: *ast.Expr = try prs.parseExpr();
+    defer result.destroyAll(std.testing.allocator);
+
+    const expect = &ast.Expr {.CallExpr = ast.CallExpr {
+        .id = &ast.Expr {.Lval = ast.Lval {.Var = "f"}},
+        .args = &[_]*const ast.Expr {
+            &ast.Expr {.ListExpr = &[_]*const ast.Expr {
+                &ast.Expr {.Lit = ast.Lit {.Int = 1}},
+                &ast.Expr {.Lit = ast.Lit {.Int = 2}},
+                &ast.Expr {.Lit = ast.Lit {.Int = 3}},
+            }},
+
+            &ast.Expr {.ListExpr = &[_]*const ast.Expr {
+                &ast.Expr {.Lit = ast.Lit {.Int = 1}},
+                &ast.Expr {.Lit = ast.Lit {.Int = 2}},
+                &ast.Expr {.Lit = ast.Lit {.Int = 3}},
+            }},
+        }
+    }};
+
+    try std.testing.expectEqualDeep(expect, result);
+}
+
+
+test "list immediates with less than" {
+
+    var tokens: std.ArrayList(Token) = .init(std.testing.allocator);
+    defer tokens.deinit();
+
+    // <1,2, 3 < < 4 > >
+    try tokens.append(Token {.LT = {}});
+    try tokens.append(Token {.INTLIT = 1});
+    try tokens.append(Token {.COMMA = {}});
+    try tokens.append(Token {.INTLIT = 2});
+    try tokens.append(Token {.COMMA = {}});
+    try tokens.append(Token {.INTLIT = 3});
+    try tokens.append(Token {.LT = {}});
+    try tokens.append(Token {.LT = {}});
+    try tokens.append(Token {.INTLIT = 4});
+    try tokens.append(Token {.GT = {}});
+    try tokens.append(Token {.GT = {}});
+    try tokens.append(Token {.EOF = {}});
+    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+
+    const result: *ast.Expr = try prs.parseExpr();
+    defer result.destroyAll(std.testing.allocator);
+
+    const expect = &ast.Expr {.ListExpr = &[_]*const ast.Expr {
+        &ast.Expr {.Lit = ast.Lit {.Int = 1}},
+        &ast.Expr {.Lit = ast.Lit {.Int = 2}},
+        &ast.Expr {.BinOpExpr = ast.BinOpExpr {
+            .lhs = &ast.Expr {.Lit = ast.Lit {.Int = 3}},
+            .op = .Lt,
+            .rhs = &ast.Expr {.ListExpr = &[_]*const ast.Expr {
+                &ast.Expr {.Lit = ast.Lit {.Int = 4}}
+            }}
+        }},
+    }};
+    try std.testing.expectEqualDeep(expect, result);
+}
+
+test "list immediates with greater than" {
+
+    var tokens: std.ArrayList(Token) = .init(std.testing.allocator);
+    defer tokens.deinit();
+
+    // <1,2, 3 > 5 >
+    try tokens.append(Token {.LT = {}});
+    try tokens.append(Token {.INTLIT = 1});
+    try tokens.append(Token {.COMMA = {}});
+    try tokens.append(Token {.INTLIT = 2});
+    try tokens.append(Token {.COMMA = {}});
+    try tokens.append(Token {.INTLIT = 3});
+    try tokens.append(Token {.GT = {}});
+    try tokens.append(Token {.INTLIT = 5});
+    try tokens.append(Token {.GT = {}});
+    try tokens.append(Token {.EOF = {}});
+    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+
+    const result: *ast.Expr = try prs.parseExpr();
+    defer result.destroyAll(std.testing.allocator);
+
+    const expect = &ast.Expr {.ListExpr = &[_]*const ast.Expr {
+        &ast.Expr {.Lit = ast.Lit {.Int = 1}},
+        &ast.Expr {.Lit = ast.Lit {.Int = 2}},
+        &ast.Expr {.Lit = ast.Lit {.Int = 3}}
+    }};
+    try std.testing.expectEqualDeep(expect, result);
+}
+
+test "more complicated list immediates" {
+
+    var tokens: std.ArrayList(Token) = .init(std.testing.allocator);
+    defer tokens.deinit();
+
+    // <1, 2, 3 > < <1>
+    try tokens.append(Token {.LT = {}});
+    try tokens.append(Token {.INTLIT = 1});
+    try tokens.append(Token {.COMMA = {}});
+    try tokens.append(Token {.INTLIT = 2});
+    try tokens.append(Token {.COMMA = {}});
+    try tokens.append(Token {.INTLIT = 3});
+    try tokens.append(Token {.GT = {}});
+    try tokens.append(Token {.LT = {}});
+    try tokens.append(Token {.LT = {}});
+    try tokens.append(Token {.INTLIT = 1});
+    try tokens.append(Token {.GT = {}});
+    try tokens.append(Token {.EOF = {}});
+    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+
+    const result: *ast.Expr = try prs.parseExpr();
+    defer result.destroyAll(std.testing.allocator);
+
+    const expect = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
+        .lhs = &ast.Expr {.ListExpr = &[_]*const ast.Expr {
+            &ast.Expr {.Lit = ast.Lit {.Int = 1}},
+            &ast.Expr {.Lit = ast.Lit {.Int = 2}},
+            &ast.Expr {.Lit = ast.Lit {.Int = 3}},
+        }},
+        .op = .Lt,
+        .rhs = &ast.Expr {.ListExpr = &[_]*const ast.Expr {
+            &ast.Expr {.Lit = ast.Lit {.Int = 1}}
+        }}
+    }};
+
+    try std.testing.expectEqualDeep(expect, result);
+}
+
+test "more complicated list immediates 2" {
+
+    var tokens: std.ArrayList(Token) = .init(std.testing.allocator);
+    defer tokens.deinit();
+
+    // <1, 2, 3 > > <1>
+    try tokens.append(Token {.LT = {}});
+    try tokens.append(Token {.INTLIT = 1});
+    try tokens.append(Token {.COMMA = {}});
+    try tokens.append(Token {.INTLIT = 2});
+    try tokens.append(Token {.COMMA = {}});
+    try tokens.append(Token {.INTLIT = 3});
+    try tokens.append(Token {.GT = {}});
+    try tokens.append(Token {.GT = {}});
+    try tokens.append(Token {.LT = {}});
+    try tokens.append(Token {.INTLIT = 1});
+    try tokens.append(Token {.GT = {}});
+    try tokens.append(Token {.EOF = {}});
+    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+
+    const result: *ast.Expr = try prs.parseExpr();
+    defer result.destroyAll(std.testing.allocator);
+
+    const expect = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
+        .lhs = &ast.Expr {.ListExpr = &[_]*const ast.Expr {
+            &ast.Expr {.Lit = ast.Lit {.Int = 1}},
+            &ast.Expr {.Lit = ast.Lit {.Int = 2}},
+            &ast.Expr {.Lit = ast.Lit {.Int = 3}},
+        }},
+        .op = .Gt,
+        .rhs = &ast.Expr {.ListExpr = &[_]*const ast.Expr {
+            &ast.Expr {.Lit = ast.Lit {.Int = 1}}
+        }}
+    }};
+
+    try std.testing.expectEqualDeep(expect, result);
+}
+
+test "list immediates with assignment" {
+
+    var tokens: std.ArrayList(Token) = .init(std.testing.allocator);
+    defer tokens.deinit();
+
+    // <1,2, 3 = 5 >
+    try tokens.append(Token {.LT = {}});
+    try tokens.append(Token {.INTLIT = 1});
+    try tokens.append(Token {.COMMA = {}});
+    try tokens.append(Token {.INTLIT = 2});
+    try tokens.append(Token {.COMMA = {}});
+    try tokens.append(Token {.INTLIT = 3});
+    try tokens.append(Token {.EQ = {}});
+    try tokens.append(Token {.INTLIT = 5});
+    try tokens.append(Token {.GT = {}});
+    try tokens.append(Token {.EOF = {}});
+    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+
+    const result: *ast.Expr = try prs.parseExpr();
+    defer result.destroyAll(std.testing.allocator);
+
+    const expect = &ast.Expr {.ListExpr = &[_]*const ast.Expr {
+        &ast.Expr {.Lit = ast.Lit {.Int = 1}},
+        &ast.Expr {.Lit = ast.Lit {.Int = 2}},
+        &ast.Expr {.AssignExpr = ast.AssignExpr {
+            .lhs = &ast.Expr {.Lit = ast.Lit {.Int = 3}},
+            .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 5}}
+        }}
+    }};
+    try std.testing.expectEqualDeep(expect, result);
+}

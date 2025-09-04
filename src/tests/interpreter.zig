@@ -2289,3 +2289,15 @@ test "list function return print statement" {
     // Make sure that y is set with updated x
     _ = try interpreter.evalProc(proc, &env);
 }
+
+
+// TODO:
+// 1. declare list immediate
+// 2. declare lst[5] = list immediate
+// 3. pass list immediate to call expr
+// 4. return lits immediate
+// 5. list immediate in assign expr
+// 6. expr statement list immediate
+// 7. no callable in list immediate
+// 8. list immediates inside list immediates
+// 9. fix list index expressions to allow <1,2,3>[2]

@@ -132,7 +132,8 @@ pub const Parser = struct {
                 while (!std.meta.eql(self.peekToken(), Token {.GT = {}})) {
 
                     // Parse expression
-                    acc.append(try self.parseExprBp(0)) catch unreachable;
+                    const bp: u8 = (Token {.GT = {}}).getInfixPrecedence().?.right;
+                    acc.append(try self.parseExprBp(bp)) catch unreachable;
 
                     // Peek the next token
                     if (self.peekToken()) |tok| switch (tok) {
@@ -166,7 +167,7 @@ pub const Parser = struct {
         }
 
 
-        lp: while (true) {
+        while (true) {
 
             // LHS has already been created, so need errdefer here
             errdefer lhs.destroyAll(self.allocator);
@@ -249,17 +250,6 @@ pub const Parser = struct {
 
                 // Break or skip the already peeked token
                 if (l_bp < min_bp) break;
-
-                // Peek next token to check if > or ) is an ending of a sequence
-                // Use this to retain the closing angle bracket in list immediates
-                switch (op_token) {
-                    .GT => switch (self.peekNthToken(2).?) {
-                        .RPAREN, .GT, .RBRACK, .COMMA, .LB, .EOF => break :lp,
-                        else => {},
-                    },
-                    else => {}
-                }
-
                 _ = self.nextToken() catch unreachable;
 
                 // Handle right-hand side of operator/expression

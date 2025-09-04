@@ -145,20 +145,25 @@ pub const Token: type = union(TokenType) {
         // TODO: FUN should be binding hard here...
         return switch(self) {
 
+
+            // PLACE GT LTE HERE
+            .GT => InfixPrecedence {.left = 1, .right = 2},
+            .LT => InfixPrecedence {.left = 3, .right = 4},
+            .LTE, .GTE => InfixPrecedence {.left = 5, .right = 6},
+
             // Right-associative assignment
-            .EQ           => InfixPrecedence {.left = 2, .right = 1},
+            .EQ           => InfixPrecedence {.left = 8, .right = 7},
 
             // The rest are left-associative
-            .AND, .OR     => InfixPrecedence {.left = 3, .right = 4},
+            .AND, .OR     => InfixPrecedence {.left = 9, .right = 10},
 
-            .DEQ          => InfixPrecedence {.left = 5, .right = 6},
+            .DEQ          => InfixPrecedence {.left = 11, .right = 12},
 
-            .LT, .GT, .LTE, .GTE => InfixPrecedence {.left = 7, .right = 8},
 
-            .PLUS, .MINUS => InfixPrecedence {.left = 9, .right = 10},
-            .MUL, .DIV    => InfixPrecedence {.left = 11, .right = 12},
+            .PLUS, .MINUS => InfixPrecedence {.left = 13, .right = 14},
+            .MUL, .DIV    => InfixPrecedence {.left = 15, .right = 16},
 
-            .DOT => InfixPrecedence {.left = 19, .right = 20},
+            .DOT => InfixPrecedence {.left = 23, .right = 24},
 
             // Some are not operators
             else => null
@@ -167,15 +172,15 @@ pub const Token: type = union(TokenType) {
 
     pub fn getPrefixPrecedence(self: Token) ?u8 {
         return switch(self) {
-            .MINUS, .NOT => 13,
+            .MINUS, .NOT => 17,
             else => null
         };
     }
 
     pub fn getPostfixPrecedence(self: Token) ?u8 {
         return switch(self) {
-            .LPAREN => 15,
-            .LBRACK => 17,
+            .LPAREN => 19,
+            .LBRACK => 21,
             else => null
         };
     }
