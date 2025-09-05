@@ -68,9 +68,12 @@ pub const List = struct {
     ) !void {
         _ = fmt;
         _ = options;
-        try writer.print("[", .{});
-        for (self.items) |item| try writer.print("{},", .{item});
-        try writer.print("]", .{});
+        try writer.print("<", .{});
+        if (self.items.len > 0) {
+            for (0..self.items.len-1) |i| try writer.print("{}, ", .{self.items[i]});
+            try writer.print("{}", .{self.items[self.items.len - 1]});
+        }
+        try writer.print(">", .{});
     }
 
 };
