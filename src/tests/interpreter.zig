@@ -2291,13 +2291,435 @@ test "list function return print statement" {
 }
 
 
-// TODO:
-// 1. declare list immediate
-// 2. declare lst[5] = list immediate
-// 3. pass list immediate to call expr
-// 4. return lits immediate
-// 5. list immediate in assign expr
-// 6. expr statement list immediate
-// 7. no callable in list immediate
-// 8. list immediates inside list immediates
-// 9. fix list index expressions to allow <1,2,3>[2]
+test "immediate list function return" {
+
+    // Prepare environment
+    var env = venv.Env.new(std.testing.allocator);
+    defer env.deinit();
+
+    // Prepare procedure
+    const proc: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
+
+        ast.Stmt {.FunDefStmt = &ast.FunDefStmt {
+            .id = "f",
+            .params = &[_]ast.Var {},
+            .body = ast.Stmt {.ReturnStmt = &ast.Expr {.ListExpr = &[_]*const ast.Expr {
+                &ast.Expr {.Lit = ast.Lit {.Int = 1}}
+            }}}
+        }},
+
+        ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {
+            &ast.Expr {.AssignExpr = ast.AssignExpr {
+                .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
+                .rhs = &ast.Expr {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
+                    .idx = &ast.Expr {.Lit = ast.Lit {.Int = 0}},
+                    .id = &ast.Expr {.CallExpr = ast.CallExpr {
+                        .id = &ast.Expr {.Lval = ast.Lval {.Var = "f"}},
+                        .args = &[_]*const ast.Expr {}
+                    }}
+                }}}
+            }}
+        }},
+
+    }};
+
+    // Evaluate procedure
+    _ = try interpreter.evalProc(proc, &env);
+    try std.testing.expectEqualDeep(
+        venv.ObjectVal {.Var = ast.Lit {.Int = 1}},
+        env.lookup("x")
+    );
+}
+
+test "declare list immediate" {
+    // Prepare environment
+    var env = venv.Env.new(std.testing.allocator);
+    defer env.deinit();
+
+    // Prepare procedure
+    const proc: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
+
+        ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {
+            &ast.Expr {.AssignExpr = ast.AssignExpr {
+                .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
+                .rhs = &ast.Expr {.ListExpr = &[_]*const ast.Expr {
+                    &ast.Expr {.Lit = ast.Lit {.Int = 1}},
+                }}
+            }}
+        }},
+
+    }};
+
+    const items = try std.testing.allocator.alloc(ast.Lit, 1);
+    defer std.testing.allocator.free(items);
+    for (items) |*item| item.* = ast.Lit {.Int = 1};
+
+    const ptr = try std.testing.allocator.create(ast.List);
+    defer std.testing.allocator.destroy(ptr);
+    ptr.* = ast.List {
+        .items = items,
+        .len = 1,
+        .refs = 1
+    };
+
+    _ = try interpreter.evalProc(proc, &env);
+
+    try std.testing.expectEqualDeep(
+        venv.ObjectVal {.Var = ast.Lit {.List = ptr}},
+        env.lookup("x")
+    );
+}
+
+test "declare list of list immediates" {
+    // Prepare environment
+    var env = venv.Env.new(std.testing.allocator);
+    defer env.deinit();
+
+    // Prepare procedure
+    const proc: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
+
+        ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {
+            &ast.Expr {.AssignExpr = ast.AssignExpr {
+                .lhs = &ast.Expr {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
+                    .id = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
+                    .idx = &ast.Expr {.Lit = ast.Lit {.Int = 5}}
+                }}},
+                .rhs = &ast.Expr {.ListExpr = &[_]*const ast.Expr {
+                    &ast.Expr {.Lit = ast.Lit {.Int = 1}},
+                }}
+            }}
+        }},
+
+    }};
+
+    const inner_items = try std.testing.allocator.alloc(ast.Lit, 1);
+    for (inner_items) |*item| item.* = ast.Lit {.Int = 1};
+    const inner_list = try std.testing.allocator.create(ast.List);
+    inner_list.* = ast.List {
+        .items = inner_items,
+        .len = 1,
+        .refs = 5
+    };
+
+    const items = try std.testing.allocator.alloc(ast.Lit, 5);
+    for (items) |*item| item.* = ast.Lit {.List = inner_list};
+
+    const ptr = try std.testing.allocator.create(ast.List);
+    ptr.* = ast.List {
+        .items = items,
+        .len = 5,
+        .refs = 1
+    };
+
+    defer ptr.destroyAll(std.testing.allocator);
+
+    _ = try interpreter.evalProc(proc, &env);
+
+    try std.testing.expectEqualDeep(
+        venv.ObjectVal {.Var = ast.Lit {.List = ptr}},
+        env.lookup("x")
+    );
+}
+
+test "list immediate to funcall" {
+    // Prepare environment
+    var env = venv.Env.new(std.testing.allocator);
+    defer env.deinit();
+
+    // Prepare procedure
+    const proc: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
+
+        ast.Stmt {.FunDefStmt = &ast.FunDefStmt {
+            .id = "f",
+            .params = &[_]ast.Var {"x"},
+            .body = ast.Stmt {.ReturnStmt = &ast.Expr {
+                .Lval = ast.Lval {.ListIndex = ast.ListIndex {
+                    .id = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
+                    .idx = &ast.Expr {.Lit = ast.Lit {.Int = 0}}
+                }}
+            }}
+        }},
+
+        ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {
+            &ast.Expr {.AssignExpr = ast.AssignExpr {
+                .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
+                .rhs = &ast.Expr {.CallExpr = ast.CallExpr {
+                    .id = &ast.Expr {.Lval = ast.Lval {.Var = "f"}},
+                    .args = &[_]*const ast.Expr {
+                        &ast.Expr {.ListExpr = &[_]*const ast.Expr {
+                            &ast.Expr {.Lit = ast.Lit {.Int = 9}},
+                            &ast.Expr {.Lit = ast.Lit {.Int = 8}},
+                            &ast.Expr {.Lit = ast.Lit {.Int = 7}},
+                        }}
+                    }
+                }}
+            }}
+        }},
+
+    }};
+
+    _ = try interpreter.evalProc(proc, &env);
+
+    try std.testing.expectEqualDeep(
+        venv.ObjectVal {.Var = ast.Lit {.Int = 9}},
+        env.lookup("x")
+    );
+}
+
+test "return list immediate" {
+    // Prepare environment
+    var env = venv.Env.new(std.testing.allocator);
+    defer env.deinit();
+
+    // Prepare procedure
+    const proc: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
+
+        ast.Stmt {.FunDefStmt = &ast.FunDefStmt {
+            .id = "f",
+            .params = &[_]ast.Var {},
+            .body = ast.Stmt {.ReturnStmt = &ast.Expr {
+                .ListExpr = &[_]*const ast.Expr {
+                    &ast.Expr {.Lit = ast.Lit {.Int = -1}},
+                }
+            }}
+        }},
+
+        ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {
+            &ast.Expr {.AssignExpr = ast.AssignExpr {
+                .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
+                .rhs = &ast.Expr {.CallExpr = ast.CallExpr {
+                    .id = &ast.Expr {.Lval = ast.Lval {.Var = "f"}},
+                    .args = &[_]*const ast.Expr {}
+                }}
+            }}
+        }},
+
+    }};
+
+    const items = try std.testing.allocator.alloc(ast.Lit, 1);
+    for (items) |*item| item.* = ast.Lit {.Int = -1};
+    const ptr = try std.testing.allocator.create(ast.List);
+    ptr.* = ast.List {
+        .items = items,
+        .len = 1,
+        .refs = 1
+    };
+
+    defer ptr.destroyAll(std.testing.allocator);
+
+    _ = try interpreter.evalProc(proc, &env);
+
+    try std.testing.expectEqualDeep(
+        venv.ObjectVal {.Var = ast.Lit {.List = ptr}},
+        env.lookup("x")
+    );
+}
+
+test "list immediate assign expression" {
+    // Prepare environment
+    var env = venv.Env.new(std.testing.allocator);
+    defer env.deinit();
+
+    // Prepare procedure
+    const proc: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
+
+        ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {
+            &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
+            &ast.Expr {.Lval = ast.Lval {.Var = "y"}},
+        }},
+
+        ast.Stmt {.ExprStmt = &ast.Expr {.AssignExpr = ast.AssignExpr {
+            .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
+            .rhs = &ast.Expr {.AssignExpr = ast.AssignExpr {
+                .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "y"}},
+                .rhs = &ast.Expr {.ListExpr = &[_]*const ast.Expr {
+                    &ast.Expr {.Lit = ast.Lit {.Int = 1}}
+                }}
+            }}
+        }}},
+
+    }};
+
+    const items = try std.testing.allocator.alloc(ast.Lit, 1);
+    for (items) |*item| item.* = ast.Lit {.Int = 1};
+    const ptr = try std.testing.allocator.create(ast.List);
+    ptr.* = ast.List {
+        .items = items,
+        .len = 1,
+        .refs = 2
+    };
+
+    defer std.testing.allocator.free(items);
+    defer std.testing.allocator.destroy(ptr);
+
+    _ = try interpreter.evalProc(proc, &env);
+
+    try std.testing.expectEqualDeep(
+        venv.ObjectVal {.Var = ast.Lit {.List = ptr}},
+        env.lookup("x")
+    );
+    try std.testing.expectEqualDeep(
+        venv.ObjectVal {.Var = ast.Lit {.List = ptr}},
+        env.lookup("y")
+    );
+}
+
+
+test "list immediate indexing" {
+
+    // Prepare environment
+    var env = venv.Env.new(std.testing.allocator);
+    defer env.deinit();
+
+    // Test less-than expressions
+    const exp1: ast.Expr = ast.Expr {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
+        .id = &ast.Expr {.ListExpr = &[_]*const ast.Expr {
+            &ast.Expr {.Lit = ast.Lit {.Int = 1}},
+            &ast.Expr {.Lit = ast.Lit {.Int = 2}},
+            &ast.Expr {.Lit = ast.Lit {.Int = 3}},
+        }},
+        .idx = &ast.Expr {.Lit = ast.Lit {.Int = 0}}
+    }}};
+
+    const exp2: ast.Expr = ast.Expr {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
+        .id = &ast.Expr {.ListExpr = &[_]*const ast.Expr {
+            &ast.Expr {.Lit = ast.Lit {.Int = 1}},
+            &ast.Expr {.Lit = ast.Lit {.Int = 2}},
+            &ast.Expr {.Lit = ast.Lit {.Int = 3}},
+        }},
+        .idx = &ast.Expr {.Lit = ast.Lit {.Int = 2}}
+    }}};
+
+    try std.testing.expectEqual(
+        try interpreter.evalExpr(&exp1, &env),
+        ast.Lit {.Int = 1}
+    );
+
+    try std.testing.expectEqual(
+        try interpreter.evalExpr(&exp2, &env),
+        ast.Lit {.Int = 3}
+    );
+}
+
+test "nested list immediate" {
+    // Prepare environment
+    var env = venv.Env.new(std.testing.allocator);
+    defer env.deinit();
+
+    // Prepare procedure
+    const proc: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
+
+
+        ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {
+            &ast.Expr {.AssignExpr = ast.AssignExpr {
+                .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
+                .rhs = &ast.Expr {.ListExpr = &[_]*const ast.Expr {
+                    &ast.Expr {.Lit = ast.Lit {.Int = 0}},
+                    &ast.Expr {.ListExpr = &[_]*const ast.Expr {
+                        &ast.Expr {.Lit = ast.Lit {.Int = -1}},
+                        &ast.Expr {.Lit = ast.Lit {.Int = -1}},
+                    }},
+                    &ast.Expr {.ListExpr = &[_]*const ast.Expr {}},
+                }}
+            }}
+        }},
+
+    }};
+
+    // Main list
+    const items = try std.testing.allocator.alloc(ast.Lit, 3);
+    items[0] = ast.Lit {.Int = 0};
+    const ptr = try std.testing.allocator.create(ast.List);
+    ptr.* = ast.List {
+        .items = items,
+        .len = 3,
+        .refs = 1
+    };
+
+    //Inner list 1
+    {
+        const itms = try std.testing.allocator.alloc(ast.Lit, 2);
+        for (itms) |*item| item.* = ast.Lit {.Int = -1};
+        const lst = try std.testing.allocator.create(ast.List);
+        lst.* = ast.List {
+            .items = itms,
+            .len = 2,
+            .refs = 1
+        };
+        items[1] = ast.Lit {.List = lst};
+    }
+
+    // Inner list 2
+    {
+        const itms = try std.testing.allocator.alloc(ast.Lit, 0);
+        const lst = try std.testing.allocator.create(ast.List);
+        lst.* = ast.List {
+            .items = itms,
+            .len = 0,
+            .refs = 1
+        };
+        items[2] = ast.Lit {.List = lst};
+    }
+
+    defer ptr.destroyAll(std.testing.allocator);
+
+    _ = try interpreter.evalProc(proc, &env);
+
+    try std.testing.expectEqualDeep(
+        venv.ObjectVal {.Var = ast.Lit {.List = ptr}},
+        env.lookup("x")
+    );
+}
+
+test "list immediate expression statement" {
+    // Prepare environment
+    var env = venv.Env.new(std.testing.allocator);
+    defer env.deinit();
+
+    // Prepare procedure
+    const proc: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
+
+        ast.Stmt {.ExprStmt = &ast.Expr {.ListExpr = &[_]*const ast.Expr {
+            &ast.Expr {.Lit = ast.Lit {.Int = -1}},
+            &ast.Expr {.Lit = ast.Lit {.Int = 3}},
+            &ast.Expr {.Lit = ast.Lit {.Int = 7}},
+        }}}
+
+    }};
+
+    _ = try interpreter.evalProc(proc, &env);
+}
+
+test "callable in list immediate" {
+    // Prepare environment
+    var env = venv.Env.new(std.testing.allocator);
+    defer env.deinit();
+
+    // Prepare procedure
+    const proc: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
+
+        ast.Stmt {.FunDefStmt = &ast.FunDefStmt {
+            .id = "f",
+            .params = &[_]ast.Var {"x"},
+            .body = ast.Stmt {.ReturnStmt = &ast.Expr {
+                .Lval = ast.Lval {.ListIndex = ast.ListIndex {
+                    .id = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
+                    .idx = &ast.Expr {.Lit = ast.Lit {.Int = 0}}
+                }}
+            }}
+        }},
+
+        ast.Stmt {.ExprStmt = &ast.Expr {.ListExpr = &[_]*const ast.Expr {
+            &ast.Expr {.Lit = ast.Lit {.Int = 0}},
+            &ast.Expr {.Lval = ast.Lval {.Var = "f"}},
+        }}}
+
+    }};
+
+    const r: interpreter.EvalError!void = interpreter.evalProc(proc, &env);
+
+    try std.testing.expectEqualDeep(
+        r,
+        interpreter.EvalError.InvalidUpcall
+    );
+}

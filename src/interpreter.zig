@@ -66,11 +66,11 @@ pub fn evalLval(lval: ast.Lval, env: *venv.Env) EvalError!ast.Lit {
         .ListIndex => |l| {
 
             // Evaluate identifier (should lookup in environment..)
-            var list: ast.List = switch (try evalExpr(l.id, env)) {
-                .List => |lst| lst.*,
+            var list: *ast.List = switch (try evalExpr(l.id, env)) {
+                .List => |lst| lst,
                 .Int, .Bool, .Void, .Callable => return EvalError.NotList
             };
-            list.destroyAll(env.allocator);
+            defer list.destroyAll(env.allocator);
 
             // Evaluate index
             const index: i64 = switch (try evalExpr(l.idx, env)) {
@@ -102,6 +102,7 @@ pub fn evalLval(lval: ast.Lval, env: *venv.Env) EvalError!ast.Lit {
             // Evaluate left-hand-side
             var lhs: ast.Lit = try evalExpr(p.lhs, env);
             defer lhs.destroyAll(env.allocator);
+
             switch (lhs) {
                 .List => |l| {
                     if (std.mem.eql(u8, id, "size")) break :sw ast.Lit {.Int = @intCast(l.len)}
@@ -278,7 +279,7 @@ pub fn evalAssignExpr(expr: *const ast.AssignExpr, env: *venv.Env) EvalError!ast
                 .List => |l| l,
                 .Int, .Bool, .Void, .Callable => return EvalError.NotList
             };
-            lst.destroyAll(env.allocator);
+            defer lst.destroyAll(env.allocator);
 
             // Evaluate index
             const idx: i64 = switch (try evalExpr(lidx.idx, env)) {
@@ -347,8 +348,14 @@ pub fn evalListExpr(exprs: []const *const ast.Expr, env: *venv.Env) EvalError!as
     errdefer acc.deinit();
     errdefer for (acc.items) |*item| item.destroyAll(env.allocator);
 
-    // Evaluate each entry
-    for (exprs) |expr| acc.append(try evalExpr(expr, env)) catch unreachable;
+    // Evaluate each entry while preventing callables
+    for (exprs) |expr| {
+        const lit: ast.Lit = try evalExpr(expr, env);
+        switch (lit) {
+            .Callable => return SemanticError.InvalidUpcall,
+            else => acc.append(lit) catch unreachable
+        }
+    }
 
     // Create a list literal
     const ptr = env.allocator.create(ast.List) catch unreachable;
