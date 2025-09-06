@@ -1,0 +1,97 @@
+function count_neighbors(board, x, y) {
+
+	declare ys = <y - 1, y, y + 1>
+	declare xs = <x - 1, x, x + 1>
+
+	declare count = 0
+	declare i = 0
+	while i < ys.size {
+		declare j = 0
+		while j < xs.size {
+
+			declare yi = ys[i]
+			declare xj = xs[j]
+
+			j = j + 1
+
+			if yi == y && xj == x
+				continue
+
+			if (yi < 0) || (yi >= board.size)
+				continue
+
+			if (xj < 0) || (xj >= board[yi].size)
+				continue
+
+			count = count + board[yi][xj]
+		}
+		i = i + 1
+	}
+
+	return count
+}
+
+function update_board(board) {
+
+	declare buffer = create_board(board.size, board[0].size)
+
+	declare i = 0
+	while i < board.size {
+		declare j = 0
+		while j < board[i].size {
+
+			declare live_neighbors = count_neighbors(board, j, i)
+
+			if (live_neighbors < 2) || (live_neighbors > 3)
+				buffer[i][j] = 0
+			else
+				buffer[i][j] = board[i][j]
+
+			if live_neighbors == 3
+				buffer[i][j] = 1
+
+			j = j + 1
+		}
+		i = i + 1
+	}
+
+	return buffer
+}
+
+function create_board(width, height) {
+	declare rows[height], i = 0
+	while i < height {
+		declare columns[width] = 0
+		rows[i] = columns
+		i = i + 1
+	}
+	return rows
+}
+
+function print_board(board) {
+	declare i = 0
+	while i < board.size {
+		print board[i]
+		i = i + 1
+	}
+}
+
+
+declare board = create_board(5, 5)
+board[1][1] = 1
+board[1][2] = 1
+board[2][1] = 1
+board[4][1] = 1
+board[4][3] = 1
+
+declare steps = 10
+while steps > 0 {
+	steps = steps - 1
+
+	print_board(board)
+	print 0
+
+	board = update_board(board)
+}
+
+print_board(board)
