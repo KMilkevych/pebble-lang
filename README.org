@@ -70,6 +70,7 @@ gives output
 89
 #+end_example
 ** Lists
+Lists are dynamically typed static arrays that implement reference-counting. This means that allocation and deallocation of memory is automatically done by the interpreter.
 #+begin_src
 function copy(dst, src) {
     declare idx = 0
@@ -94,9 +95,25 @@ print mylist
 #+end_src
 gives output
 #+begin_example
-[0,0,0,0,]
-[0,0,0,0,1,]
+<0, 0, 0, 0>
+<0, 0, 0, 0, 1>
 #+end_example
+
+Lists can also be described as immediate list literals:
+#+begin src
+; declare my_var as an immediate list of 3 elements
+declare my_var = <1, 2, 3>
+
+; overwrite second element with another list
+my_var[1] = <0, 0, 0>
+
+print my_var, my_var[1]
+#+end_src
+gives output
+#+begin_example
+<1, <0, 0, 0>, 3> <0, 0, 0>
+#+end_example
+
 
 * Features
 ** Implemented
@@ -109,6 +126,7 @@ gives output
 - Function definitions and function calls
 - Higher-order functions (passing functions as parameters)
 - Lists with dynamic types using ~declare lst[size]~ syntax
+- Immediate list literals using ~<x1, x * 3 + 1, <1, 2, 3>, false>~ syntax
 - Comments prefixed with ~;~ or ~#~
 
 ** Not yet implemented

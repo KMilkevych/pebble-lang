@@ -68,9 +68,12 @@ pub const List = struct {
     ) !void {
         _ = fmt;
         _ = options;
-        try writer.print("[", .{});
-        for (self.items) |item| try writer.print("{s},", .{item});
-        try writer.print("]", .{});
+        try writer.print("<", .{});
+        if (self.items.len > 0) {
+            for (0..self.items.len-1) |i| try writer.print("{}, ", .{self.items[i]});
+            try writer.print("{}", .{self.items[self.items.len - 1]});
+        }
+        try writer.print(">", .{});
     }
 
 };
@@ -367,6 +370,7 @@ pub const Expr = union(enum) {
     Lval: Lval,
     AssignExpr: AssignExpr,
     CallExpr: CallExpr,
+    ListExpr: []const *const Expr,
 
     pub fn destroyAll(self: *const Expr, allocator: std.mem.Allocator) void {
         switch (self.*) {
@@ -376,6 +380,10 @@ pub const Expr = union(enum) {
             .Lval => |*lval| lval.destroyAll(allocator),
             .AssignExpr => |*expr| expr.destroyAll(allocator),
             .CallExpr => |*expr| expr.destroyAll(allocator),
+            .ListExpr => |exprs| {
+                for (exprs) |expr| expr.destroyAll(allocator);
+                allocator.free(exprs);
+            }
         }
         allocator.destroy(self);
     }
@@ -393,6 +401,11 @@ pub const Expr = union(enum) {
             .Lval => |lval| lval.format(fmt, options, writer),
             .AssignExpr => |expr| expr.format(fmt, options, writer),
             .CallExpr => |expr| expr.format(fmt, options, writer),
+            .ListExpr => |exprs| {
+                try writer.print("<", .{});
+                for (exprs) |expr| try writer.print("{},", .{expr});
+                try writer.print(">", .{});
+            }
         };
     }
 };

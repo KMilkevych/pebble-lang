@@ -8,6 +8,7 @@ const ArrayList = std.ArrayList;
 pub const ParseError = error {
     ExpectedTokenOrEOF,
     ExpectedPClose,
+    ExpectedAngleClose,
     ExpectedPrint,
     ExpectedLineBreak,
     ExpectedIf,
@@ -25,6 +26,7 @@ pub fn expectedTokenError(expected: Token) ParseError {
         .IF => ParseError.ExpectedIf,
         .WHILE => ParseError.ExpectedWhile,
         .IDENT => ParseError.ExpectedIdentifier,
+        .GT => ParseError.ExpectedAngleClose,
         else => unreachable
     };
 }
@@ -54,6 +56,11 @@ pub const Parser = struct {
 
     fn peekToken(self: *Self) ?Token {
         return self.tokens.getLastOrNull();
+    }
+
+    fn peekNthToken(self: *Self, n: usize) ?Token {
+        if (self.tokens.items.len >= n) return self.tokens.items[self.tokens.items.len - n]
+        else return null;
     }
 
     fn expectToken(self: *Self, tok: Token) ParseError!void {
@@ -112,6 +119,36 @@ pub const Parser = struct {
                     .op = ast.UnOp.from_token(next_token).?,
                     .rhs = rhs,
                 }};
+            },
+
+            // Immediate list literals
+            .LT => {
+
+                // Parse contents
+                var acc: ArrayList(*const ast.Expr) = .init(self.allocator);
+                errdefer acc.deinit();
+                errdefer for (acc.items) |expr| expr.destroyAll(self.allocator);
+
+                while (!std.meta.eql(self.peekToken(), Token {.GT = {}})) {
+
+                    // Parse expression
+                    const bp: u8 = (Token {.GT = {}}).getInfixPrecedence().?.right;
+                    acc.append(try self.parseExprBp(bp)) catch unreachable;
+
+                    // Peek the next token
+                    if (self.peekToken()) |tok| switch (tok) {
+                        .COMMA => _ = self.nextToken() catch unreachable,
+                        else => break
+                    } else break;
+                }
+
+                // Consume closing bracket
+                try self.expectToken(Token {.GT = {}});
+
+                // Produce list literal
+                lhs = self.allocator.create(ast.Expr) catch unreachable;
+                lhs.*  = ast.Expr {.ListExpr = acc.toOwnedSlice() catch unreachable};
+
             },
 
             // Parentheses
@@ -212,8 +249,8 @@ pub const Parser = struct {
                 const r_bp: u8 = op_prec.right;
 
                 // Break or skip the already peeked token
-                if (l_bp < min_bp) break
-                else _ = self.nextToken() catch unreachable;
+                if (l_bp < min_bp) break;
+                _ = self.nextToken() catch unreachable;
 
                 // Handle right-hand side of operator/expression
                 const rhs: *ast.Expr = try self.parseExprBp(r_bp);
