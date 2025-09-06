@@ -100,7 +100,8 @@ gives output
 #+end_example
 
 Lists can also be described as immediate list literals:
-#+begin src
+
+#+begin_src
 ; declare my_var as an immediate list of 3 elements
 declare my_var = <1, 2, 3>
 
