@@ -2,6 +2,7 @@ const std = @import("std");
 
 pub const TokenType: type = enum {
     INTLIT,
+    FLOATLIT,
     BOOLLIT,
     IDENT,
     PLUS,
@@ -45,6 +46,7 @@ pub const Token: type = union(TokenType) {
 
     // Literals and identifiers
     INTLIT: i64,
+    FLOATLIT: f64,
     BOOLLIT: bool,
     IDENT: []const u8,
 
@@ -134,6 +136,7 @@ pub const Token: type = union(TokenType) {
             .RETURN   => try writer.print("[RETURN  ]:", .{}),
             .FUN      => try writer.print("[FUN     ]:", .{}),
             .INTLIT   => |val| try writer.print("[INTLIT  ]: {}", .{val}),
+            .FLOATLIT => |val| try writer.print("[FLOATLIT]: {}", .{val}),
             .BOOLLIT  => |val| try writer.print("[BOOLLIT ]: {}", .{val}),
             .IDENT    => |val| try writer.print("[IDENT   ]: {s}", .{val})
         }

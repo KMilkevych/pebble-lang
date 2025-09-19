@@ -2735,3 +2735,26 @@ test "list immediates with assignment" {
     }};
     try std.testing.expectEqualDeep(expect, result);
 }
+
+test "float expression" {
+
+    var tokens: std.ArrayList(Token) = .init(std.testing.allocator);
+    defer tokens.deinit();
+
+    // <1,2, 3 = 5 >
+    try tokens.append(Token {.FLOATLIT = 3.14});
+    try tokens.append(Token {.PLUS = {}});
+    try tokens.append(Token {.FLOATLIT = 1.2});
+    try tokens.append(Token {.EOF = {}});
+    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+
+    const result: *ast.Expr = try prs.parseExpr();
+    defer result.destroyAll(std.testing.allocator);
+
+    const expect = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
+        .lhs = &ast.Expr {.Lit = ast.Lit {.Float = 3.14}},
+        .op = .Add,
+        .rhs = &ast.Expr {.Lit = ast.Lit {.Float = 1.2}}
+    }};
+    try std.testing.expectEqualDeep(expect, result);
+}

@@ -94,6 +94,10 @@ pub const Parser = struct {
                 lhs = self.allocator.create(ast.Expr) catch unreachable;
                 lhs.* = ast.Expr { .Lit = ast.Lit {.Int = val} };
             },
+            .FLOATLIT => |val| {
+                lhs = self.allocator.create(ast.Expr) catch unreachable;
+                lhs.* = ast.Expr { .Lit = ast.Lit {.Float = val} };
+            },
             .BOOLLIT => |val| {
                 lhs = self.allocator.create(ast.Expr) catch unreachable;
                 lhs.* = ast.Expr { .Lit = ast.Lit {.Bool = val}};

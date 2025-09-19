@@ -80,6 +80,7 @@ pub const List = struct {
 
 pub const Lit = union(enum) {
     Int: i64,
+    Float: f64,
     Bool: bool,
     Void: void,
     Callable: Callable,
@@ -87,7 +88,7 @@ pub const Lit = union(enum) {
 
     pub fn destroyAll(self: *Lit, allocator: std.mem.Allocator) void {
         switch (self.*) {
-            .Int, .Bool, .Void => {},
+            .Int, .Bool, .Float, .Void => {},
             .Callable => |fun| fun.destroyAll(allocator),
             .List => |lst| lst.destroyAll(allocator),
         }
@@ -103,6 +104,7 @@ pub const Lit = union(enum) {
         _ = options;
         switch(self) {
             .Int => |v| try writer.print("{}", .{v}),
+            .Float => |v| try writer.print("{}", .{v}),
             .Bool => |v| try writer.print("{}", .{v}),
             .Void => try writer.print("{{}}", .{}),
             .Callable => |f| try writer.print("{}", .{f}),
