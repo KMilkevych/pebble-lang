@@ -129,10 +129,10 @@ gives output
 - Lists with dynamic types using ~declare lst[size]~ syntax
 - Immediate list literals using ~<x1, x * 3 + 1, <1, 2, 3>, false>~ syntax
 - Comments prefixed with ~;~ or ~#~
+- Floating point types
 
 ** Not yet implemented
 - String types
-- Floating point types
 - Structs
 - For-loops
 - INPUT statements
