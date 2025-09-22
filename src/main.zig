@@ -89,7 +89,10 @@ fn interactive() !void {
             try outw.print("{}\n", .{err});
             continue;
         };
-        defer tree.destroyAll(std.heap.page_allocator);
+
+        // NOTE: Freeing the memory associated with the statement will cause
+        // issues with lists and strings in the future
+        // defer tree.destroyAll(std.heap.page_allocator);
 
         const res: ?ast.Lit = blk: switch (tree) {
             .ExprStmt => |exp| interpreter.evalExpr(exp, &env) catch |err| {
