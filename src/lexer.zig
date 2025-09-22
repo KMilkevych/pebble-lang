@@ -132,7 +132,14 @@ pub const Lexer = struct {
         }
     }
 
-    fn lexInt(self: *Self) !token.Token {
+    fn lexFloat(self: *Self, integer: []u8) !token.Token {
+        _ = self;
+        _ = integer;
+
+        unreachable;
+    }
+
+    fn lexIntOrFloat(self: *Self) !token.Token {
 
         // Create a buffer for storing digit characters
         var buf: std.ArrayList(u8) = .init(self.allocator);
@@ -148,6 +155,39 @@ pub const Lexer = struct {
                 else => unreachable
             };
         }
+
+        // Check if we were able to advance
+        if (self.topdigit()) |_| {
+
+            // Check if we are in a real
+            if (is_real_digit[c]) {
+
+                // Append decimal separator
+                try buf.append(c);
+
+                // Lex remainder of float
+                if (self.advance()) |val| {
+                    c = val;
+
+                    while (is_numeric_digit[c]) {
+                        try buf.append(c);
+                        c = self.advance() catch |err| switch (err) {
+                            error.EndOfFile => break,
+                            else => unreachable
+                        };
+                    }
+                }
+                else |_| {}
+
+                // Return lexed float literal
+                const lit: f64 = std.fmt.parseFloat(f64, buf.items) catch |err| switch (err) {
+                    std.fmt.ParseFloatError.InvalidCharacter => unreachable
+                };
+
+                return token.Token {.FLOATLIT = lit};
+            }
+        } else |_| {}
+
 
         // Convert found digits into an int
         // NOTE: we only expect valid characters here
@@ -246,7 +286,7 @@ pub const Lexer = struct {
 
         // TODO: Remove unreachables...
         if (is_numeric_digit[c]) {
-            tok = self.lexInt() catch unreachable;
+            tok = self.lexIntOrFloat() catch unreachable;
         } else if (is_operator_digit[c]) {
             tok = self.lexOperator() catch unreachable;
         } else if (is_ident_digit[c]) {

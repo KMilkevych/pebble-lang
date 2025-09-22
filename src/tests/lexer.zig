@@ -1705,3 +1705,73 @@ test "inline comment" {
 
     try std.testing.expectEqualDeep(expected, tokens.items);
 }
+
+test "float literal" {
+    const input = "13.4";
+
+    var lx = lexer.Lexer.new(input, std.testing.allocator);
+
+    const tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit();
+
+    const expected: []const Token = &[_]Token{
+        Token {.FLOATLIT = 13.4},
+        Token {.EOF = {}}
+    };
+
+    try std.testing.expectEqualDeep(expected, tokens.items);
+}
+
+test "short form float literal" {
+    const input = "13.";
+
+    var lx = lexer.Lexer.new(input, std.testing.allocator);
+
+    const tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit();
+
+    const expected: []const Token = &[_]Token{
+        Token {.FLOATLIT = 13.0},
+        Token {.EOF = {}}
+    };
+
+    try std.testing.expectEqualDeep(expected, tokens.items);
+}
+
+test "float expression" {
+    const input = "13.4+1.-1.3434";
+
+    var lx = lexer.Lexer.new(input, std.testing.allocator);
+
+    const tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit();
+
+    const expected: []const Token = &[_]Token{
+        Token {.FLOATLIT = 13.4},
+        Token {.PLUS = {}},
+        Token {.FLOATLIT = 1.0},
+        Token {.MINUS = {}},
+        Token {.FLOATLIT = 1.3434},
+        Token {.EOF = {}}
+    };
+
+    try std.testing.expectEqualDeep(expected, tokens.items);
+}
+
+test "mixed float" {
+    const input = "13.,42";
+
+    var lx = lexer.Lexer.new(input, std.testing.allocator);
+
+    const tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit();
+
+    const expected: []const Token = &[_]Token{
+        Token {.FLOATLIT = 13.0},
+        Token {.COMMA = {}},
+        Token {.INTLIT = 42},
+        Token {.EOF = {}}
+    };
+
+    try std.testing.expectEqualDeep(expected, tokens.items);
+}
