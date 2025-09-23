@@ -1775,3 +1775,28 @@ test "mixed float" {
 
     try std.testing.expectEqualDeep(expected, tokens.items);
 }
+
+test "booleans alternative" {
+
+    const input = "!(true and false)or true==false";
+    var lx = lexer.Lexer.new(input, std.testing.allocator);
+
+    const tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit();
+
+    const expected: []const Token = &[_]Token{
+        Token {.NOT = {}},
+        Token {.LPAREN = {}},
+        Token {.BOOLLIT = true},
+        Token {.AND = {}},
+        Token {.BOOLLIT = false},
+        Token {.RPAREN = {}},
+        Token {.OR = {}},
+        Token {.BOOLLIT = true},
+        Token {.DEQ = {}},
+        Token {.BOOLLIT = false},
+        Token {.EOF = {}}
+    };
+
+    try expect(tokens_eql(tokens.items, expected));
+}
