@@ -59,7 +59,7 @@ fn operator_from_string(str: []const u8) token.Token {
 }
 
 fn is_keyword(chars: []const u8) bool {
-    return contains(&[_][]const u8 {"declare", "print", "if", "else", "while", "break", "continue", "return", "function", "and", "or"}, chars);
+    return contains(&[_][]const u8 {"declare", "print", "if", "else", "while", "break", "continue", "return", "function", "and", "or", "as", "Int", "Float", "Bool"}, chars);
 }
 
 fn keyword_from_string(str: []const u8) token.Token {
@@ -74,6 +74,10 @@ fn keyword_from_string(str: []const u8) token.Token {
     if (std.mem.eql(u8, str, "function")) return token.Token {.FUN = {}};
     if (std.mem.eql(u8, str, "and")) return token.Token {.AND = {}};
     if (std.mem.eql(u8, str, "or")) return token.Token {.OR = {}};
+    if (std.mem.eql(u8, str, "as")) return token.Token {.AS = {}};
+    if (std.mem.eql(u8, str, "Int")) return token.Token {.INT = {}};
+    if (std.mem.eql(u8, str, "Float")) return token.Token {.FLOAT = {}};
+    if (std.mem.eql(u8, str, "Bool")) return token.Token {.BOOL = {}};
     unreachable;
 }
 

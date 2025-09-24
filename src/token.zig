@@ -33,6 +33,10 @@ pub const TokenType: type = enum {
     CONTINUE,
     RETURN,
     FUN,
+    INT,
+    FLOAT,
+    BOOL,
+    AS,
     LB,
     COMMA,
     DOT,
@@ -83,6 +87,10 @@ pub const Token: type = union(TokenType) {
     CONTINUE: void,
     RETURN: void,
     FUN: void,
+    INT: void,
+    FLOAT: void,
+    BOOL: void,
+    AS: void,
 
     // Utility
     LB: void,
@@ -135,6 +143,10 @@ pub const Token: type = union(TokenType) {
             .CONTINUE => try writer.print("[CONTINUE]:", .{}),
             .RETURN   => try writer.print("[RETURN  ]:", .{}),
             .FUN      => try writer.print("[FUN     ]:", .{}),
+            .INT      => try writer.print("[INT     ]:", .{}),
+            .FLOAT    => try writer.print("[FLOAT   ]:", .{}),
+            .BOOL     => try writer.print("[BOOL    ]:", .{}),
+            .AS       => try writer.print("[AS      ]:", .{}),
             .INTLIT   => |val| try writer.print("[INTLIT  ]: {}", .{val}),
             .FLOATLIT => |val| try writer.print("[FLOATLIT]: {}", .{val}),
             .BOOLLIT  => |val| try writer.print("[BOOLLIT ]: {}", .{val}),
@@ -162,11 +174,12 @@ pub const Token: type = union(TokenType) {
 
             .DEQ          => InfixPrecedence {.left = 11, .right = 12},
 
+            .AS           => InfixPrecedence {.left = 13, .right = 14},
 
-            .PLUS, .MINUS => InfixPrecedence {.left = 13, .right = 14},
-            .MUL, .DIV    => InfixPrecedence {.left = 15, .right = 16},
+            .PLUS, .MINUS => InfixPrecedence {.left = 15, .right = 16},
+            .MUL, .DIV    => InfixPrecedence {.left = 17, .right = 18},
 
-            .DOT => InfixPrecedence {.left = 23, .right = 24},
+            .DOT => InfixPrecedence {.left = 25, .right = 26},
 
             // Some are not operators
             else => null
@@ -175,15 +188,15 @@ pub const Token: type = union(TokenType) {
 
     pub fn getPrefixPrecedence(self: Token) ?u8 {
         return switch(self) {
-            .MINUS, .NOT => 17,
+            .MINUS, .NOT => 19,
             else => null
         };
     }
 
     pub fn getPostfixPrecedence(self: Token) ?u8 {
         return switch(self) {
-            .LPAREN => 19,
-            .LBRACK => 21,
+            .LPAREN => 21,
+            .LBRACK => 23,
             else => null
         };
     }

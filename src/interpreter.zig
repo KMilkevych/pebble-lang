@@ -62,6 +62,7 @@ pub fn evalLval(lval: ast.Lval, env: *venv.Env) EvalError!ast.Lit {
                     .Void => return ValueError.UnexpectedVoidValue,
                     .Callable => |fun| ast.Lit {.Callable = fun},
                     .List => |lst| ast.Lit {.List = lst.makeReference()},
+                    .Type => |tp| ast.Lit {.Type = tp},
                 },
                 .Undefined => return EvalError.UndefinedVariable
             };
@@ -72,14 +73,14 @@ pub fn evalLval(lval: ast.Lval, env: *venv.Env) EvalError!ast.Lit {
             // Evaluate identifier (should lookup in environment..)
             var list: *ast.List = switch (try evalExpr(l.id, env)) {
                 .List => |lst| lst,
-                .Int, .Float, .Bool, .Void, .Callable => return EvalError.NotList
+                .Int, .Float, .Bool, .Type, .Void, .Callable => return EvalError.NotList
             };
             defer list.destroyAll(env.allocator);
 
             // Evaluate index
             const index: i64 = switch (try evalExpr(l.idx, env)) {
                 .Int => |i| i,
-                .Bool, .Float, .Void, .Callable, .List => return EvalError.MismatchedType
+                .Bool, .Float, .Type, .Void, .Callable, .List => return EvalError.MismatchedType
             };
 
             // Make sure index is within bounds
@@ -134,40 +135,40 @@ pub fn evalBinOpExpr(expr: *const ast.BinOpExpr, env: *venv.Env) EvalError!ast.L
             .Int => |l| switch (rhs) {
                 .Int => |r| ast.Lit {.Int = l + r},
                 .Float => |r| ast.Lit {.Float = i64asf64(l) + r},
-                .Bool, .Callable, .Void, .List => TypeError.MismatchedType,
+                .Bool, .Type, .Callable, .Void, .List => TypeError.MismatchedType,
             },
             .Float => |l| switch (rhs) {
                 .Int => |r| ast.Lit {.Float = l + i64asf64(r)},
                 .Float => |r| ast.Lit {.Float = l + r},
-                .Bool, .Callable, .Void, .List => TypeError.MismatchedType,
+                .Bool, .Type, .Callable, .Void, .List => TypeError.MismatchedType,
             },
-            .Bool, .Callable, .Void, .List => TypeError.MismatchedType,
+            .Bool, .Type, .Callable, .Void, .List => TypeError.MismatchedType,
         },
         .Sub => switch (lhs) {
             .Int => |l| switch (rhs) {
                 .Int => |r| ast.Lit {.Int = l - r},
                 .Float => |r| ast.Lit {.Float = i64asf64(l) - r},
-                .Bool, .Callable, .Void, .List => TypeError.MismatchedType,
+                .Bool, .Type, .Callable, .Void, .List => TypeError.MismatchedType,
             },
             .Float => |l| switch (rhs) {
                 .Int => |r| ast.Lit {.Float = l - i64asf64(r)},
                 .Float => |r| ast.Lit {.Float = l - r},
-                .Bool, .Callable, .Void, .List => TypeError.MismatchedType,
+                .Bool, .Type, .Callable, .Void, .List => TypeError.MismatchedType,
             },
-            .Bool, .Callable, .Void, .List => TypeError.MismatchedType,
+            .Bool, .Type, .Callable, .Void, .List => TypeError.MismatchedType,
         },
         .Mul => switch (lhs) {
             .Int => |l| switch (rhs) {
                 .Int => |r| ast.Lit {.Int = l * r},
                 .Float => |r| ast.Lit {.Float = i64asf64(l) * r},
-                .Bool, .Callable, .Void, .List => TypeError.MismatchedType,
+                .Bool, .Type, .Callable, .Void, .List => TypeError.MismatchedType,
             },
             .Float => |l| switch (rhs) {
                 .Int => |r| ast.Lit {.Float = l * i64asf64(r)},
                 .Float => |r| ast.Lit {.Float = l * r},
-                .Bool, .Callable, .Void, .List => TypeError.MismatchedType,
+                .Bool, .Type, .Callable, .Void, .List => TypeError.MismatchedType,
             },
-            .Bool, .Callable, .Void, .List => TypeError.MismatchedType,
+            .Bool, .Type, .Callable, .Void, .List => TypeError.MismatchedType,
         },
         .Div => switch (lhs) {
             .Int => |l| switch (rhs) {
@@ -179,7 +180,7 @@ pub fn evalBinOpExpr(expr: *const ast.BinOpExpr, env: *venv.Env) EvalError!ast.L
                     if (r == 0) return ArithmeticError.DivisionByZero;
                     return ast.Lit {.Float = i64asf64(l) / r};
                 },
-                .Bool, .Callable, .Void, .List => TypeError.MismatchedType,
+                .Bool, .Type, .Callable, .Void, .List => TypeError.MismatchedType,
             },
             .Float => |l| switch (rhs) {
                 .Int => |r| {
@@ -190,97 +191,101 @@ pub fn evalBinOpExpr(expr: *const ast.BinOpExpr, env: *venv.Env) EvalError!ast.L
                     if (r == 0) return ArithmeticError.DivisionByZero;
                     return ast.Lit {.Float = l / r};
                 },
-                .Bool, .Callable, .Void, .List => TypeError.MismatchedType,
+                .Bool, .Type, .Callable, .Void, .List => TypeError.MismatchedType,
             },
-            .Bool, .Callable, .Void, .List => TypeError.MismatchedType,
+            .Bool, .Type, .Callable, .Void, .List => TypeError.MismatchedType,
         },
         .And => switch (lhs) {
             .Bool => |l| switch (rhs) {
                 .Bool => |r| ast.Lit {.Bool = l and r},
-                .Int, .Float, .Callable, .Void, .List => TypeError.MismatchedType,
+                .Int, .Float, .Type, .Callable, .Void, .List => TypeError.MismatchedType,
             },
-            .Int, .Float, .Callable, .Void, .List => TypeError.MismatchedType,
+            .Int, .Float, .Type, .Callable, .Void, .List => TypeError.MismatchedType,
         },
         .Or => switch (lhs) {
             .Bool => |l| switch (rhs) {
                 .Bool => |r| ast.Lit {.Bool = l or r},
-                .Int, .Float, .Callable, .Void, .List => TypeError.MismatchedType,
+                .Int, .Float, .Type, .Callable, .Void, .List => TypeError.MismatchedType,
             },
-            .Int, .Float, .Callable, .Void, .List => TypeError.MismatchedType,
+            .Int, .Float, .Type, .Callable, .Void, .List => TypeError.MismatchedType,
         },
         .Eq => switch (lhs) {
             .Bool => |l| switch (rhs) {
                 .Bool => |r| ast.Lit {.Bool = l == r},
-                .Int, .Float, .Callable, .Void, .List => ast.Lit {.Bool = false},
+                .Int, .Float, .Type, .Callable, .Void, .List => ast.Lit {.Bool = false},
             },
             .Int => |l| switch (rhs) {
-                .Bool, .Callable, .Void, .List => ast.Lit {.Bool = false},
+                .Bool, .Type, .Callable, .Void, .List => ast.Lit {.Bool = false},
                 .Int => |r| ast.Lit {.Bool = l == r},
                 .Float => |r| ast.Lit {.Bool = i64asf64(l) == r}
             },
             .Float => |l| switch (rhs) {
-                .Bool, .Callable, .Void, .List => ast.Lit {.Bool = false},
+                .Bool, .Type, .Callable, .Void, .List => ast.Lit {.Bool = false},
                 .Int => |r| ast.Lit {.Bool = l == i64asf64(r)},
                 .Float => |r| ast.Lit {.Bool = l == r},
             },
             .Callable => |l| switch (rhs) {
                 .Callable => |r| ast.Lit {.Bool = std.meta.eql(l, r)},
-                .Int, .Float, .Bool, .Void, .List => ast.Lit {.Bool = false},
+                .Int, .Float, .Bool, .Type, .Void, .List => ast.Lit {.Bool = false},
             },
             .List => |l| switch (rhs) {
-                .Int, .Float, .Bool, .Callable, .Void => ast.Lit {.Bool = false},
+                .Int, .Float, .Bool, .Type, .Callable, .Void => ast.Lit {.Bool = false},
                 .List => |r| ast.Lit {.Bool = std.meta.eql(l.items, r.items)},
+            },
+            .Type => |tl| switch (rhs) {
+                .Bool, .Int, .Float, .Callable, .Void, .List => ast.Lit {.Bool = false},
+                .Type => |tr| ast.Lit {.Bool = tl == tr},
             },
             .Void => ast.Lit {.Bool = false},
         },
         .Lt => switch (lhs) {
-            .Bool, .Callable, .Void, .List => TypeError.MismatchedType,
+            .Bool, .Type, .Callable, .Void, .List => TypeError.MismatchedType,
             .Int => |l| switch (rhs) {
-                .Bool, .Callable, .Void, .List => TypeError.MismatchedType,
+                .Bool, .Type, .Callable, .Void, .List => TypeError.MismatchedType,
                 .Int => |r| ast.Lit {.Bool = l < r},
                 .Float => |r| ast.Lit {.Bool = i64asf64(l) < r}
             },
             .Float => |l| switch (rhs) {
-                .Bool, .Callable, .Void, .List => TypeError.MismatchedType,
+                .Bool, .Type, .Callable, .Void, .List => TypeError.MismatchedType,
                 .Int => |r| ast.Lit {.Bool = l < i64asf64(r)},
                 .Float => |r| ast.Lit {.Bool = l < r}
             }
         },
         .Gt => switch (lhs) {
-            .Bool, .Callable, .Void, .List => TypeError.MismatchedType,
+            .Bool, .Type, .Callable, .Void, .List => TypeError.MismatchedType,
             .Int => |l| switch (rhs) {
-                .Bool, .Callable, .Void, .List => TypeError.MismatchedType,
+                .Bool, .Type, .Callable, .Void, .List => TypeError.MismatchedType,
                 .Int => |r| ast.Lit {.Bool = l > r},
                 .Float => |r| ast.Lit {.Bool = i64asf64(l) > r}
             },
             .Float => |l| switch (rhs) {
-                .Bool, .Callable, .Void, .List => TypeError.MismatchedType,
+                .Bool, .Type, .Callable, .Void, .List => TypeError.MismatchedType,
                 .Int => |r| ast.Lit {.Bool = l > i64asf64(r)},
                 .Float => |r| ast.Lit {.Bool = l > r}
             }
         },
         .Lte => switch (lhs) {
-            .Bool, .Callable, .Void, .List => TypeError.MismatchedType,
+            .Bool, .Type, .Callable, .Void, .List => TypeError.MismatchedType,
             .Int => |l| switch (rhs) {
-                .Bool, .Callable, .Void, .List => TypeError.MismatchedType,
+                .Bool, .Type, .Callable, .Void, .List => TypeError.MismatchedType,
                 .Int => |r| ast.Lit {.Bool = l <= r},
                 .Float => |r| ast.Lit {.Bool = i64asf64(l) <= r}
             },
             .Float => |l| switch (rhs) {
-                .Bool, .Callable, .Void, .List => TypeError.MismatchedType,
+                .Bool, .Type, .Callable, .Void, .List => TypeError.MismatchedType,
                 .Int => |r| ast.Lit {.Bool = l <= i64asf64(r)},
                 .Float => |r| ast.Lit {.Bool = l <= r}
             }
         },
         .Gte => switch (lhs) {
-            .Bool, .Callable, .Void, .List => TypeError.MismatchedType,
+            .Bool, .Type, .Callable, .Void, .List => TypeError.MismatchedType,
             .Int => |l| switch (rhs) {
-                .Bool, .Callable, .Void, .List => TypeError.MismatchedType,
+                .Bool, .Type, .Callable, .Void, .List => TypeError.MismatchedType,
                 .Int => |r| ast.Lit {.Bool = l >= r},
                 .Float => |r| ast.Lit {.Bool = i64asf64(l) >= r}
             },
             .Float => |l| switch (rhs) {
-                .Bool, .Callable, .Void, .List => TypeError.MismatchedType,
+                .Bool, .Type, .Callable, .Void, .List => TypeError.MismatchedType,
                 .Int => |r| ast.Lit {.Bool = l >= i64asf64(r)},
                 .Float => |r| ast.Lit {.Bool = l >= r}
             }
@@ -297,13 +302,13 @@ pub fn evalUnOpExpr(expr: *const ast.UnOpExpr, env: *venv.Env) EvalError!ast.Lit
     // Evaluate operator
     return switch (expr.op) {
         .Not => switch (lit) {
-            .Int, .Float, .Callable, .Void, .List => TypeError.MismatchedType,
+            .Int, .Float, .Type, .Callable, .Void, .List => TypeError.MismatchedType,
             .Bool => |val| ast.Lit { .Bool = !val },
         },
         .Neg => switch (lit) {
             .Int => |val| ast.Lit { .Int = -val },
             .Float => |val| ast.Lit { .Float = -val },
-            .Bool, .Callable, .Void, .List => TypeError.MismatchedType,
+            .Bool, .Type, .Callable, .Void, .List => TypeError.MismatchedType,
         },
     };
 }
@@ -332,7 +337,7 @@ pub fn evalAssignExpr(expr: *const ast.AssignExpr, env: *venv.Env) EvalError!ast
                 .Var => |v| switch (v) {
                     .List => |l| l.destroyAll(env.allocator),
                     .Callable => |c| c.destroyAll(env.allocator),
-                    .Int, .Float, .Bool, .Void => {}
+                    .Int, .Float, .Bool, .Type, .Void => {}
                 }
             }
 
@@ -345,14 +350,14 @@ pub fn evalAssignExpr(expr: *const ast.AssignExpr, env: *venv.Env) EvalError!ast
             // NOTE: this creates an additional reference
             var lst: *ast.List = switch (try evalExpr(lidx.id, env)) {
                 .List => |l| l,
-                .Int, .Float, .Bool, .Void, .Callable => return EvalError.NotList
+                .Int, .Float, .Bool, .Type, .Void, .Callable => return EvalError.NotList
             };
             defer lst.destroyAll(env.allocator);
 
             // Evaluate index
             const idx: i64 = switch (try evalExpr(lidx.idx, env)) {
                 .Int => |i| i,
-                .Bool, .Float, .Void, .Callable, .List => return EvalError.MismatchedType,
+                .Bool, .Float, .Type, .Void, .Callable, .List => return EvalError.MismatchedType,
             };
 
             // Bounds checking
@@ -361,7 +366,7 @@ pub fn evalAssignExpr(expr: *const ast.AssignExpr, env: *venv.Env) EvalError!ast
             // Destroy existing value
             switch (lst.items[@as(usize, @intCast(idx))]) {
                 .List, .Callable => lst.items[@as(usize, @intCast(idx))].destroyAll(env.allocator),
-                .Int, .Float, .Bool, .Void => {}
+                .Int, .Float, .Type, .Bool, .Void => {}
             }
 
             // Perform assignment
@@ -381,7 +386,7 @@ pub fn evalCallExpr(expr: *const ast.CallExpr, env: *venv.Env) EvalError!ast.Lit
     // Evaluate identifier
     const callable: ast.Callable = switch(try evalExpr(expr.id, env)) {
         .Callable => |fun| fun,
-        .Int, .Float, .Bool, .Void, .List => return EvalError.NotCallable,
+        .Int, .Float, .Bool, .Type, .Void, .List => return EvalError.NotCallable,
     };
 
     // Create a scoped environment based on function closure
@@ -435,6 +440,38 @@ pub fn evalListExpr(exprs: []const *const ast.Expr, env: *venv.Env) EvalError!as
     return ast.Lit {.List = ptr};
 }
 
+pub fn evalAsExpr(expr: *const ast.AsExpr, env: *venv.Env) EvalError!ast.Lit {
+
+    // Evaluate left-hand-side
+    const lhs: ast.Lit = try evalExpr(expr.lhs, env);
+
+    // Evaluate right-hand side to a type literal
+    const tp: ast.Type = switch (try evalExpr(expr.as, env)) {
+        .Type => |tp| tp,
+        else => return EvalError.MismatchedType
+    };
+
+    // Evaluate type conversion
+    return switch (lhs) {
+        .Callable, .List, .Void, .Type => EvalError.MismatchedType,
+        .Bool => |b| switch (tp) {
+            .Bool => ast.Lit {.Bool = b},
+            .Int => ast.Lit {.Int = if (b) 1 else 0},
+            .Float => ast.Lit {.Float = if (b) 1.0 else 0.0},
+        },
+        .Float => |f| switch (tp) {
+            .Bool => ast.Lit {.Bool = f != 0.0},
+            .Int => ast.Lit {.Int = @intFromFloat(f)},
+            .Float => ast.Lit {.Float = f}
+        },
+        .Int => |i| switch (tp) {
+            .Bool => ast.Lit {.Bool = i != 0},
+            .Float => ast.Lit {.Float = @floatFromInt(i)},
+            .Int => ast.Lit {.Int = i}
+        }
+    };
+}
+
 
 pub fn evalExpr(expr: *const ast.Expr, env: *venv.Env) EvalError!ast.Lit {
     return switch (expr.*) {
@@ -451,6 +488,7 @@ pub fn evalExpr(expr: *const ast.Expr, env: *venv.Env) EvalError!ast.Lit {
         .AssignExpr => |ex| evalAssignExpr(&ex, env),
         .CallExpr => |ex| evalCallExpr(&ex, env),
         .ListExpr => |ex| evalListExpr(ex, env),
+        .AsExpr => |ex| evalAsExpr(&ex, env),
     };
 }
 
@@ -523,7 +561,7 @@ pub fn evalStmt(statement: ast.Stmt, env: *venv.Env) EvalError!StmtReturn {
                         // Evaluate index (size)
                         const size: i64 = switch (try evalExpr(li.idx, env)) {
                             .Int => |i| i,
-                            .Bool, .Float, .Callable, .Void, .List => return EvalError.MismatchedType,
+                            .Bool, .Float, .Type, .Callable, .Void, .List => return EvalError.MismatchedType,
                         };
 
                         // Do size checking
@@ -603,7 +641,7 @@ pub fn evalStmt(statement: ast.Stmt, env: *venv.Env) EvalError!StmtReturn {
             // Check condition
             var cond_res: ast.Lit = try evalExpr(stmt.cond, env);
             const res: bool = switch (cond_res) {
-                .Int, .Float, .Callable, .Void, .List => return TypeError.MismatchedType,
+                .Int, .Float, .Type, .Callable, .Void, .List => return TypeError.MismatchedType,
                 .Bool => |b| b,
             };
 
@@ -629,7 +667,7 @@ pub fn evalStmt(statement: ast.Stmt, env: *venv.Env) EvalError!StmtReturn {
                 // Check condition
                 var cond_lit: ast.Lit = try evalExpr(stmt.cond, env);
                 const res: bool = switch (cond_lit) {
-                    .Int, .Float, .Callable, .Void, .List => return TypeError.MismatchedType,
+                    .Int, .Float, .Type, .Callable, .Void, .List => return TypeError.MismatchedType,
                     .Bool => |b| b,
                 };
 
