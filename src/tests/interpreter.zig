@@ -2723,3 +2723,212 @@ test "callable in list immediate" {
         interpreter.EvalError.InvalidUpcall
     );
 }
+
+test "type conversion int - bool" {
+    // Prepare environment
+    var env = venv.Env.new(std.testing.allocator);
+    defer env.deinit();
+
+    // Test different cases
+    const e1: ast.Expr = ast.Expr {.AsExpr = ast.AsExpr {
+        .lhs = &ast.Expr {.Lit = ast.Lit {.Int = 1}},
+        .as = &ast.Expr {.Lit = ast.Lit {.Type = .Bool}}
+    }};
+    try std.testing.expectEqualDeep(
+        try interpreter.evalExpr(&e1, &env),
+        ast.Lit {.Bool = true}
+    );
+    const e2: ast.Expr = ast.Expr {.AsExpr = ast.AsExpr {
+        .lhs = &ast.Expr {.Lit = ast.Lit {.Int = 0}},
+        .as = &ast.Expr {.Lit = ast.Lit {.Type = .Bool}}
+    }};
+    try std.testing.expectEqualDeep(
+        try interpreter.evalExpr(&e2, &env),
+        ast.Lit {.Bool = false}
+    );
+    const e3: ast.Expr = ast.Expr {.AsExpr = ast.AsExpr {
+        .lhs = &ast.Expr {.Lit = ast.Lit {.Bool = true}},
+        .as = &ast.Expr {.Lit = ast.Lit {.Type = .Int}}
+    }};
+    try std.testing.expectEqualDeep(
+        try interpreter.evalExpr(&e3, &env),
+        ast.Lit {.Int = 1}
+    );
+    const e4: ast.Expr = ast.Expr {.AsExpr = ast.AsExpr {
+        .lhs = &ast.Expr {.Lit = ast.Lit {.Bool = false}},
+        .as = &ast.Expr {.Lit = ast.Lit {.Type = .Int}}
+    }};
+    try std.testing.expectEqualDeep(
+        try interpreter.evalExpr(&e4, &env),
+        ast.Lit {.Int = 0}
+    );
+    const e5: ast.Expr = ast.Expr {.AsExpr = ast.AsExpr {
+        .lhs = &ast.Expr {.Lit = ast.Lit {.Int = 2}},
+        .as = &ast.Expr {.Lit = ast.Lit {.Type = .Bool}}
+    }};
+    try std.testing.expectEqualDeep(
+        try interpreter.evalExpr(&e5, &env),
+        ast.Lit {.Bool = true}
+    );
+    const e6: ast.Expr = ast.Expr {.AsExpr = ast.AsExpr {
+        .lhs = &ast.Expr {.Lit = ast.Lit {.Int = -124}},
+        .as = &ast.Expr {.Lit = ast.Lit {.Type = .Bool}}
+    }};
+    try std.testing.expectEqualDeep(
+        try interpreter.evalExpr(&e6, &env),
+        ast.Lit {.Bool = true}
+    );
+    const e7: ast.Expr = ast.Expr {.AsExpr = ast.AsExpr {
+        .lhs = &ast.Expr {.Lit = ast.Lit {.Int = -(0)}},
+        .as = &ast.Expr {.Lit = ast.Lit {.Type = .Bool}}
+    }};
+    try std.testing.expectEqualDeep(
+        try interpreter.evalExpr(&e7, &env),
+        ast.Lit {.Bool = false}
+    );
+}
+
+test "type conversion float - bool" {
+    // Prepare environment
+    var env = venv.Env.new(std.testing.allocator);
+    defer env.deinit();
+
+    // Test different cases
+    const e1: ast.Expr = ast.Expr {.AsExpr = ast.AsExpr {
+        .lhs = &ast.Expr {.Lit = ast.Lit {.Float = 1.0}},
+        .as = &ast.Expr {.Lit = ast.Lit {.Type = .Bool}}
+    }};
+    try std.testing.expectEqualDeep(
+        try interpreter.evalExpr(&e1, &env),
+        ast.Lit {.Bool = true}
+    );
+    const e2: ast.Expr = ast.Expr {.AsExpr = ast.AsExpr {
+        .lhs = &ast.Expr {.Lit = ast.Lit {.Float = 0.0}},
+        .as = &ast.Expr {.Lit = ast.Lit {.Type = .Bool}}
+    }};
+    try std.testing.expectEqualDeep(
+        try interpreter.evalExpr(&e2, &env),
+        ast.Lit {.Bool = false}
+    );
+    const e3: ast.Expr = ast.Expr {.AsExpr = ast.AsExpr {
+        .lhs = &ast.Expr {.Lit = ast.Lit {.Bool = true}},
+        .as = &ast.Expr {.Lit = ast.Lit {.Type = .Float}}
+    }};
+    try std.testing.expectEqualDeep(
+        try interpreter.evalExpr(&e3, &env),
+        ast.Lit {.Float = 1.0}
+    );
+    const e4: ast.Expr = ast.Expr {.AsExpr = ast.AsExpr {
+        .lhs = &ast.Expr {.Lit = ast.Lit {.Bool = false}},
+        .as = &ast.Expr {.Lit = ast.Lit {.Type = .Float}}
+    }};
+    try std.testing.expectEqualDeep(
+        try interpreter.evalExpr(&e4, &env),
+        ast.Lit {.Float = 0.0}
+    );
+    const e5: ast.Expr = ast.Expr {.AsExpr = ast.AsExpr {
+        .lhs = &ast.Expr {.Lit = ast.Lit {.Float = 2.00203}},
+        .as = &ast.Expr {.Lit = ast.Lit {.Type = .Bool}}
+    }};
+    try std.testing.expectEqualDeep(
+        try interpreter.evalExpr(&e5, &env),
+        ast.Lit {.Bool = true}
+    );
+    const e6: ast.Expr = ast.Expr {.AsExpr = ast.AsExpr {
+        .lhs = &ast.Expr {.Lit = ast.Lit {.Float = -1.3232042}},
+        .as = &ast.Expr {.Lit = ast.Lit {.Type = .Bool}}
+    }};
+    try std.testing.expectEqualDeep(
+        try interpreter.evalExpr(&e6, &env),
+        ast.Lit {.Bool = true}
+    );
+    const e7: ast.Expr = ast.Expr {.AsExpr = ast.AsExpr {
+        .lhs = &ast.Expr {.Lit = ast.Lit {.Float = -(0.0)}},
+        .as = &ast.Expr {.Lit = ast.Lit {.Type = .Bool}}
+    }};
+    try std.testing.expectEqualDeep(
+        try interpreter.evalExpr(&e7, &env),
+        ast.Lit {.Bool = false}
+    );
+    const e8: ast.Expr = ast.Expr {.AsExpr = ast.AsExpr {
+        .lhs = &ast.Expr {.Lit = ast.Lit {.Float = 0.000001}},
+        .as = &ast.Expr {.Lit = ast.Lit {.Type = .Bool}}
+    }};
+    try std.testing.expectEqualDeep(
+        try interpreter.evalExpr(&e8, &env),
+        ast.Lit {.Bool = true}
+    );
+}
+
+
+test "type conversion int - float" {
+    // Prepare environment
+    var env = venv.Env.new(std.testing.allocator);
+    defer env.deinit();
+
+    // Test different cases
+    const e1: ast.Expr = ast.Expr {.AsExpr = ast.AsExpr {
+        .lhs = &ast.Expr {.Lit = ast.Lit {.Float = 1.0}},
+        .as = &ast.Expr {.Lit = ast.Lit {.Type = .Int}}
+    }};
+    try std.testing.expectEqualDeep(
+        try interpreter.evalExpr(&e1, &env),
+        ast.Lit {.Int = 1}
+    );
+    const e2: ast.Expr = ast.Expr {.AsExpr = ast.AsExpr {
+        .lhs = &ast.Expr {.Lit = ast.Lit {.Float = 0.0}},
+        .as = &ast.Expr {.Lit = ast.Lit {.Type = .Int}}
+    }};
+    try std.testing.expectEqualDeep(
+        try interpreter.evalExpr(&e2, &env),
+        ast.Lit {.Int = 0}
+    );
+    const e3: ast.Expr = ast.Expr {.AsExpr = ast.AsExpr {
+        .lhs = &ast.Expr {.Lit = ast.Lit {.Int = 1}},
+        .as = &ast.Expr {.Lit = ast.Lit {.Type = .Float}}
+    }};
+    try std.testing.expectEqualDeep(
+        try interpreter.evalExpr(&e3, &env),
+        ast.Lit {.Float = 1.0}
+    );
+    const e4: ast.Expr = ast.Expr {.AsExpr = ast.AsExpr {
+        .lhs = &ast.Expr {.Lit = ast.Lit {.Int = 0}},
+        .as = &ast.Expr {.Lit = ast.Lit {.Type = .Float}}
+    }};
+    try std.testing.expectEqualDeep(
+        try interpreter.evalExpr(&e4, &env),
+        ast.Lit {.Float = 0.0}
+    );
+    const e5: ast.Expr = ast.Expr {.AsExpr = ast.AsExpr {
+        .lhs = &ast.Expr {.Lit = ast.Lit {.Float = 2.00203}},
+        .as = &ast.Expr {.Lit = ast.Lit {.Type = .Int}}
+    }};
+    try std.testing.expectEqualDeep(
+        try interpreter.evalExpr(&e5, &env),
+        ast.Lit {.Int = 2}
+    );
+    const e6: ast.Expr = ast.Expr {.AsExpr = ast.AsExpr {
+        .lhs = &ast.Expr {.Lit = ast.Lit {.Float = -1.3232042}},
+        .as = &ast.Expr {.Lit = ast.Lit {.Type = .Int}}
+    }};
+    try std.testing.expectEqualDeep(
+        try interpreter.evalExpr(&e6, &env),
+        ast.Lit {.Int = -1}
+    );
+    const e7: ast.Expr = ast.Expr {.AsExpr = ast.AsExpr {
+        .lhs = &ast.Expr {.Lit = ast.Lit {.Float = -(0.0)}},
+        .as = &ast.Expr {.Lit = ast.Lit {.Type = .Int}}
+    }};
+    try std.testing.expectEqualDeep(
+        try interpreter.evalExpr(&e7, &env),
+        ast.Lit {.Int = 0}
+    );
+    const e8: ast.Expr = ast.Expr {.AsExpr = ast.AsExpr {
+        .lhs = &ast.Expr {.Lit = ast.Lit {.Float = 0.000001}},
+        .as = &ast.Expr {.Lit = ast.Lit {.Type = .Int}}
+    }};
+    try std.testing.expectEqualDeep(
+        try interpreter.evalExpr(&e8, &env),
+        ast.Lit {.Int = 0}
+    );
+}
