@@ -78,6 +78,27 @@ pub const List = struct {
 
 };
 
+pub const Type = enum {
+    Int,
+    Float,
+    Bool,
+
+    pub fn format(
+        self: Type,
+        comptime fmt: []const u8,
+        options: std.fmt.FormatOptions,
+        writer: anytype
+    ) !void {
+        _ = fmt;
+        _ = options;
+        switch(self) {
+            .Int => try writer.print("Int", .{}),
+            .Float => try writer.print("Float", .{}),
+            .Bool => try writer.print("Bool", .{}),
+        }
+    }
+};
+
 pub const Lit = union(enum) {
     Int: i64,
     Float: f64,
@@ -85,10 +106,11 @@ pub const Lit = union(enum) {
     Void: void,
     Callable: Callable,
     List: *List,
+    Type: Type,
 
     pub fn destroyAll(self: *Lit, allocator: std.mem.Allocator) void {
         switch (self.*) {
-            .Int, .Bool, .Float, .Void => {},
+            .Int, .Bool, .Float, .Type, .Void => {},
             .Callable => |fun| fun.destroyAll(allocator),
             .List => |lst| lst.destroyAll(allocator),
         }
@@ -109,6 +131,7 @@ pub const Lit = union(enum) {
             .Void => try writer.print("{{}}", .{}),
             .Callable => |f| try writer.print("{}", .{f}),
             .List => |l| try writer.print("{}", .{l}),
+            .Type => |t| try writer.print("{}", .{t}),
         }
     }
 };
@@ -365,6 +388,27 @@ pub const CallExpr = struct {
     }
 };
 
+pub const AsExpr = struct {
+    lhs: *const Expr,
+    as: *const Expr,
+
+    pub fn destroyAll(self: *const AsExpr, allocator: std.mem.Allocator) void {
+        self.lhs.destroyAll(allocator);
+        self.as.destroyAll(allocator);
+    }
+
+    pub fn format(
+        self: AsExpr,
+        comptime fmt: []const u8,
+        options: std.fmt.FormatOptions,
+        writer: anytype
+    ) !void {
+        _ = fmt;
+        _ = options;
+        try writer.print("{} as {}", .{self.lhs, self.as});
+    }
+};
+
 pub const Expr = union(enum) {
     BinOpExpr: BinOpExpr,
     UnOpExpr: UnOpExpr,
@@ -373,6 +417,7 @@ pub const Expr = union(enum) {
     AssignExpr: AssignExpr,
     CallExpr: CallExpr,
     ListExpr: []const *const Expr,
+    AsExpr: AsExpr,
 
     pub fn destroyAll(self: *const Expr, allocator: std.mem.Allocator) void {
         switch (self.*) {
@@ -385,7 +430,8 @@ pub const Expr = union(enum) {
             .ListExpr => |exprs| {
                 for (exprs) |expr| expr.destroyAll(allocator);
                 allocator.free(exprs);
-            }
+            },
+            .AsExpr => |*expr| expr.destroyAll(allocator),
         }
         allocator.destroy(self);
     }
@@ -407,7 +453,8 @@ pub const Expr = union(enum) {
                 try writer.print("<", .{});
                 for (exprs) |expr| try writer.print("{},", .{expr});
                 try writer.print(">", .{});
-            }
+            },
+            .AsExpr => |expr| expr.format(fmt, options, writer),
         };
     }
 };

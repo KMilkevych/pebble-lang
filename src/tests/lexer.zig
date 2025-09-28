@@ -1800,3 +1800,25 @@ test "booleans alternative" {
 
     try expect(tokens_eql(tokens.items, expected));
 }
+
+test "as and type keywords" {
+
+    const input = "true as Int as Float as Bool";
+    var lx = lexer.Lexer.new(input, std.testing.allocator);
+
+    const tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit();
+
+    const expected: []const Token = &[_]Token{
+        Token {.BOOLLIT = true},
+        Token {.AS = {}},
+        Token {.INT = {}},
+        Token {.AS = {}},
+        Token {.FLOAT = {}},
+        Token {.AS = {}},
+        Token {.BOOL = {}},
+        Token {.EOF = {}}
+    };
+
+    try expect(tokens_eql(tokens.items, expected));
+}

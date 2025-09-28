@@ -106,6 +106,18 @@ pub const Parser = struct {
                 lhs = self.allocator.create(ast.Expr) catch unreachable;
                 lhs.* = ast.Expr { .Lval = ast.Lval {.Var = val}};
             },
+            .INT => {
+                lhs = self.allocator.create(ast.Expr) catch unreachable;
+                lhs.* = ast.Expr {.Lit = ast.Lit {.Type = .Int}};
+            },
+            .FLOAT => {
+                lhs = self.allocator.create(ast.Expr) catch unreachable;
+                lhs.* = ast.Expr {.Lit = ast.Lit {.Type = .Float}};
+            },
+            .BOOL => {
+                lhs = self.allocator.create(ast.Expr) catch unreachable;
+                lhs.* = ast.Expr {.Lit = ast.Lit {.Type = .Bool}};
+            },
 
             // Unary operators
             .MINUS, .NOT => {
@@ -269,6 +281,10 @@ pub const Parser = struct {
                         .lhs = lhs,
                         .prop = rhs
                     }}},
+                    .AS => ast.Expr {.AsExpr = ast.AsExpr {
+                        .lhs = lhs,
+                        .as = rhs
+                    }},
                     else => ast.Expr {.BinOpExpr = ast.BinOpExpr {
                         .lhs = lhs,
                         .op = ast.BinOp.from_token(op_token).?,

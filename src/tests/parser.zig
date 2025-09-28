@@ -2758,3 +2758,92 @@ test "float expression" {
     }};
     try std.testing.expectEqualDeep(expect, result);
 }
+
+
+test "as expression" {
+
+    var tokens: std.ArrayList(Token) = .init(std.testing.allocator);
+    defer tokens.deinit();
+
+    // 3.14 as Int
+    try tokens.append(Token {.FLOATLIT = 3.14});
+    try tokens.append(Token {.AS = {}});
+    try tokens.append(Token {.INT = {}});
+    try tokens.append(Token {.EOF = {}});
+    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+
+    const result: *ast.Expr = try prs.parseExpr();
+    defer result.destroyAll(std.testing.allocator);
+
+    const expect = &ast.Expr {.AsExpr = ast.AsExpr {
+        .lhs = &ast.Expr {.Lit = ast.Lit {.Float = 3.14}},
+        .as = &ast.Expr {.Lit = ast.Lit {.Type = .Int}}
+    }};
+    try std.testing.expectEqualDeep(expect, result);
+}
+
+test "as expression left-associative" {
+
+    var tokens: std.ArrayList(Token) = .init(std.testing.allocator);
+    defer tokens.deinit();
+
+    // 3.14 as Int
+    try tokens.append(Token {.FLOATLIT = 3.14});
+    try tokens.append(Token {.AS = {}});
+    try tokens.append(Token {.INT = {}});
+    try tokens.append(Token {.AS = {}});
+    try tokens.append(Token {.BOOL = {}});
+    try tokens.append(Token {.EOF = {}});
+    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+
+    const result: *ast.Expr = try prs.parseExpr();
+    defer result.destroyAll(std.testing.allocator);
+
+    const expect = &ast.Expr {.AsExpr = ast.AsExpr {
+        .lhs = &ast.Expr {.AsExpr = ast.AsExpr {
+            .lhs = &ast.Expr {.Lit = ast.Lit {.Float = 3.14}},
+            .as = &ast.Expr {.Lit = ast.Lit {.Type = .Int}}
+        }},
+        .as = &ast.Expr {.Lit = ast.Lit {.Type = .Bool}}
+    }};
+    try std.testing.expectEqualDeep(expect, result);
+}
+
+
+test "as expression binding power" {
+
+    var tokens: std.ArrayList(Token) = .init(std.testing.allocator);
+    defer tokens.deinit();
+
+    // 3.14 > 5 as Int
+    // 1) 3.14 > (5 as Int)
+    // 2) (3.14 > 5) as Int
+    try tokens.append(Token {.FLOATLIT = 3.14});
+    try tokens.append(Token {.GT = {}});
+    try tokens.append(Token {.INTLIT = 5});
+    try tokens.append(Token {.AS = {}});
+    try tokens.append(Token {.FLOAT = {}});
+    try tokens.append(Token {.EOF = {}});
+    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+
+    const result: *ast.Expr = try prs.parseExpr();
+    defer result.destroyAll(std.testing.allocator);
+
+    // const expect = &ast.Expr {.AsExpr = ast.AsExpr {
+    //     .lhs = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
+    //         .lhs = &ast.Expr {.Lit = ast.Lit {.Float= 3.14}},
+    //         .op = .Gt,
+    //         .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 5}}
+    //     }},
+    //     .as = &ast.Expr {.Lit = ast.Lit {.Type = .Int}}
+    // }};
+    const expect = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
+        .lhs = &ast.Expr {.Lit = ast.Lit {.Float = 3.14}},
+        .op = .Gt,
+        .rhs = &ast.Expr {.AsExpr = ast.AsExpr {
+            .lhs = &ast.Expr {.Lit = ast.Lit {.Int = 5}},
+            .as = &ast.Expr {.Lit = ast.Lit {.Type = .Float}}
+        }}
+    }};
+    try std.testing.expectEqualDeep(expect, result);
+}
