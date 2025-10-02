@@ -130,6 +130,7 @@ gives output
 - Immediate list literals using ~<x1, x * 3 + 1, <1, 2, 3>, false>~ syntax
 - Comments prefixed with ~;~ or ~#~
 - Floating point types
+- Type conversions using ~as~ keyword
 
 ** Not yet implemented
 - String types
