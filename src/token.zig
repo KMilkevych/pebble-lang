@@ -1,6 +1,7 @@
 const std = @import("std");
+const loc = @import("location.zig");
 
-pub const TokenType: type = enum {
+const TokenTypeInner: type = enum {
     INTLIT,
     FLOATLIT,
     BOOLLIT,
@@ -45,8 +46,7 @@ pub const TokenType: type = enum {
     ILLEGAL
 };
 
-// TODO: Token must know at all times where it is
-pub const Token: type = union(TokenType) {
+pub const TokenType: type = union(TokenTypeInner) {
 
     // Literals and identifiers
     INTLIT: i64,
@@ -100,64 +100,8 @@ pub const Token: type = union(TokenType) {
     ERROR: []const u8,
     ILLEGAL: u8,
 
-    pub fn format(
-        self: Token,
-        comptime fmt: []const u8,
-        options: std.fmt.FormatOptions,
-        writer: anytype
-    ) !void {
-        _ = fmt;
-        _ = options;
-        switch (self) {
-            .EOF      => try writer.print("[EOF     ]:", .{}),
-            .LB       => try writer.print("[LB      ]:", .{}),
-            .COMMA    => try writer.print("[COMMA   ]:", .{}),
-            .DOT      => try writer.print("[DOT     ]:", .{}),
-            .ERROR    => |val| try writer.print("[ERROR   ]: {s}", .{val}),
-            .ILLEGAL  => |val| try writer.print("[ILLEGAL ]: {c}", .{val}),
-            .LPAREN   => try writer.print("[LPAREN  ]:", .{}),
-            .RPAREN   => try writer.print("[RPAREN  ]:", .{}),
-            .LBRACK   => try writer.print("[LBRACK  ]:", .{}),
-            .RBRACK   => try writer.print("[RBRACK  ]:", .{}),
-            .LCURLY   => try writer.print("[LCURLY  ]:", .{}),
-            .RCURLY   => try writer.print("[RCURLY  ]:", .{}),
-            .PLUS     => try writer.print("[PLUS    ]:", .{}),
-            .MINUS    => try writer.print("[MINUS   ]:", .{}),
-            .DIV      => try writer.print("[DIV     ]:", .{}),
-            .MUL      => try writer.print("[MUL     ]:", .{}),
-            .AND      => try writer.print("[AND     ]:", .{}),
-            .OR       => try writer.print("[OR      ]:", .{}),
-            .NOT      => try writer.print("[NOT     ]:", .{}),
-            .DEQ      => try writer.print("[DEQ     ]:", .{}),
-            .EQ       => try writer.print("[EQ      ]:", .{}),
-            .LT       => try writer.print("[LT      ]:", .{}),
-            .GT       => try writer.print("[GT      ]:", .{}),
-            .LTE      => try writer.print("[LTE     ]:", .{}),
-            .GTE      => try writer.print("[GTE     ]:", .{}),
-            .DECLARE  => try writer.print("[DECLARE ]:", .{}),
-            .PRINT    => try writer.print("[PRINT   ]:", .{}),
-            .IF       => try writer.print("[IF      ]:", .{}),
-            .ELSE     => try writer.print("[ELSE    ]:", .{}),
-            .WHILE    => try writer.print("[WHILE   ]:", .{}),
-            .BREAK    => try writer.print("[BREAK   ]:", .{}),
-            .CONTINUE => try writer.print("[CONTINUE]:", .{}),
-            .RETURN   => try writer.print("[RETURN  ]:", .{}),
-            .FUN      => try writer.print("[FUN     ]:", .{}),
-            .INT      => try writer.print("[INT     ]:", .{}),
-            .FLOAT    => try writer.print("[FLOAT   ]:", .{}),
-            .BOOL     => try writer.print("[BOOL    ]:", .{}),
-            .AS       => try writer.print("[AS      ]:", .{}),
-            .INTLIT   => |val| try writer.print("[INTLIT  ]: {}", .{val}),
-            .FLOATLIT => |val| try writer.print("[FLOATLIT]: {}", .{val}),
-            .BOOLLIT  => |val| try writer.print("[BOOLLIT ]: {}", .{val}),
-            .IDENT    => |val| try writer.print("[IDENT   ]: {s}", .{val})
-        }
-    }
+    pub fn getInfixPrecedence(self: TokenType) ?InfixPrecedence {
 
-    pub fn getInfixPrecedence(self: Token) ?InfixPrecedence {
-        // TODO:
-        // Implement the remaining tokens here..
-        // TODO: FUN should be binding hard here...
         return switch(self) {
 
 
@@ -186,20 +130,81 @@ pub const Token: type = union(TokenType) {
         };
     }
 
-    pub fn getPrefixPrecedence(self: Token) ?u8 {
+    pub fn getPrefixPrecedence(self: TokenType) ?u8 {
         return switch(self) {
             .MINUS, .NOT => 19,
             else => null
         };
     }
 
-    pub fn getPostfixPrecedence(self: Token) ?u8 {
+    pub fn getPostfixPrecedence(self: TokenType) ?u8 {
         return switch(self) {
             .LPAREN => 21,
             .LBRACK => 23,
             else => null
         };
     }
+};
+
+pub const Token: type = struct {
+
+    location: loc.Location = .{.file = "", .column = 0, .line = 0},
+    tokenType: TokenType,
+
+    pub fn format(
+        self: Token,
+        comptime fmt: []const u8,
+        options: std.fmt.FormatOptions,
+        writer: anytype
+    ) !void {
+        _ = fmt;
+        _ = options;
+        switch (self.tokenType) {
+            .EOF      => try writer.print("[EOF     ]: | {}", .{self.location}),
+            .LB       => try writer.print("[LB      ]: | {}", .{self.location}),
+            .COMMA    => try writer.print("[COMMA   ]: | {}", .{self.location}),
+            .DOT      => try writer.print("[DOT     ]: | {}", .{self.location}),
+            .ERROR    => |val| try writer.print("[ERROR   ]: {s} | {}", .{val, self.location}),
+            .ILLEGAL  => |val| try writer.print("[ILLEGAL ]: {c} | {}", .{val, self.location}),
+            .LPAREN   => try writer.print("[LPAREN  ]: | {}", .{self.location}),
+            .RPAREN   => try writer.print("[RPAREN  ]: | {}", .{self.location}),
+            .LBRACK   => try writer.print("[LBRACK  ]: | {}", .{self.location}),
+            .RBRACK   => try writer.print("[RBRACK  ]: | {}", .{self.location}),
+            .LCURLY   => try writer.print("[LCURLY  ]: | {}", .{self.location}),
+            .RCURLY   => try writer.print("[RCURLY  ]: | {}", .{self.location}),
+            .PLUS     => try writer.print("[PLUS    ]: | {}", .{self.location}),
+            .MINUS    => try writer.print("[MINUS   ]: | {}", .{self.location}),
+            .DIV      => try writer.print("[DIV     ]: | {}", .{self.location}),
+            .MUL      => try writer.print("[MUL     ]: | {}", .{self.location}),
+            .AND      => try writer.print("[AND     ]: | {}", .{self.location}),
+            .OR       => try writer.print("[OR      ]: | {}", .{self.location}),
+            .NOT      => try writer.print("[NOT     ]: | {}", .{self.location}),
+            .DEQ      => try writer.print("[DEQ     ]: | {}", .{self.location}),
+            .EQ       => try writer.print("[EQ      ]: | {}", .{self.location}),
+            .LT       => try writer.print("[LT      ]: | {}", .{self.location}),
+            .GT       => try writer.print("[GT      ]: | {}", .{self.location}),
+            .LTE      => try writer.print("[LTE     ]: | {}", .{self.location}),
+            .GTE      => try writer.print("[GTE     ]: | {}", .{self.location}),
+            .DECLARE  => try writer.print("[DECLARE ]: | {}", .{self.location}),
+            .PRINT    => try writer.print("[PRINT   ]: | {}", .{self.location}),
+            .IF       => try writer.print("[IF      ]: | {}", .{self.location}),
+            .ELSE     => try writer.print("[ELSE    ]: | {}", .{self.location}),
+            .WHILE    => try writer.print("[WHILE   ]: | {}", .{self.location}),
+            .BREAK    => try writer.print("[BREAK   ]: | {}", .{self.location}),
+            .CONTINUE => try writer.print("[CONTINUE]: | {}", .{self.location}),
+            .RETURN   => try writer.print("[RETURN  ]: | {}", .{self.location}),
+            .FUN      => try writer.print("[FUN     ]: | {}", .{self.location}),
+            .INT      => try writer.print("[INT     ]: | {}", .{self.location}),
+            .FLOAT    => try writer.print("[FLOAT   ]: | {}", .{self.location}),
+            .BOOL     => try writer.print("[BOOL    ]: | {}", .{self.location}),
+            .AS       => try writer.print("[AS      ]: | {}", .{self.location}),
+            .INTLIT   => |val| try writer.print("[INTLIT  ]: {} | {}", .{val, self.location}),
+            .FLOATLIT => |val| try writer.print("[FLOATLIT]: {} | {}", .{val, self.location}),
+            .BOOLLIT  => |val| try writer.print("[BOOLLIT ]: {} | {}", .{val, self.location}),
+            .IDENT    => |val| try writer.print("[IDENT   ]: {s} | {}", .{val, self.location})
+        }
+    }
+
 };
 
 pub const InfixPrecedence: type = struct {

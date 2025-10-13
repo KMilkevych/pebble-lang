@@ -245,7 +245,7 @@ pub const BinOp = enum {
         }
     }
 
-    pub fn from_token(tok: token.Token) ?BinOp {
+    pub fn from_token(tok: token.TokenType) ?BinOp {
         return switch (tok) {
             .PLUS => BinOp.Add,
             .MINUS => BinOp.Sub,
@@ -281,7 +281,7 @@ pub const UnOp = enum {
         }
     }
 
-    pub fn from_token(tok: token.Token) ?UnOp {
+    pub fn from_token(tok: token.TokenType) ?UnOp {
         return switch(tok) {
             .MINUS => UnOp.Neg,
             .NOT => UnOp.Not,

@@ -3,6 +3,7 @@ const interpreter = @import("../interpreter.zig");
 const lexer = @import("../lexer.zig");
 const token = @import("../token.zig");
 const Token = token.Token;
+const TokenType = token.TokenType;
 
 const std = @import("std");
 const expect = std.testing.expect;
@@ -19,34 +20,34 @@ fn printTokens(tokens: std.ArrayList(Token)) void {
 
 test "tokens_eql" {
     const tokens1: []const Token = &[_]Token {
-        Token {.INTLIT = 3},
-        Token {.PLUS = {}},
-        Token {.EOF = {}}
+        Token {.tokenType = TokenType {.INTLIT = 3}},
+        Token {.tokenType = TokenType {.PLUS = {}}},
+        Token {.tokenType = TokenType {.EOF = {}}}
     };
 
     const tokens2: []const Token = &[_]Token {
-        Token {.INTLIT = 4},
-        Token {.PLUS = {}},
-        Token {.EOF = {}}
+        Token {.tokenType = TokenType {.INTLIT = 4}},
+        Token {.tokenType = TokenType {.PLUS = {}}},
+        Token {.tokenType = TokenType {.EOF = {}}}
     };
 
     const tokens3: []const Token = &[_]Token {
-        Token {.INTLIT = 3},
-        Token {.MINUS = {}},
-        Token {.EOF = {}}
+        Token {.tokenType = TokenType {.INTLIT = 3}},
+        Token {.tokenType = TokenType {.MINUS = {}}},
+        Token {.tokenType = TokenType {.EOF = {}}}
     };
 
     const tokens4: []const Token = &[_]Token {
-        Token {.INTLIT = 3},
-        Token {.MINUS = {}},
-        Token {.EOF = {}},
-        Token {.EOF = {}}
+        Token {.tokenType = TokenType {.INTLIT = 3}},
+        Token {.tokenType = TokenType {.MINUS = {}}},
+        Token {.tokenType = TokenType {.EOF = {}}},
+        Token {.tokenType = TokenType {.EOF = {}}}
     };
 
     const tokens5: []const Token = &[_]Token {
-        Token {.INTLIT = 3},
-        Token {.PLUS = {}},
-        Token {.EOF = {}}
+        Token {.tokenType = TokenType {.INTLIT = 3}},
+        Token {.tokenType = TokenType {.PLUS = {}}},
+        Token {.tokenType = TokenType {.EOF = {}}}
     };
 
     try expect(!tokens_eql(tokens1, tokens2));
@@ -56,13 +57,13 @@ test "tokens_eql" {
 }
 
 test "tokens_eql 2" {
-    try expect(std.meta.eql(Token {.IDENT = "identifier"}, Token {.IDENT = "identifier"}));
+    try expect(std.meta.eql(Token {.tokenType = TokenType {.IDENT = "identifier"}}, Token {.tokenType = TokenType {.IDENT = "identifier"}}));
 }
 
 test "tokens_eql 3" {
     const slice = "id";
-    const tk1: Token = Token {.IDENT = "id"};
-    const tk2: Token = Token {.IDENT = slice};
+    const tk1: Token = Token {.tokenType = TokenType {.IDENT = "id"}};
+    const tk2: Token = Token {.tokenType = TokenType {.IDENT = slice}};
     try expect(std.meta.eql(tk1, tk2));
 }
 
@@ -75,16 +76,16 @@ test "intlits" {
     defer tokens.deinit();
 
     const expected: []const Token = &[_]Token{
-        Token {.INTLIT = 12},
-        Token {.PLUS = {}},
-        Token {.INTLIT = 2},
-        Token {.PLUS = {}},
-        Token {.INTLIT = 891},
-        Token {.PLUS = {}},
-        Token {.INTLIT = 21823},
-        Token {.PLUS = {}},
-        Token {.INTLIT = 2},
-        Token {.EOF = {}}
+        Token {.tokenType = TokenType {.INTLIT = 12}},
+        Token {.tokenType = TokenType {.PLUS = {}}},
+        Token {.tokenType = TokenType {.INTLIT = 2}},
+        Token {.tokenType = TokenType {.PLUS = {}}},
+        Token {.tokenType = TokenType {.INTLIT = 891}},
+        Token {.tokenType = TokenType {.PLUS = {}}},
+        Token {.tokenType = TokenType {.INTLIT = 21823}},
+        Token {.tokenType = TokenType {.PLUS = {}}},
+        Token {.tokenType = TokenType {.INTLIT = 2}},
+        Token {.tokenType = TokenType {.EOF = {}}}
     };
 
     try expect(tokens_eql(tokens.items, expected));
@@ -100,16 +101,16 @@ test "whitespace" {
     defer tokens.deinit();
 
     const expected: []const Token = &[_]Token{
-        Token {.PLUS = {}},
-        Token {.PLUS = {}},
-        Token {.PLUS = {}},
-        Token {.PLUS = {}},
-        Token {.PLUS = {}},
-        Token {.PLUS = {}},
-        Token {.PLUS = {}},
-        Token {.PLUS = {}},
-        Token {.PLUS = {}},
-        Token {.EOF = {}}
+        Token {.tokenType = TokenType {.PLUS = {}}},
+        Token {.tokenType = TokenType {.PLUS = {}}},
+        Token {.tokenType = TokenType {.PLUS = {}}},
+        Token {.tokenType = TokenType {.PLUS = {}}},
+        Token {.tokenType = TokenType {.PLUS = {}}},
+        Token {.tokenType = TokenType {.PLUS = {}}},
+        Token {.tokenType = TokenType {.PLUS = {}}},
+        Token {.tokenType = TokenType {.PLUS = {}}},
+        Token {.tokenType = TokenType {.PLUS = {}}},
+        Token {.tokenType = TokenType {.EOF = {}}}
     };
 
     try expect(tokens_eql(tokens.items, expected));
@@ -125,24 +126,24 @@ test "operators" {
     defer tokens.deinit();
 
     const expected: []const Token = &[_]Token{
-        Token {.LPAREN = {}},
-        Token {.INTLIT = 1},
-        Token {.PLUS = {}},
-        Token {.INTLIT = 3},
-        Token {.RPAREN = {}},
-        Token {.MUL = {}},
-        Token {.LPAREN = {}},
-        Token {.INTLIT = 8912},
-        Token {.OR = {}},
-        Token {.INTLIT = 123},
-        Token {.RPAREN = {}},
-        Token {.AND = {}},
-        Token {.INTLIT = 4},
-        Token {.DIV = {}},
-        Token {.INTLIT = 5},
-        Token {.DEQ = {}},
-        Token {.INTLIT = 12},
-        Token {.EOF = {}}
+        Token {.tokenType = TokenType {.LPAREN = {}}},
+        Token {.tokenType = TokenType {.INTLIT = 1}},
+        Token {.tokenType = TokenType {.PLUS = {}}},
+        Token {.tokenType = TokenType {.INTLIT = 3}},
+        Token {.tokenType = TokenType {.RPAREN = {}}},
+        Token {.tokenType = TokenType {.MUL = {}}},
+        Token {.tokenType = TokenType {.LPAREN = {}}},
+        Token {.tokenType = TokenType {.INTLIT = 8912}},
+        Token {.tokenType = TokenType {.OR = {}}},
+        Token {.tokenType = TokenType {.INTLIT = 123}},
+        Token {.tokenType = TokenType {.RPAREN = {}}},
+        Token {.tokenType = TokenType {.AND = {}}},
+        Token {.tokenType = TokenType {.INTLIT = 4}},
+        Token {.tokenType = TokenType {.DIV = {}}},
+        Token {.tokenType = TokenType {.INTLIT = 5}},
+        Token {.tokenType = TokenType {.DEQ = {}}},
+        Token {.tokenType = TokenType {.INTLIT = 12}},
+        Token {.tokenType = TokenType {.EOF = {}}}
     };
 
     try expect(tokens_eql(tokens.items, expected));
@@ -157,18 +158,18 @@ test "booleans" {
     defer tokens.deinit();
 
     const expected: []const Token = &[_]Token{
-        Token {.NOT = {}},
-        Token {.LPAREN = {}},
-        Token {.BOOLLIT = true},
-        Token {.AND = {}},
-        Token {.BOOLLIT = false},
-        Token {.RPAREN = {}},
-        Token {.OR = {}},
-        Token {.NOT = {}},
-        Token {.BOOLLIT = true},
-        Token {.DEQ = {}},
-        Token {.BOOLLIT = false},
-        Token {.EOF = {}}
+        Token {.tokenType = TokenType {.NOT = {}}},
+        Token {.tokenType = TokenType {.LPAREN = {}}},
+        Token {.tokenType = TokenType {.BOOLLIT = true}},
+        Token {.tokenType = TokenType {.AND = {}}},
+        Token {.tokenType = TokenType {.BOOLLIT = false}},
+        Token {.tokenType = TokenType {.RPAREN = {}}},
+        Token {.tokenType = TokenType {.OR = {}}},
+        Token {.tokenType = TokenType {.NOT = {}}},
+        Token {.tokenType = TokenType {.BOOLLIT = true}},
+        Token {.tokenType = TokenType {.DEQ = {}}},
+        Token {.tokenType = TokenType {.BOOLLIT = false}},
+        Token {.tokenType = TokenType {.EOF = {}}}
     };
 
     try expect(tokens_eql(tokens.items, expected));
@@ -183,14 +184,14 @@ test "illegal" {
     defer tokens.deinit();
 
     const expected: []const Token = &[_]Token{
-        Token {.INTLIT = 12},
-        Token {.ILLEGAL = '\''},
-        Token {.INTLIT = 32},
-        Token {.ILLEGAL = '^'},
-        Token {.INTLIT = 23},
-        Token {.ILLEGAL = '@'},
-        Token {.INTLIT = 3},
-        Token {.EOF = {}}
+        Token {.tokenType = TokenType {.INTLIT = 12}},
+        Token {.tokenType = TokenType {.ILLEGAL = '\''}},
+        Token {.tokenType = TokenType {.INTLIT = 32}},
+        Token {.tokenType = TokenType {.ILLEGAL = '^'}},
+        Token {.tokenType = TokenType {.INTLIT = 23}},
+        Token {.tokenType = TokenType {.ILLEGAL = '@'}},
+        Token {.tokenType = TokenType {.INTLIT = 3}},
+        Token {.tokenType = TokenType {.EOF = {}}}
     };
 
     try expect(tokens_eql(tokens.items, expected));
@@ -205,14 +206,14 @@ test "bool literals" {
     defer tokens.deinit();
 
     const expected: []const Token = &[_]Token{
-        Token {.BOOLLIT = true},
-        Token {.AND = {}},
-        Token {.BOOLLIT = false},
-        Token {.OR = {}},
-        Token {.BOOLLIT = true},
-        Token {.MUL = {}},
-        Token {.BOOLLIT = false},
-        Token {.EOF = {}}
+        Token {.tokenType = TokenType {.BOOLLIT = true}},
+        Token {.tokenType = TokenType {.AND = {}}},
+        Token {.tokenType = TokenType {.BOOLLIT = false}},
+        Token {.tokenType = TokenType {.OR = {}}},
+        Token {.tokenType = TokenType {.BOOLLIT = true}},
+        Token {.tokenType = TokenType {.MUL = {}}},
+        Token {.tokenType = TokenType {.BOOLLIT = false}},
+        Token {.tokenType = TokenType {.EOF = {}}}
     };
 
     try expect(tokens_eql(tokens.items, expected));
@@ -227,10 +228,10 @@ test "keyword" {
     defer tokens.deinit();
 
     const expected: []const Token = &[_]Token{
-        Token {.DECLARE = {}},
-        Token {.AND = {}},
-        Token {.IDENT = "declare4declare"},
-        Token {.EOF = {}}
+        Token {.tokenType = TokenType {.DECLARE = {}}},
+        Token {.tokenType = TokenType {.AND = {}}},
+        Token {.tokenType = TokenType {.IDENT = "declare4declare"}},
+        Token {.tokenType = TokenType {.EOF = {}}}
     };
 
     try std.testing.expectEqualDeep(expected, tokens.items);
@@ -245,14 +246,14 @@ test "keyword 2" {
     defer tokens.deinit();
 
     const expected: []const Token = &[_]Token{
-        Token {.PRINT = {}},
-        Token {.IDENT = "x"},
-        Token {.LB = {}},
-        Token {.DECLARE = {}},
-        Token {.IDENT = "y"},
-        Token {.EQ = {}},
-        Token {.INTLIT = 3},
-        Token {.EOF = {}}
+        Token {.tokenType = TokenType {.PRINT = {}}},
+        Token {.tokenType = TokenType {.IDENT = "x"}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.DECLARE = {}}},
+        Token {.tokenType = TokenType {.IDENT = "y"}},
+        Token {.tokenType = TokenType {.EQ = {}}},
+        Token {.tokenType = TokenType {.INTLIT = 3}},
+        Token {.tokenType = TokenType {.EOF = {}}}
     };
 
     try std.testing.expectEqualDeep(expected, tokens.items);
@@ -267,17 +268,17 @@ test "identifiers" {
     defer tokens.deinit();
 
     const expected: []const Token = &[_]Token{
-        Token {.DECLARE = {}},
-        Token {.LPAREN = {}},
-        Token {.IDENT = "bob"},
-        Token {.DEQ = {}},
-        Token {.IDENT = "alice"},
-        Token {.RPAREN = {}},
-        Token {.OR = {}},
-        Token {.IDENT = "eve"},
-        Token {.MUL = {}},
-        Token {.IDENT = "b0b"},
-        Token {.EOF = {}}
+        Token {.tokenType = TokenType {.DECLARE = {}}},
+        Token {.tokenType = TokenType {.LPAREN = {}}},
+        Token {.tokenType = TokenType {.IDENT = "bob"}},
+        Token {.tokenType = TokenType {.DEQ = {}}},
+        Token {.tokenType = TokenType {.IDENT = "alice"}},
+        Token {.tokenType = TokenType {.RPAREN = {}}},
+        Token {.tokenType = TokenType {.OR = {}}},
+        Token {.tokenType = TokenType {.IDENT = "eve"}},
+        Token {.tokenType = TokenType {.MUL = {}}},
+        Token {.tokenType = TokenType {.IDENT = "b0b"}},
+        Token {.tokenType = TokenType {.EOF = {}}}
     };
 
     try std.testing.expectEqualDeep(expected, tokens.items);
@@ -293,13 +294,13 @@ test "assignment" {
     defer tokens.deinit();
 
     const expected: []const Token = &[_]Token{
-        Token {.DECLARE = {}},
-        Token {.IDENT = "eeve"},
-        Token {.EQ = {}},
-        Token {.IDENT = "bob"},
-        Token {.AND = {}},
-        Token {.IDENT = "alice"},
-        Token {.EOF = {}}
+        Token {.tokenType = TokenType {.DECLARE = {}}},
+        Token {.tokenType = TokenType {.IDENT = "eeve"}},
+        Token {.tokenType = TokenType {.EQ = {}}},
+        Token {.tokenType = TokenType {.IDENT = "bob"}},
+        Token {.tokenType = TokenType {.AND = {}}},
+        Token {.tokenType = TokenType {.IDENT = "alice"}},
+        Token {.tokenType = TokenType {.EOF = {}}}
     };
 
     try std.testing.expectEqualDeep(expected, tokens.items);
@@ -317,18 +318,18 @@ test "brackets" {
     // NOTE: Expecting a LB to be inserted before RCURLY and LCURLY
     // This is because { and } are special statement-related tokens
     const expected: []const Token = &[_]Token{
-        Token {.LPAREN = {}},
-        Token {.RPAREN = {}},
-        Token {.LBRACK = {}},
-        Token {.LPAREN = {}},
-        Token {.RBRACK = {}},
-        Token {.LB = {}},
-        Token {.LCURLY = {}},
-        Token {.LB = {}},
-        Token {.LBRACK = {}},
-        Token {.LB = {}},
-        Token {.RCURLY = {}},
-        Token {.EOF = {}}
+        Token {.tokenType = TokenType {.LPAREN = {}}},
+        Token {.tokenType = TokenType {.RPAREN = {}}},
+        Token {.tokenType = TokenType {.LBRACK = {}}},
+        Token {.tokenType = TokenType {.LPAREN = {}}},
+        Token {.tokenType = TokenType {.RBRACK = {}}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.LCURLY = {}}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.LBRACK = {}}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.RCURLY = {}}},
+        Token {.tokenType = TokenType {.EOF = {}}}
     };
 
     try std.testing.expectEqualDeep(expected, tokens.items);
@@ -342,15 +343,15 @@ test "smart line breaks" {
     defer tokens.deinit();
 
     const expected: []const Token = &[_]Token{
-        Token {.DECLARE = {}},
-        Token {.IDENT = "x"},
-        Token {.EQ = {}},
-        Token {.IDENT = "x"},
-        Token {.PLUS = {}},
-        Token {.INTLIT = 1},
-        Token {.LB = {}},
-        Token {.DECLARE = {}},
-        Token {.EOF = {}}
+        Token {.tokenType = TokenType {.DECLARE = {}}},
+        Token {.tokenType = TokenType {.IDENT = "x"}},
+        Token {.tokenType = TokenType {.EQ = {}}},
+        Token {.tokenType = TokenType {.IDENT = "x"}},
+        Token {.tokenType = TokenType {.PLUS = {}}},
+        Token {.tokenType = TokenType {.INTLIT = 1}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.DECLARE = {}}},
+        Token {.tokenType = TokenType {.EOF = {}}}
     };
 
     try std.testing.expectEqualDeep(expected, tokens.items);
@@ -365,9 +366,9 @@ test "no line break before first statement" {
     defer tokens.deinit();
 
     const expected: []const Token = &[_]Token{
-        Token {.PRINT = {}},
-        Token {.IDENT = "x"},
-        Token {.EOF = {}}
+        Token {.tokenType = TokenType {.PRINT = {}}},
+        Token {.tokenType = TokenType {.IDENT = "x"}},
+        Token {.tokenType = TokenType {.EOF = {}}}
     };
 
     try std.testing.expectEqualDeep(expected, tokens.items);
@@ -382,9 +383,9 @@ test "no line break before first statement 2" {
     defer tokens.deinit();
 
     const expected: []const Token = &[_]Token{
-        Token {.PRINT = {}},
-        Token {.IDENT = "x"},
-        Token {.EOF = {}}
+        Token {.tokenType = TokenType {.PRINT = {}}},
+        Token {.tokenType = TokenType {.IDENT = "x"}},
+        Token {.tokenType = TokenType {.EOF = {}}}
     };
 
     try std.testing.expectEqualDeep(expected, tokens.items);
@@ -399,12 +400,12 @@ test "line break mixup" {
     defer tokens.deinit();
 
     const expected: []const Token = &[_]Token{
-        Token {.PRINT = {}},
-        Token {.IDENT = "x"},
-        Token {.LB = {}},
-        Token {.PRINT = {}},
-        Token {.IDENT = "x"},
-        Token {.EOF = {}}
+        Token {.tokenType = TokenType {.PRINT = {}}},
+        Token {.tokenType = TokenType {.IDENT = "x"}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.PRINT = {}}},
+        Token {.tokenType = TokenType {.IDENT = "x"}},
+        Token {.tokenType = TokenType {.EOF = {}}}
     };
 
     try std.testing.expectEqualDeep(expected, tokens.items);
@@ -418,9 +419,9 @@ test "single line statement" {
     defer tokens.deinit();
 
     const expected: []const Token = &[_]Token{
-        Token {.PRINT = {}},
-        Token {.IDENT = "x"},
-        Token {.EOF = {}}
+        Token {.tokenType = TokenType {.PRINT = {}}},
+        Token {.tokenType = TokenType {.IDENT = "x"}},
+        Token {.tokenType = TokenType {.EOF = {}}}
     };
 
     try std.testing.expectEqualDeep(expected, tokens.items);
@@ -435,10 +436,10 @@ test "single line statement 2" {
     defer tokens.deinit();
 
     const expected: []const Token = &[_]Token{
-        Token {.PRINT = {}},
-        Token {.IDENT = "x"},
-        Token {.LB = {}},
-        Token {.EOF = {}}
+        Token {.tokenType = TokenType {.PRINT = {}}},
+        Token {.tokenType = TokenType {.IDENT = "x"}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.EOF = {}}}
     };
 
     try std.testing.expectEqualDeep(expected, tokens.items);
@@ -452,10 +453,10 @@ test "single line statement 3" {
     defer tokens.deinit();
 
     const expected: []const Token = &[_]Token{
-        Token {.PRINT = {}},
-        Token {.IDENT = "x"},
-        Token {.LB = {}},
-        Token {.EOF = {}}
+        Token {.tokenType = TokenType {.PRINT = {}}},
+        Token {.tokenType = TokenType {.IDENT = "x"}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.EOF = {}}}
     };
 
     try std.testing.expectEqualDeep(expected, tokens.items);
@@ -470,12 +471,12 @@ test "single line two statements" {
     defer tokens.deinit();
 
     const expected: []const Token = &[_]Token{
-        Token {.PRINT = {}},
-        Token {.IDENT = "x"},
-        Token {.LB = {}},
-        Token {.PRINT = {}},
-        Token {.IDENT = "y"},
-        Token {.EOF = {}}
+        Token {.tokenType = TokenType {.PRINT = {}}},
+        Token {.tokenType = TokenType {.IDENT = "x"}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.PRINT = {}}},
+        Token {.tokenType = TokenType {.IDENT = "y"}},
+        Token {.tokenType = TokenType {.EOF = {}}}
     };
 
     try std.testing.expectEqualDeep(expected, tokens.items);
@@ -489,12 +490,12 @@ test "single line two statements 2" {
     defer tokens.deinit();
 
     const expected: []const Token = &[_]Token{
-        Token {.PRINT = {}},
-        Token {.IDENT = "x"},
-        Token {.LB = {}},
-        Token {.PRINT = {}},
-        Token {.IDENT = "y"},
-        Token {.EOF = {}}
+        Token {.tokenType = TokenType {.PRINT = {}}},
+        Token {.tokenType = TokenType {.IDENT = "x"}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.PRINT = {}}},
+        Token {.tokenType = TokenType {.IDENT = "y"}},
+        Token {.tokenType = TokenType {.EOF = {}}}
     };
 
     try std.testing.expectEqualDeep(expected, tokens.items);
@@ -508,12 +509,12 @@ test "single line two statements 3" {
     defer tokens.deinit();
 
     const expected: []const Token = &[_]Token{
-        Token {.PRINT = {}},
-        Token {.IDENT = "x"},
-        Token {.LB = {}},
-        Token {.PRINT = {}},
-        Token {.IDENT = "y"},
-        Token {.EOF = {}}
+        Token {.tokenType = TokenType {.PRINT = {}}},
+        Token {.tokenType = TokenType {.IDENT = "x"}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.PRINT = {}}},
+        Token {.tokenType = TokenType {.IDENT = "y"}},
+        Token {.tokenType = TokenType {.EOF = {}}}
     };
 
     try std.testing.expectEqualDeep(expected, tokens.items);
@@ -527,16 +528,16 @@ test "single line with block statement" {
     defer tokens.deinit();
 
     const expected: []const Token = &[_]Token{
-        Token {.PRINT = {}},
-        Token {.IDENT = "x"},
-        Token {.LB = {}},
-        Token {.LCURLY = {}},
-        Token {.LB = {}},
-        Token {.PRINT = {}},
-        Token {.IDENT = "y"},
-        Token {.LB = {}},
-        Token {.RCURLY = {}},
-        Token {.EOF = {}}
+        Token {.tokenType = TokenType {.PRINT = {}}},
+        Token {.tokenType = TokenType {.IDENT = "x"}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.LCURLY = {}}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.PRINT = {}}},
+        Token {.tokenType = TokenType {.IDENT = "y"}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.RCURLY = {}}},
+        Token {.tokenType = TokenType {.EOF = {}}}
     };
 
     try std.testing.expectEqualDeep(expected, tokens.items);
@@ -554,12 +555,12 @@ test "multiline input" {
     defer tokens.deinit();
 
     const expected: []const Token = &[_]Token{
-        Token {.PRINT = {}},
-        Token {.IDENT = "x"},
-        Token {.LB = {}},
-        Token {.PRINT = {}},
-        Token {.IDENT = "y"},
-        Token {.EOF = {}}
+        Token {.tokenType = TokenType {.PRINT = {}}},
+        Token {.tokenType = TokenType {.IDENT = "x"}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.PRINT = {}}},
+        Token {.tokenType = TokenType {.IDENT = "y"}},
+        Token {.tokenType = TokenType {.EOF = {}}}
     };
 
     try std.testing.expectEqualDeep(expected, tokens.items);
@@ -578,13 +579,13 @@ test "multiline input 2" {
     defer tokens.deinit();
 
     const expected: []const Token = &[_]Token{
-        Token {.PRINT = {}},
-        Token {.IDENT = "x"},
-        Token {.LB = {}},
-        Token {.PRINT = {}},
-        Token {.IDENT = "y"},
-        Token {.LB = {}},
-        Token {.EOF = {}}
+        Token {.tokenType = TokenType {.PRINT = {}}},
+        Token {.tokenType = TokenType {.IDENT = "x"}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.PRINT = {}}},
+        Token {.tokenType = TokenType {.IDENT = "y"}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.EOF = {}}}
     };
 
     try std.testing.expectEqualDeep(expected, tokens.items);
@@ -606,19 +607,19 @@ test "multiline input with blocks" {
     defer tokens.deinit();
 
     const expected: []const Token = &[_]Token{
-        Token {.PRINT = {}},
-        Token {.IDENT = "x"},
-        Token {.LB = {}},
-        Token {.PRINT = {}},
-        Token {.IDENT = "y"},
-        Token {.LB = {}},
-        Token {.LCURLY = {}},
-        Token {.LB = {}},
-        Token {.PRINT = {}},
-        Token {.IDENT = "x"},
-        Token {.LB = {}},
-        Token {.RCURLY = {}},
-        Token {.EOF = {}}
+        Token {.tokenType = TokenType {.PRINT = {}}},
+        Token {.tokenType = TokenType {.IDENT = "x"}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.PRINT = {}}},
+        Token {.tokenType = TokenType {.IDENT = "y"}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.LCURLY = {}}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.PRINT = {}}},
+        Token {.tokenType = TokenType {.IDENT = "x"}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.RCURLY = {}}},
+        Token {.tokenType = TokenType {.EOF = {}}}
     };
 
     try std.testing.expectEqualDeep(expected, tokens.items);
@@ -637,19 +638,19 @@ test "multiline input with inline block" {
     defer tokens.deinit();
 
     const expected: []const Token = &[_]Token{
-        Token {.PRINT = {}},
-        Token {.IDENT = "x"},
-        Token {.LB = {}},
-        Token {.PRINT = {}},
-        Token {.IDENT = "y"},
-        Token {.LB = {}},
-        Token {.LCURLY = {}},
-        Token {.LB = {}},
-        Token {.PRINT = {}},
-        Token {.IDENT = "y"},
-        Token {.LB = {}},
-        Token {.RCURLY = {}},
-        Token {.EOF = {}}
+        Token {.tokenType = TokenType {.PRINT = {}}},
+        Token {.tokenType = TokenType {.IDENT = "x"}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.PRINT = {}}},
+        Token {.tokenType = TokenType {.IDENT = "y"}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.LCURLY = {}}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.PRINT = {}}},
+        Token {.tokenType = TokenType {.IDENT = "y"}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.RCURLY = {}}},
+        Token {.tokenType = TokenType {.EOF = {}}}
     };
 
     try std.testing.expectEqualDeep(expected, tokens.items);
@@ -669,22 +670,22 @@ test "multiline input with inline block two statements" {
     defer tokens.deinit();
 
     const expected: []const Token = &[_]Token{
-        Token {.PRINT = {}},
-        Token {.IDENT = "x"},
-        Token {.LB = {}},
-        Token {.PRINT = {}},
-        Token {.IDENT = "y"},
-        Token {.LB = {}},
-        Token {.LCURLY = {}},
-        Token {.LB = {}},
-        Token {.PRINT = {}},
-        Token {.IDENT = "y"},
-        Token {.LB = {}},
-        Token {.PRINT = {}},
-        Token {.IDENT = "x"},
-        Token {.LB = {}},
-        Token {.RCURLY = {}},
-        Token {.EOF = {}}
+        Token {.tokenType = TokenType {.PRINT = {}}},
+        Token {.tokenType = TokenType {.IDENT = "x"}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.PRINT = {}}},
+        Token {.tokenType = TokenType {.IDENT = "y"}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.LCURLY = {}}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.PRINT = {}}},
+        Token {.tokenType = TokenType {.IDENT = "y"}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.PRINT = {}}},
+        Token {.tokenType = TokenType {.IDENT = "x"}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.RCURLY = {}}},
+        Token {.tokenType = TokenType {.EOF = {}}}
     };
 
     try std.testing.expectEqualDeep(expected, tokens.items);
@@ -705,22 +706,22 @@ test "multiline input with inline block two statements 2" {
     defer tokens.deinit();
 
     const expected: []const Token = &[_]Token{
-        Token {.PRINT = {}},
-        Token {.IDENT = "x"},
-        Token {.LB = {}},
-        Token {.PRINT = {}},
-        Token {.IDENT = "y"},
-        Token {.LB = {}},
-        Token {.LCURLY = {}},
-        Token {.LB = {}},
-        Token {.PRINT = {}},
-        Token {.IDENT = "y"},
-        Token {.LB = {}},
-        Token {.PRINT = {}},
-        Token {.IDENT = "x"},
-        Token {.LB = {}},
-        Token {.RCURLY = {}},
-        Token {.EOF = {}}
+        Token {.tokenType = TokenType {.PRINT = {}}},
+        Token {.tokenType = TokenType {.IDENT = "x"}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.PRINT = {}}},
+        Token {.tokenType = TokenType {.IDENT = "y"}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.LCURLY = {}}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.PRINT = {}}},
+        Token {.tokenType = TokenType {.IDENT = "y"}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.PRINT = {}}},
+        Token {.tokenType = TokenType {.IDENT = "x"}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.RCURLY = {}}},
+        Token {.tokenType = TokenType {.EOF = {}}}
     };
 
 
@@ -743,22 +744,22 @@ test "multiline input with block two statements" {
     defer tokens.deinit();
 
     const expected: []const Token = &[_]Token{
-        Token {.PRINT = {}},
-        Token {.IDENT = "x"},
-        Token {.LB = {}},
-        Token {.PRINT = {}},
-        Token {.IDENT = "y"},
-        Token {.LB = {}},
-        Token {.LCURLY = {}},
-        Token {.LB = {}},
-        Token {.PRINT = {}},
-        Token {.IDENT = "y"},
-        Token {.LB = {}},
-        Token {.PRINT = {}},
-        Token {.IDENT = "x"},
-        Token {.LB = {}},
-        Token {.RCURLY = {}},
-        Token {.EOF = {}}
+        Token {.tokenType = TokenType {.PRINT = {}}},
+        Token {.tokenType = TokenType {.IDENT = "x"}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.PRINT = {}}},
+        Token {.tokenType = TokenType {.IDENT = "y"}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.LCURLY = {}}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.PRINT = {}}},
+        Token {.tokenType = TokenType {.IDENT = "y"}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.PRINT = {}}},
+        Token {.tokenType = TokenType {.IDENT = "x"}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.RCURLY = {}}},
+        Token {.tokenType = TokenType {.EOF = {}}}
     };
 
     try std.testing.expectEqualDeep(expected, tokens.items);
@@ -779,16 +780,16 @@ test "multiline input with empty block" {
     defer tokens.deinit();
 
     const expected: []const Token = &[_]Token{
-        Token {.PRINT = {}},
-        Token {.IDENT = "x"},
-        Token {.LB = {}},
-        Token {.PRINT = {}},
-        Token {.IDENT = "y"},
-        Token {.LB = {}},
-        Token {.LCURLY = {}},
-        Token {.LB = {}},
-        Token {.RCURLY = {}},
-        Token {.EOF = {}}
+        Token {.tokenType = TokenType {.PRINT = {}}},
+        Token {.tokenType = TokenType {.IDENT = "x"}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.PRINT = {}}},
+        Token {.tokenType = TokenType {.IDENT = "y"}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.LCURLY = {}}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.RCURLY = {}}},
+        Token {.tokenType = TokenType {.EOF = {}}}
     };
 
     try std.testing.expectEqualDeep(expected, tokens.items);
@@ -807,10 +808,10 @@ test "empty block" {
     defer tokens.deinit();
 
     const expected: []const Token = &[_]Token{
-        Token {.LCURLY = {}},
-        Token {.LB = {}},
-        Token {.RCURLY = {}},
-        Token {.EOF = {}}
+        Token {.tokenType = TokenType {.LCURLY = {}}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.RCURLY = {}}},
+        Token {.tokenType = TokenType {.EOF = {}}}
     };
 
     try std.testing.expectEqualDeep(expected, tokens.items);
@@ -828,10 +829,10 @@ test "empty block inline" {
     defer tokens.deinit();
 
     const expected: []const Token = &[_]Token{
-        Token {.LCURLY = {}},
-        Token {.LB = {}},
-        Token {.RCURLY = {}},
-        Token {.EOF = {}}
+        Token {.tokenType = TokenType {.LCURLY = {}}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.RCURLY = {}}},
+        Token {.tokenType = TokenType {.EOF = {}}}
     };
 
     try std.testing.expectEqualDeep(expected, tokens.items);
@@ -852,14 +853,14 @@ test "nested blocks" {
     defer tokens.deinit();
 
     const expected: []const Token = &[_]Token{
-        Token {.LCURLY = {}},
-        Token {.LB = {}},
-        Token {.LCURLY = {}},
-        Token {.LB = {}},
-        Token {.RCURLY = {}},
-        Token {.LB = {}},
-        Token {.RCURLY = {}},
-        Token {.EOF = {}}
+        Token {.tokenType = TokenType {.LCURLY = {}}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.LCURLY = {}}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.RCURLY = {}}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.RCURLY = {}}},
+        Token {.tokenType = TokenType {.EOF = {}}}
     };
 
     try std.testing.expectEqualDeep(expected, tokens.items);
@@ -876,14 +877,14 @@ test "nested blocks inline" {
     defer tokens.deinit();
 
     const expected: []const Token = &[_]Token{
-        Token {.LCURLY = {}},
-        Token {.LB = {}},
-        Token {.LCURLY = {}},
-        Token {.LB = {}},
-        Token {.RCURLY = {}},
-        Token {.LB = {}},
-        Token {.RCURLY = {}},
-        Token {.EOF = {}}
+        Token {.tokenType = TokenType {.LCURLY = {}}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.LCURLY = {}}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.RCURLY = {}}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.RCURLY = {}}},
+        Token {.tokenType = TokenType {.EOF = {}}}
     };
 
     try std.testing.expectEqualDeep(expected, tokens.items);
@@ -901,14 +902,14 @@ test "nested blocks semi-inline" {
     defer tokens.deinit();
 
     const expected: []const Token = &[_]Token{
-        Token {.LCURLY = {}},
-        Token {.LB = {}},
-        Token {.LCURLY = {}},
-        Token {.LB = {}},
-        Token {.RCURLY = {}},
-        Token {.LB = {}},
-        Token {.RCURLY = {}},
-        Token {.EOF = {}}
+        Token {.tokenType = TokenType {.LCURLY = {}}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.LCURLY = {}}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.RCURLY = {}}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.RCURLY = {}}},
+        Token {.tokenType = TokenType {.EOF = {}}}
     };
 
     try std.testing.expectEqualDeep(expected, tokens.items);
@@ -926,14 +927,14 @@ test "nested blocks semi-inline 2" {
     defer tokens.deinit();
 
     const expected: []const Token = &[_]Token{
-        Token {.LCURLY = {}},
-        Token {.LB = {}},
-        Token {.LCURLY = {}},
-        Token {.LB = {}},
-        Token {.RCURLY = {}},
-        Token {.LB = {}},
-        Token {.RCURLY = {}},
-        Token {.EOF = {}}
+        Token {.tokenType = TokenType {.LCURLY = {}}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.LCURLY = {}}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.RCURLY = {}}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.RCURLY = {}}},
+        Token {.tokenType = TokenType {.EOF = {}}}
     };
 
     try std.testing.expectEqualDeep(expected, tokens.items);
@@ -951,14 +952,14 @@ test "nested blocks semi-inline 3" {
     defer tokens.deinit();
 
     const expected: []const Token = &[_]Token{
-        Token {.LCURLY = {}},
-        Token {.LB = {}},
-        Token {.LCURLY = {}},
-        Token {.LB = {}},
-        Token {.RCURLY = {}},
-        Token {.LB = {}},
-        Token {.RCURLY = {}},
-        Token {.EOF = {}}
+        Token {.tokenType = TokenType {.LCURLY = {}}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.LCURLY = {}}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.RCURLY = {}}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.RCURLY = {}}},
+        Token {.tokenType = TokenType {.EOF = {}}}
     };
 
     try std.testing.expectEqualDeep(expected, tokens.items);
@@ -980,39 +981,39 @@ test "advanced sequence with nested blocks" {
     defer tokens.deinit();
 
     const expected: []const Token = &[_]Token{
-        Token {.LCURLY = {}},
-        Token {.LB = {}},
-        Token {.LCURLY = {}},
-        Token {.LB = {}},
-        Token {.RCURLY = {}},
-        Token {.LB = {}},
-        Token {.RCURLY = {}},
-        Token {.LB = {}},
-        Token {.DECLARE = {}},
-        Token {.IDENT = "x"},
-        Token {.EQ = {}},
-        Token {.INTLIT = 10},
-        Token {.LB = {}},
-        Token {.LCURLY = {}},
-        Token {.LB = {}},
-        Token {.DECLARE = {}},
-        Token {.IDENT = "x"},
-        Token {.LB = {}},
-        Token {.RCURLY = {}},
-        Token {.LB = {}},
-        Token {.LCURLY = {}},
-        Token {.LB = {}},
-        Token {.DECLARE = {}},
-        Token {.IDENT = "x"},
-        Token {.LB = {}},
-        Token {.PRINT = {}},
-        Token {.IDENT = "x"},
-        Token {.LB = {}},
-        Token {.RCURLY = {}},
-        Token {.LB = {}},
-        Token {.PRINT = {}},
-        Token {.IDENT = "x"},
-        Token {.EOF = {}}
+        Token {.tokenType = TokenType {.LCURLY = {}}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.LCURLY = {}}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.RCURLY = {}}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.RCURLY = {}}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.DECLARE = {}}},
+        Token {.tokenType = TokenType {.IDENT = "x"}},
+        Token {.tokenType = TokenType {.EQ = {}}},
+        Token {.tokenType = TokenType {.INTLIT = 10}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.LCURLY = {}}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.DECLARE = {}}},
+        Token {.tokenType = TokenType {.IDENT = "x"}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.RCURLY = {}}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.LCURLY = {}}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.DECLARE = {}}},
+        Token {.tokenType = TokenType {.IDENT = "x"}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.PRINT = {}}},
+        Token {.tokenType = TokenType {.IDENT = "x"}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.RCURLY = {}}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.PRINT = {}}},
+        Token {.tokenType = TokenType {.IDENT = "x"}},
+        Token {.tokenType = TokenType {.EOF = {}}}
     };
 
     try std.testing.expectEqualDeep(expected, tokens.items);
@@ -1030,19 +1031,19 @@ test "multiline if else" {
     defer tokens.deinit();
 
     const expected: []const Token = &[_]Token{
-        Token {.IF = {}},
-        Token {.IDENT = "x"},
-        Token {.LB = {}},
-        Token {.LCURLY = {}},
-        Token {.LB = {}},
-        Token {.RCURLY = {}},
-        Token {.LB = {}},
-        Token {.ELSE = {}},
-        Token {.LB = {}},
-        Token {.LCURLY = {}},
-        Token {.LB = {}},
-        Token {.RCURLY = {}},
-        Token {.EOF = {}}
+        Token {.tokenType = TokenType {.IF = {}}},
+        Token {.tokenType = TokenType {.IDENT = "x"}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.LCURLY = {}}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.RCURLY = {}}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.ELSE = {}}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.LCURLY = {}}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.RCURLY = {}}},
+        Token {.tokenType = TokenType {.EOF = {}}}
     };
 
     try std.testing.expectEqualDeep(expected, tokens.items);
@@ -1059,19 +1060,19 @@ test "inline if else" {
     defer tokens.deinit();
 
     const expected: []const Token = &[_]Token{
-        Token {.IF = {}},
-        Token {.IDENT = "x"},
-        Token {.LB = {}},
-        Token {.LCURLY = {}},
-        Token {.LB = {}},
-        Token {.RCURLY = {}},
-        Token {.LB = {}},
-        Token {.ELSE = {}},
-        Token {.LB = {}},
-        Token {.LCURLY = {}},
-        Token {.LB = {}},
-        Token {.RCURLY = {}},
-        Token {.EOF = {}}
+        Token {.tokenType = TokenType {.IF = {}}},
+        Token {.tokenType = TokenType {.IDENT = "x"}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.LCURLY = {}}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.RCURLY = {}}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.ELSE = {}}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.LCURLY = {}}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.RCURLY = {}}},
+        Token {.tokenType = TokenType {.EOF = {}}}
     };
 
     try std.testing.expectEqualDeep(expected, tokens.items);
@@ -1088,17 +1089,17 @@ test "if else without curly braces" {
     defer tokens.deinit();
 
     const expected: []const Token = &[_]Token{
-        Token {.IF = {}},
-        Token {.IDENT = "x"},
-        Token {.LB = {}},
-        Token {.PRINT = {}},
-        Token {.IDENT = "x"},
-        Token {.LB = {}},
-        Token {.ELSE = {}},
-        Token {.LB = {}},
-        Token {.PRINT = {}},
-        Token {.IDENT = "y"},
-        Token {.EOF = {}}
+        Token {.tokenType = TokenType {.IF = {}}},
+        Token {.tokenType = TokenType {.IDENT = "x"}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.PRINT = {}}},
+        Token {.tokenType = TokenType {.IDENT = "x"}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.ELSE = {}}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.PRINT = {}}},
+        Token {.tokenType = TokenType {.IDENT = "y"}},
+        Token {.tokenType = TokenType {.EOF = {}}}
     };
 
     try std.testing.expectEqualDeep(expected, tokens.items);
@@ -1115,21 +1116,21 @@ test "if else with mixed curly braces" {
     defer tokens.deinit();
 
     const expected: []const Token = &[_]Token{
-        Token {.IF = {}},
-        Token {.IDENT = "x"},
-        Token {.LB = {}},
-        Token {.LCURLY = {}},
-        Token {.LB = {}},
-        Token {.PRINT = {}},
-        Token {.IDENT = "x"},
-        Token {.LB = {}},
-        Token {.RCURLY = {}},
-        Token {.LB = {}},
-        Token {.ELSE = {}},
-        Token {.LB = {}},
-        Token {.PRINT = {}},
-        Token {.IDENT = "y"},
-        Token {.EOF = {}}
+        Token {.tokenType = TokenType {.IF = {}}},
+        Token {.tokenType = TokenType {.IDENT = "x"}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.LCURLY = {}}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.PRINT = {}}},
+        Token {.tokenType = TokenType {.IDENT = "x"}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.RCURLY = {}}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.ELSE = {}}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.PRINT = {}}},
+        Token {.tokenType = TokenType {.IDENT = "y"}},
+        Token {.tokenType = TokenType {.EOF = {}}}
     };
 
     try std.testing.expectEqualDeep(expected, tokens.items);
@@ -1149,22 +1150,22 @@ test "multiline if else with mixed curly braces" {
     defer tokens.deinit();
 
     const expected: []const Token = &[_]Token{
-        Token {.IF = {}},
-        Token {.IDENT = "x"},
-        Token {.LB = {}},
-        Token {.LCURLY = {}},
-        Token {.LB = {}},
-        Token {.IDENT = "x"},
-        Token {.EQ = {}},
-        Token {.INTLIT = 10},
-        Token {.LB = {}},
-        Token {.RCURLY = {}},
-        Token {.LB = {}},
-        Token {.ELSE = {}},
-        Token {.LB = {}},
-        Token {.PRINT = {}},
-        Token {.IDENT = "y"},
-        Token {.EOF = {}}
+        Token {.tokenType = TokenType {.IF = {}}},
+        Token {.tokenType = TokenType {.IDENT = "x"}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.LCURLY = {}}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.IDENT = "x"}},
+        Token {.tokenType = TokenType {.EQ = {}}},
+        Token {.tokenType = TokenType {.INTLIT = 10}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.RCURLY = {}}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.ELSE = {}}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.PRINT = {}}},
+        Token {.tokenType = TokenType {.IDENT = "y"}},
+        Token {.tokenType = TokenType {.EOF = {}}}
     };
 
     try std.testing.expectEqualDeep(expected, tokens.items);
@@ -1183,16 +1184,16 @@ test "multiline while" {
     defer tokens.deinit();
 
     const expected: []const Token = &[_]Token{
-        Token {.WHILE = {}},
-        Token {.IDENT = "x"},
-        Token {.LB = {}},
-        Token {.LCURLY = {}},
-        Token {.LB = {}},
-        Token {.PRINT = {}},
-        Token {.IDENT = "x"},
-        Token {.LB = {}},
-        Token {.RCURLY = {}},
-        Token {.EOF = {}}
+        Token {.tokenType = TokenType {.WHILE = {}}},
+        Token {.tokenType = TokenType {.IDENT = "x"}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.LCURLY = {}}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.PRINT = {}}},
+        Token {.tokenType = TokenType {.IDENT = "x"}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.RCURLY = {}}},
+        Token {.tokenType = TokenType {.EOF = {}}}
     };
 
     try std.testing.expectEqualDeep(expected, tokens.items);
@@ -1208,12 +1209,12 @@ test "inline while" {
     defer tokens.deinit();
 
     const expected: []const Token = &[_]Token{
-        Token {.WHILE = {}},
-        Token {.IDENT = "x"},
-        Token {.LB = {}},
-        Token {.PRINT = {}},
-        Token {.IDENT = "x"},
-        Token {.EOF = {}}
+        Token {.tokenType = TokenType {.WHILE = {}}},
+        Token {.tokenType = TokenType {.IDENT = "x"}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.PRINT = {}}},
+        Token {.tokenType = TokenType {.IDENT = "x"}},
+        Token {.tokenType = TokenType {.EOF = {}}}
     };
 
     try std.testing.expectEqualDeep(expected, tokens.items);
@@ -1228,10 +1229,10 @@ test "less than" {
     defer tokens.deinit();
 
     const expected: []const Token = &[_]Token{
-        Token {.IDENT = "x"},
-        Token {.LT = {}},
-        Token {.IDENT = "y"},
-        Token {.EOF = {}}
+        Token {.tokenType = TokenType {.IDENT = "x"}},
+        Token {.tokenType = TokenType {.LT = {}}},
+        Token {.tokenType = TokenType {.IDENT = "y"}},
+        Token {.tokenType = TokenType {.EOF = {}}}
     };
 
     try std.testing.expectEqualDeep(expected, tokens.items);
@@ -1247,10 +1248,10 @@ test "greater than" {
     defer tokens.deinit();
 
     const expected: []const Token = &[_]Token{
-        Token {.IDENT = "x"},
-        Token {.GT = {}},
-        Token {.IDENT = "y"},
-        Token {.EOF = {}}
+        Token {.tokenType = TokenType {.IDENT = "x"}},
+        Token {.tokenType = TokenType {.GT = {}}},
+        Token {.tokenType = TokenType {.IDENT = "y"}},
+        Token {.tokenType = TokenType {.EOF = {}}}
     };
 
     try std.testing.expectEqualDeep(expected, tokens.items);
@@ -1265,10 +1266,10 @@ test "less than equal" {
     defer tokens.deinit();
 
     const expected: []const Token = &[_]Token{
-        Token {.IDENT = "x"},
-        Token {.LTE = {}},
-        Token {.IDENT = "y"},
-        Token {.EOF = {}}
+        Token {.tokenType = TokenType {.IDENT = "x"}},
+        Token {.tokenType = TokenType {.LTE = {}}},
+        Token {.tokenType = TokenType {.IDENT = "y"}},
+        Token {.tokenType = TokenType {.EOF = {}}}
     };
 
     try std.testing.expectEqualDeep(expected, tokens.items);
@@ -1284,10 +1285,10 @@ test "greater than equal" {
     defer tokens.deinit();
 
     const expected: []const Token = &[_]Token{
-        Token {.IDENT = "x"},
-        Token {.GTE = {}},
-        Token {.IDENT = "y"},
-        Token {.EOF = {}}
+        Token {.tokenType = TokenType {.IDENT = "x"}},
+        Token {.tokenType = TokenType {.GTE = {}}},
+        Token {.tokenType = TokenType {.IDENT = "y"}},
+        Token {.tokenType = TokenType {.EOF = {}}}
     };
 
     try std.testing.expectEqualDeep(expected, tokens.items);
@@ -1305,13 +1306,13 @@ test "expression statement after other statements" {
     defer tokens.deinit();
 
     const expected: []const Token = &[_]Token{
-        Token {.PRINT = {}},
-        Token {.IDENT = "x"},
-        Token {.LB = {}},
-        Token {.IDENT = "x"},
-        Token {.EQ = {}},
-        Token {.IDENT = "x"},
-        Token {.EOF = {}}
+        Token {.tokenType = TokenType {.PRINT = {}}},
+        Token {.tokenType = TokenType {.IDENT = "x"}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.IDENT = "x"}},
+        Token {.tokenType = TokenType {.EQ = {}}},
+        Token {.tokenType = TokenType {.IDENT = "x"}},
+        Token {.tokenType = TokenType {.EOF = {}}}
     };
 
     try std.testing.expectEqualDeep(expected, tokens.items);
@@ -1326,8 +1327,8 @@ test "break" {
     defer tokens.deinit();
 
     const expected: []const Token = &[_]Token{
-        Token {.BREAK = {}},
-        Token {.EOF = {}}
+        Token {.tokenType = TokenType {.BREAK = {}}},
+        Token {.tokenType = TokenType {.EOF = {}}}
     };
 
     try std.testing.expectEqualDeep(expected, tokens.items);
@@ -1342,8 +1343,8 @@ test "continue" {
     defer tokens.deinit();
 
     const expected: []const Token = &[_]Token{
-        Token {.CONTINUE = {}},
-        Token {.EOF = {}}
+        Token {.tokenType = TokenType {.CONTINUE = {}}},
+        Token {.tokenType = TokenType {.EOF = {}}}
     };
 
     try std.testing.expectEqualDeep(expected, tokens.items);
@@ -1362,15 +1363,15 @@ test "block break" {
     defer tokens.deinit();
 
     const expected: []const Token = &[_]Token{
-        Token {.WHILE = {}},
-        Token {.BOOLLIT = true},
-        Token {.LB = {}},
-        Token {.LCURLY = {}},
-        Token {.LB = {}},
-        Token {.BREAK = {}},
-        Token {.LB = {}},
-        Token {.RCURLY = {}},
-        Token {.EOF = {}}
+        Token {.tokenType = TokenType {.WHILE = {}}},
+        Token {.tokenType = TokenType {.BOOLLIT = true}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.LCURLY = {}}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.BREAK = {}}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.RCURLY = {}}},
+        Token {.tokenType = TokenType {.EOF = {}}}
     };
 
     try std.testing.expectEqualDeep(expected, tokens.items);
@@ -1390,15 +1391,15 @@ test "block continue" {
     defer tokens.deinit();
 
     const expected: []const Token = &[_]Token{
-        Token {.WHILE = {}},
-        Token {.BOOLLIT = true},
-        Token {.LB = {}},
-        Token {.LCURLY = {}},
-        Token {.LB = {}},
-        Token {.CONTINUE = {}},
-        Token {.LB = {}},
-        Token {.RCURLY = {}},
-        Token {.EOF = {}}
+        Token {.tokenType = TokenType {.WHILE = {}}},
+        Token {.tokenType = TokenType {.BOOLLIT = true}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.LCURLY = {}}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.CONTINUE = {}}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.RCURLY = {}}},
+        Token {.tokenType = TokenType {.EOF = {}}}
     };
 
     try std.testing.expectEqualDeep(expected, tokens.items);
@@ -1415,11 +1416,11 @@ test "inline block break" {
     defer tokens.deinit();
 
     const expected: []const Token = &[_]Token{
-        Token {.WHILE = {}},
-        Token {.BOOLLIT = true},
-        Token {.LB = {}},
-        Token {.BREAK = {}},
-        Token {.EOF = {}}
+        Token {.tokenType = TokenType {.WHILE = {}}},
+        Token {.tokenType = TokenType {.BOOLLIT = true}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.BREAK = {}}},
+        Token {.tokenType = TokenType {.EOF = {}}}
     };
 
     try std.testing.expectEqualDeep(expected, tokens.items);
@@ -1437,11 +1438,11 @@ test "newline block break" {
     defer tokens.deinit();
 
     const expected: []const Token = &[_]Token{
-        Token {.WHILE = {}},
-        Token {.BOOLLIT = true},
-        Token {.LB = {}},
-        Token {.BREAK = {}},
-        Token {.EOF = {}}
+        Token {.tokenType = TokenType {.WHILE = {}}},
+        Token {.tokenType = TokenType {.BOOLLIT = true}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.BREAK = {}}},
+        Token {.tokenType = TokenType {.EOF = {}}}
     };
 
     try std.testing.expectEqualDeep(expected, tokens.items);
@@ -1459,21 +1460,21 @@ test "comma declaration" {
     defer tokens.deinit();
 
     const expected: []const Token = &[_]Token{
-        Token {.DECLARE = {}},
-        Token {.IDENT = "x"},
-        Token {.EQ = {}},
-        Token {.INTLIT = 1},
-        Token {.COMMA = {}},
-        Token {.IDENT = "y"},
-        Token {.EQ = {}},
-        Token {.INTLIT = 2},
-        Token {.COMMA = {}},
-        Token {.IDENT = "z"},
-        Token {.COMMA = {}},
-        Token {.IDENT = "w"},
-        Token {.EQ = {}},
-        Token {.INTLIT = 5},
-        Token {.EOF = {}}
+        Token {.tokenType = TokenType {.DECLARE = {}}},
+        Token {.tokenType = TokenType {.IDENT = "x"}},
+        Token {.tokenType = TokenType {.EQ = {}}},
+        Token {.tokenType = TokenType {.INTLIT = 1}},
+        Token {.tokenType = TokenType {.COMMA = {}}},
+        Token {.tokenType = TokenType {.IDENT = "y"}},
+        Token {.tokenType = TokenType {.EQ = {}}},
+        Token {.tokenType = TokenType {.INTLIT = 2}},
+        Token {.tokenType = TokenType {.COMMA = {}}},
+        Token {.tokenType = TokenType {.IDENT = "z"}},
+        Token {.tokenType = TokenType {.COMMA = {}}},
+        Token {.tokenType = TokenType {.IDENT = "w"}},
+        Token {.tokenType = TokenType {.EQ = {}}},
+        Token {.tokenType = TokenType {.INTLIT = 5}},
+        Token {.tokenType = TokenType {.EOF = {}}}
     };
 
     try std.testing.expectEqualDeep(expected, tokens.items);
@@ -1491,24 +1492,24 @@ test "inline simple function definition with return" {
     defer tokens.deinit();
 
     const expected: []const Token = &[_]Token{
-        Token {.DECLARE = {}},
-        Token {.IDENT = "x"},
-        Token {.EQ = {}},
-        Token {.INTLIT = 0},
-        Token {.LB = {}},
-        Token {.FUN = {}},
-        Token {.IDENT = "last"},
-        Token {.LPAREN = {}},
-        Token {.IDENT = "x"},
-        Token {.COMMA = {}},
-        Token {.IDENT = "y"},
-        Token {.COMMA = {}},
-        Token {.IDENT = "z"},
-        Token {.RPAREN = {}},
-        Token {.LB = {}},
-        Token {.RETURN = {}},
-        Token {.IDENT = "z"},
-        Token {.EOF = {}}
+        Token {.tokenType = TokenType {.DECLARE = {}}},
+        Token {.tokenType = TokenType {.IDENT = "x"}},
+        Token {.tokenType = TokenType {.EQ = {}}},
+        Token {.tokenType = TokenType {.INTLIT = 0}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.FUN = {}}},
+        Token {.tokenType = TokenType {.IDENT = "last"}},
+        Token {.tokenType = TokenType {.LPAREN = {}}},
+        Token {.tokenType = TokenType {.IDENT = "x"}},
+        Token {.tokenType = TokenType {.COMMA = {}}},
+        Token {.tokenType = TokenType {.IDENT = "y"}},
+        Token {.tokenType = TokenType {.COMMA = {}}},
+        Token {.tokenType = TokenType {.IDENT = "z"}},
+        Token {.tokenType = TokenType {.RPAREN = {}}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.RETURN = {}}},
+        Token {.tokenType = TokenType {.IDENT = "z"}},
+        Token {.tokenType = TokenType {.EOF = {}}}
     };
 
     try std.testing.expectEqualDeep(expected, tokens.items);
@@ -1525,12 +1526,12 @@ test "single make" {
     defer tokens.deinit();
 
     const expected: []const Token = &[_]Token{
-        Token {.DECLARE = {}},
-        Token {.IDENT = "list"},
-        Token {.LBRACK = {}},
-        Token {.INTLIT = 10},
-        Token {.RBRACK = {}},
-        Token {.EOF = {}}
+        Token {.tokenType = TokenType {.DECLARE = {}}},
+        Token {.tokenType = TokenType {.IDENT = "list"}},
+        Token {.tokenType = TokenType {.LBRACK = {}}},
+        Token {.tokenType = TokenType {.INTLIT = 10}},
+        Token {.tokenType = TokenType {.RBRACK = {}}},
+        Token {.tokenType = TokenType {.EOF = {}}}
     };
 
     try std.testing.expectEqualDeep(expected, tokens.items);
@@ -1548,20 +1549,20 @@ test "multiline multi make" {
     defer tokens.deinit();
 
     const expected: []const Token = &[_]Token{
-        Token {.DECLARE = {}},
-        Token {.IDENT = "list"},
-        Token {.LBRACK = {}},
-        Token {.INTLIT = 10},
-        Token {.RBRACK = {}},
-        Token {.COMMA = {}},
-        Token {.IDENT = "anotherlist"},
-        Token {.LBRACK = {}},
-        Token {.INTLIT = 5},
-        Token {.RBRACK = {}},
-        Token {.LB = {}},
-        Token {.PRINT = {}},
-        Token {.INTLIT = 10},
-        Token {.EOF = {}}
+        Token {.tokenType = TokenType {.DECLARE = {}}},
+        Token {.tokenType = TokenType {.IDENT = "list"}},
+        Token {.tokenType = TokenType {.LBRACK = {}}},
+        Token {.tokenType = TokenType {.INTLIT = 10}},
+        Token {.tokenType = TokenType {.RBRACK = {}}},
+        Token {.tokenType = TokenType {.COMMA = {}}},
+        Token {.tokenType = TokenType {.IDENT = "anotherlist"}},
+        Token {.tokenType = TokenType {.LBRACK = {}}},
+        Token {.tokenType = TokenType {.INTLIT = 5}},
+        Token {.tokenType = TokenType {.RBRACK = {}}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.PRINT = {}}},
+        Token {.tokenType = TokenType {.INTLIT = 10}},
+        Token {.tokenType = TokenType {.EOF = {}}}
     };
 
     try std.testing.expectEqualDeep(expected, tokens.items);
@@ -1578,10 +1579,10 @@ test "property access" {
     defer tokens.deinit();
 
     const expected: []const Token = &[_]Token{
-        Token {.IDENT = "mylist"},
-        Token {.DOT = {}},
-        Token {.IDENT = "size"},
-        Token {.EOF = {}}
+        Token {.tokenType = TokenType {.IDENT = "mylist"}},
+        Token {.tokenType = TokenType {.DOT = {}}},
+        Token {.tokenType = TokenType {.IDENT = "size"}},
+        Token {.tokenType = TokenType {.EOF = {}}}
     };
 
     try std.testing.expectEqualDeep(expected, tokens.items);
@@ -1598,12 +1599,12 @@ test "multi property access" {
     defer tokens.deinit();
 
     const expected: []const Token = &[_]Token{
-        Token {.IDENT = "obj"},
-        Token {.DOT = {}},
-        Token {.IDENT = "prop1"},
-        Token {.DOT = {}},
-        Token {.IDENT = "prop2"},
-        Token {.EOF = {}}
+        Token {.tokenType = TokenType {.IDENT = "obj"}},
+        Token {.tokenType = TokenType {.DOT = {}}},
+        Token {.tokenType = TokenType {.IDENT = "prop1"}},
+        Token {.tokenType = TokenType {.DOT = {}}},
+        Token {.tokenType = TokenType {.IDENT = "prop2"}},
+        Token {.tokenType = TokenType {.EOF = {}}}
     };
 
     try std.testing.expectEqualDeep(expected, tokens.items);
@@ -1622,14 +1623,14 @@ test "multiline property access not allowed" {
     defer tokens.deinit();
 
     const expected: []const Token = &[_]Token{
-        Token {.IDENT = "obj"},
-        Token {.LB = {}},
-        Token {.DOT = {}},
-        Token {.IDENT = "prop1"},
-        Token {.LB = {}},
-        Token {.DOT = {}},
-        Token {.IDENT = "prop2"},
-        Token {.EOF = {}}
+        Token {.tokenType = TokenType {.IDENT = "obj"}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.DOT = {}}},
+        Token {.tokenType = TokenType {.IDENT = "prop1"}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.DOT = {}}},
+        Token {.tokenType = TokenType {.IDENT = "prop2"}},
+        Token {.tokenType = TokenType {.EOF = {}}}
     };
 
     try std.testing.expectEqualDeep(expected, tokens.items);
@@ -1648,11 +1649,11 @@ test "line comment" {
     defer tokens.deinit();
 
     const expected: []const Token = &[_]Token{
-        Token {.DECLARE = {}},
-        Token {.IDENT = "x"},
-        Token {.EQ = {}},
-        Token {.INTLIT = 0},
-        Token {.EOF = {}}
+        Token {.tokenType = TokenType {.DECLARE = {}}},
+        Token {.tokenType = TokenType {.IDENT = "x"}},
+        Token {.tokenType = TokenType {.EQ = {}}},
+        Token {.tokenType = TokenType {.INTLIT = 0}},
+        Token {.tokenType = TokenType {.EOF = {}}}
     };
 
     try std.testing.expectEqualDeep(expected, tokens.items);
@@ -1670,14 +1671,14 @@ test "after line comment" {
     defer tokens.deinit();
 
     const expected: []const Token = &[_]Token{
-        Token {.DECLARE = {}},
-        Token {.IDENT = "x"},
-        Token {.EQ = {}},
-        Token {.INTLIT = 0},
-        Token {.LB = {}},
-        Token {.PRINT = {}},
-        Token {.IDENT = "x"},
-        Token {.EOF = {}}
+        Token {.tokenType = TokenType {.DECLARE = {}}},
+        Token {.tokenType = TokenType {.IDENT = "x"}},
+        Token {.tokenType = TokenType {.EQ = {}}},
+        Token {.tokenType = TokenType {.INTLIT = 0}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.PRINT = {}}},
+        Token {.tokenType = TokenType {.IDENT = "x"}},
+        Token {.tokenType = TokenType {.EOF = {}}}
     };
 
     try std.testing.expectEqualDeep(expected, tokens.items);
@@ -1695,12 +1696,12 @@ test "inline comment" {
     defer tokens.deinit();
 
     const expected: []const Token = &[_]Token{
-        Token {.DECLARE = {}},
-        Token {.IDENT = "my_"},
-        Token {.LB = {}},
-        Token {.PRINT = {}},
-        Token {.IDENT = "my_"},
-        Token {.EOF = {}}
+        Token {.tokenType = TokenType {.DECLARE = {}}},
+        Token {.tokenType = TokenType {.IDENT = "my_"}},
+        Token {.tokenType = TokenType {.LB = {}}},
+        Token {.tokenType = TokenType {.PRINT = {}}},
+        Token {.tokenType = TokenType {.IDENT = "my_"}},
+        Token {.tokenType = TokenType {.EOF = {}}}
     };
 
     try std.testing.expectEqualDeep(expected, tokens.items);
@@ -1715,8 +1716,8 @@ test "float literal" {
     defer tokens.deinit();
 
     const expected: []const Token = &[_]Token{
-        Token {.FLOATLIT = 13.4},
-        Token {.EOF = {}}
+        Token {.tokenType = TokenType {.FLOATLIT = 13.4}},
+        Token {.tokenType = TokenType {.EOF = {}}}
     };
 
     try std.testing.expectEqualDeep(expected, tokens.items);
@@ -1731,8 +1732,8 @@ test "short form float literal" {
     defer tokens.deinit();
 
     const expected: []const Token = &[_]Token{
-        Token {.FLOATLIT = 13.0},
-        Token {.EOF = {}}
+        Token {.tokenType = TokenType {.FLOATLIT = 13.0}},
+        Token {.tokenType = TokenType {.EOF = {}}}
     };
 
     try std.testing.expectEqualDeep(expected, tokens.items);
@@ -1747,12 +1748,12 @@ test "float expression" {
     defer tokens.deinit();
 
     const expected: []const Token = &[_]Token{
-        Token {.FLOATLIT = 13.4},
-        Token {.PLUS = {}},
-        Token {.FLOATLIT = 1.0},
-        Token {.MINUS = {}},
-        Token {.FLOATLIT = 1.3434},
-        Token {.EOF = {}}
+        Token {.tokenType = TokenType {.FLOATLIT = 13.4}},
+        Token {.tokenType = TokenType {.PLUS = {}}},
+        Token {.tokenType = TokenType {.FLOATLIT = 1.0}},
+        Token {.tokenType = TokenType {.MINUS = {}}},
+        Token {.tokenType = TokenType {.FLOATLIT = 1.3434}},
+        Token {.tokenType = TokenType {.EOF = {}}}
     };
 
     try std.testing.expectEqualDeep(expected, tokens.items);
@@ -1767,10 +1768,10 @@ test "mixed float" {
     defer tokens.deinit();
 
     const expected: []const Token = &[_]Token{
-        Token {.FLOATLIT = 13.0},
-        Token {.COMMA = {}},
-        Token {.INTLIT = 42},
-        Token {.EOF = {}}
+        Token {.tokenType = TokenType {.FLOATLIT = 13.0}},
+        Token {.tokenType = TokenType {.COMMA = {}}},
+        Token {.tokenType = TokenType {.INTLIT = 42}},
+        Token {.tokenType = TokenType {.EOF = {}}}
     };
 
     try std.testing.expectEqualDeep(expected, tokens.items);
@@ -1785,17 +1786,17 @@ test "booleans alternative" {
     defer tokens.deinit();
 
     const expected: []const Token = &[_]Token{
-        Token {.NOT = {}},
-        Token {.LPAREN = {}},
-        Token {.BOOLLIT = true},
-        Token {.AND = {}},
-        Token {.BOOLLIT = false},
-        Token {.RPAREN = {}},
-        Token {.OR = {}},
-        Token {.BOOLLIT = true},
-        Token {.DEQ = {}},
-        Token {.BOOLLIT = false},
-        Token {.EOF = {}}
+        Token {.tokenType = TokenType {.NOT = {}}},
+        Token {.tokenType = TokenType {.LPAREN = {}}},
+        Token {.tokenType = TokenType {.BOOLLIT = true}},
+        Token {.tokenType = TokenType {.AND = {}}},
+        Token {.tokenType = TokenType {.BOOLLIT = false}},
+        Token {.tokenType = TokenType {.RPAREN = {}}},
+        Token {.tokenType = TokenType {.OR = {}}},
+        Token {.tokenType = TokenType {.BOOLLIT = true}},
+        Token {.tokenType = TokenType {.DEQ = {}}},
+        Token {.tokenType = TokenType {.BOOLLIT = false}},
+        Token {.tokenType = TokenType {.EOF = {}}}
     };
 
     try expect(tokens_eql(tokens.items, expected));
@@ -1810,14 +1811,14 @@ test "as and type keywords" {
     defer tokens.deinit();
 
     const expected: []const Token = &[_]Token{
-        Token {.BOOLLIT = true},
-        Token {.AS = {}},
-        Token {.INT = {}},
-        Token {.AS = {}},
-        Token {.FLOAT = {}},
-        Token {.AS = {}},
-        Token {.BOOL = {}},
-        Token {.EOF = {}}
+        Token {.tokenType = TokenType {.BOOLLIT = true}},
+        Token {.tokenType = TokenType {.AS = {}}},
+        Token {.tokenType = TokenType {.INT = {}}},
+        Token {.tokenType = TokenType {.AS = {}}},
+        Token {.tokenType = TokenType {.FLOAT = {}}},
+        Token {.tokenType = TokenType {.AS = {}}},
+        Token {.tokenType = TokenType {.BOOL = {}}},
+        Token {.tokenType = TokenType {.EOF = {}}}
     };
 
     try expect(tokens_eql(tokens.items, expected));
