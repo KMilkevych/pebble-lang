@@ -14,7 +14,7 @@ function append(list, item) {
 }
 
 declare mylist[4] = 0
-print mylist
+print mylist ; outputs <0, 0, 0, 0>
 
 mylist = append(mylist, 1)
-print mylistt
+print mylist ; outputs <0, 0, 0, 0, 1>
