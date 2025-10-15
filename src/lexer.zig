@@ -33,29 +33,29 @@ fn is_operator(chars: []const u8) bool {
     );
 }
 
-fn operator_from_string(str: []const u8) token.Token {
-    if (std.mem.eql(u8, str, "(")) return token.Token {.tokenType = token.TokenType {.LPAREN = {}}};
-    if (std.mem.eql(u8, str, ")")) return token.Token {.tokenType = token.TokenType {.RPAREN = {}}};
-    if (std.mem.eql(u8, str, "[")) return token.Token {.tokenType = token.TokenType {.LBRACK = {}}};
-    if (std.mem.eql(u8, str, "]")) return token.Token {.tokenType = token.TokenType {.RBRACK = {}}};
-    if (std.mem.eql(u8, str, "{")) return token.Token {.tokenType = token.TokenType {.LCURLY = {}}};
-    if (std.mem.eql(u8, str, "}")) return token.Token {.tokenType = token.TokenType {.RCURLY = {}}};
-    if (std.mem.eql(u8, str, "+")) return token.Token {.tokenType = token.TokenType {.PLUS = {}}};
-    if (std.mem.eql(u8, str, "-")) return token.Token {.tokenType = token.TokenType {.MINUS = {}}};
-    if (std.mem.eql(u8, str, "*")) return token.Token {.tokenType = token.TokenType {.MUL = {}}};
-    if (std.mem.eql(u8, str, "/")) return token.Token {.tokenType = token.TokenType {.DIV = {}}};
-    if (std.mem.eql(u8, str, "!")) return token.Token {.tokenType = token.TokenType {.NOT = {}}};
-    if (std.mem.eql(u8, str, "||")) return token.Token {.tokenType = token.TokenType {.OR = {}}};
-    if (std.mem.eql(u8, str, "&&")) return token.Token {.tokenType = token.TokenType {.AND = {}}};
-    if (std.mem.eql(u8, str, "==")) return token.Token {.tokenType = token.TokenType {.DEQ = {}}};
-    if (std.mem.eql(u8, str, "=")) return token.Token {.tokenType = token.TokenType {.EQ = {}}};
-    if (std.mem.eql(u8, str, "<")) return token.Token {.tokenType = token.TokenType {.LT = {}}};
-    if (std.mem.eql(u8, str, ">")) return token.Token {.tokenType = token.TokenType {.GT = {}}};
-    if (std.mem.eql(u8, str, "<=")) return token.Token {.tokenType = token.TokenType {.LTE = {}}};
-    if (std.mem.eql(u8, str, ">=")) return token.Token {.tokenType = token.TokenType {.GTE = {}}};
-    if (std.mem.eql(u8, str, ",")) return token.Token {.tokenType = token.TokenType {.COMMA = {}}};
-    if (std.mem.eql(u8, str, ".")) return token.Token {.tokenType = token.TokenType {.DOT = {}}};
-    if (std.mem.eql(u8, str, "\n")) return token.Token {.tokenType = token.TokenType {.LB = {}}};
+fn operator_from_string(str: []const u8) token.TokenType {
+    if (std.mem.eql(u8, str, "(")) return token.TokenType {.LPAREN = {}};
+    if (std.mem.eql(u8, str, ")")) return token.TokenType {.RPAREN = {}};
+    if (std.mem.eql(u8, str, "[")) return token.TokenType {.LBRACK = {}};
+    if (std.mem.eql(u8, str, "]")) return token.TokenType {.RBRACK = {}};
+    if (std.mem.eql(u8, str, "{")) return token.TokenType {.LCURLY = {}};
+    if (std.mem.eql(u8, str, "}")) return token.TokenType {.RCURLY = {}};
+    if (std.mem.eql(u8, str, "+")) return token.TokenType {.PLUS = {}};
+    if (std.mem.eql(u8, str, "-")) return token.TokenType {.MINUS = {}};
+    if (std.mem.eql(u8, str, "*")) return token.TokenType {.MUL = {}};
+    if (std.mem.eql(u8, str, "/")) return token.TokenType {.DIV = {}};
+    if (std.mem.eql(u8, str, "!")) return token.TokenType {.NOT = {}};
+    if (std.mem.eql(u8, str, "||")) return token.TokenType {.OR = {}};
+    if (std.mem.eql(u8, str, "&&")) return token.TokenType {.AND = {}};
+    if (std.mem.eql(u8, str, "==")) return token.TokenType {.DEQ = {}};
+    if (std.mem.eql(u8, str, "=")) return token.TokenType {.EQ = {}};
+    if (std.mem.eql(u8, str, "<")) return token.TokenType {.LT = {}};
+    if (std.mem.eql(u8, str, ">")) return token.TokenType {.GT = {}};
+    if (std.mem.eql(u8, str, "<=")) return token.TokenType {.LTE = {}};
+    if (std.mem.eql(u8, str, ">=")) return token.TokenType {.GTE = {}};
+    if (std.mem.eql(u8, str, ",")) return token.TokenType {.COMMA = {}};
+    if (std.mem.eql(u8, str, ".")) return token.TokenType {.DOT = {}};
+    if (std.mem.eql(u8, str, "\n")) return token.TokenType {.LB = {}};
     unreachable;
 }
 
@@ -63,22 +63,22 @@ fn is_keyword(chars: []const u8) bool {
     return contains(&[_][]const u8 {"declare", "print", "if", "else", "while", "break", "continue", "return", "function", "and", "or", "as", "Int", "Float", "Bool"}, chars);
 }
 
-fn keyword_from_string(str: []const u8) token.Token {
-    if (std.mem.eql(u8, str, "declare")) return token.Token {.tokenType = token.TokenType {.DECLARE = {}}};
-    if (std.mem.eql(u8, str, "print")) return token.Token {.tokenType = token.TokenType {.PRINT = {}}};
-    if (std.mem.eql(u8, str, "if")) return token.Token {.tokenType = token.TokenType {.IF = {}}};
-    if (std.mem.eql(u8, str, "else")) return token.Token {.tokenType = token.TokenType {.ELSE = {}}};
-    if (std.mem.eql(u8, str, "while")) return token.Token {.tokenType = token.TokenType {.WHILE = {}}};
-    if (std.mem.eql(u8, str, "break")) return token.Token {.tokenType = token.TokenType {.BREAK = {}}};
-    if (std.mem.eql(u8, str, "continue")) return token.Token {.tokenType = token.TokenType {.CONTINUE = {}}};
-    if (std.mem.eql(u8, str, "return")) return token.Token {.tokenType = token.TokenType {.RETURN = {}}};
-    if (std.mem.eql(u8, str, "function")) return token.Token {.tokenType = token.TokenType {.FUN = {}}};
-    if (std.mem.eql(u8, str, "and")) return token.Token {.tokenType = token.TokenType {.AND = {}}};
-    if (std.mem.eql(u8, str, "or")) return token.Token {.tokenType = token.TokenType {.OR = {}}};
-    if (std.mem.eql(u8, str, "as")) return token.Token {.tokenType = token.TokenType {.AS = {}}};
-    if (std.mem.eql(u8, str, "Int")) return token.Token {.tokenType = token.TokenType {.INT = {}}};
-    if (std.mem.eql(u8, str, "Float")) return token.Token {.tokenType = token.TokenType {.FLOAT = {}}};
-    if (std.mem.eql(u8, str, "Bool")) return token.Token {.tokenType = token.TokenType {.BOOL = {}}};
+fn keyword_from_string(str: []const u8) token.TokenType {
+    if (std.mem.eql(u8, str, "declare")) return token.TokenType {.DECLARE = {}};
+    if (std.mem.eql(u8, str, "print")) return token.TokenType {.PRINT = {}};
+    if (std.mem.eql(u8, str, "if")) return token.TokenType {.IF = {}};
+    if (std.mem.eql(u8, str, "else")) return token.TokenType {.ELSE = {}};
+    if (std.mem.eql(u8, str, "while")) return token.TokenType {.WHILE = {}};
+    if (std.mem.eql(u8, str, "break")) return token.TokenType {.BREAK = {}};
+    if (std.mem.eql(u8, str, "continue")) return token.TokenType {.CONTINUE = {}};
+    if (std.mem.eql(u8, str, "return")) return token.TokenType {.RETURN = {}};
+    if (std.mem.eql(u8, str, "function")) return token.TokenType {.FUN = {}};
+    if (std.mem.eql(u8, str, "and")) return token.TokenType {.AND = {}};
+    if (std.mem.eql(u8, str, "or")) return token.TokenType {.OR = {}};
+    if (std.mem.eql(u8, str, "as")) return token.TokenType {.AS = {}};
+    if (std.mem.eql(u8, str, "Int")) return token.TokenType {.INT = {}};
+    if (std.mem.eql(u8, str, "Float")) return token.TokenType {.FLOAT = {}};
+    if (std.mem.eql(u8, str, "Bool")) return token.TokenType {.BOOL = {}};
     unreachable;
 }
 
@@ -86,9 +86,9 @@ fn is_bool_literal(chars: []const u8) bool {
     return contains(&[_][]const u8 {"true", "false"}, chars);
 }
 
-fn bool_literal_from_string(str: []const u8) token.Token {
-    if (std.mem.eql(u8, str, "true")) return token.Token {.tokenType = token.TokenType {.BOOLLIT = true}};
-    if (std.mem.eql(u8, str, "false")) return token.Token {.tokenType = token.TokenType {.BOOLLIT = false}};
+fn bool_literal_from_string(str: []const u8) token.TokenType {
+    if (std.mem.eql(u8, str, "true")) return token.TokenType {.BOOLLIT = true};
+    if (std.mem.eql(u8, str, "false")) return token.TokenType {.BOOLLIT = false};
     unreachable;
 }
 
