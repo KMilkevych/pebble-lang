@@ -148,7 +148,10 @@ pub const TokenType: type = union(TokenTypeInner) {
 
 pub const Token: type = struct {
 
-    location: loc.Location = .{.file = "", .column = 0, .line = 0},
+    location: loc.LocationRange = loc.LocationRange {
+        .from = loc.Location {.file = "", .column = 0, .line = 0 },
+        .to = loc.Location {.file = "", .column = 0, .line = 0 },
+    },
     tokenType: TokenType,
 
     pub fn format(
