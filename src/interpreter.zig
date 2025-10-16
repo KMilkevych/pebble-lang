@@ -1,5 +1,6 @@
 const ast = @import("ast.zig");
 const venv = @import("env.zig");
+const loc = @import("location.zig");
 
 const std = @import("std");
 
@@ -96,7 +97,7 @@ pub fn evalLval(lval: ast.Lval, env: *venv.Env) EvalError!ast.Lit {
         .PropertyAccess => |p| {
 
             // Evalutate property
-            const id: []const u8 = switch (p.prop.*) {
+            const id: []const u8 = switch (p.prop.expr) {
                 .Lval => |lv| switch (lv) {
                     .Var => |v| v,
                     else => return EvalError.InvalidProperty
@@ -318,7 +319,7 @@ pub fn evalAssignExpr(expr: *const ast.AssignExpr, env: *venv.Env) EvalError!ast
     // TODO: Prevent creating another Python and actually require types and declarations
 
     // Make sure left-hand side is an lval
-    const lval: ast.Lval = switch (expr.lhs.*) {
+    const lval: ast.Lval = switch (expr.lhs.expr) {
         .Lval => |lv| lv,
         else => return EvalError.NotIdentifier,
     };
@@ -474,7 +475,7 @@ pub fn evalAsExpr(expr: *const ast.AsExpr, env: *venv.Env) EvalError!ast.Lit {
 
 
 pub fn evalExpr(expr: *const ast.Expr, env: *venv.Env) EvalError!ast.Lit {
-    return switch (expr.*) {
+    return switch (expr.expr) {
         .BinOpExpr => |ex| evalBinOpExpr(&ex, env),
         .UnOpExpr => |ex| evalUnOpExpr(&ex, env),
         .Lval => |lval| evalLval(lval, env),
@@ -495,7 +496,7 @@ pub fn evalExpr(expr: *const ast.Expr, env: *venv.Env) EvalError!ast.Lit {
 
 pub fn evalStmt(statement: ast.Stmt, env: *venv.Env) EvalError!StmtReturn {
 
-    switch (statement) {
+    switch (statement.stmt) {
         .ExprStmt => |expr| {
 
             // Evaluate the underlying expression
@@ -515,9 +516,9 @@ pub fn evalStmt(statement: ast.Stmt, env: *venv.Env) EvalError!StmtReturn {
             for (exprs) |expr| {
 
                 // Make sure the expression is an assignment expression or Lval
-                const lhs: EvalError!ast.Lval = switch (expr.*) {
+                const lhs: EvalError!ast.Lval = switch (expr.expr) {
                     .Lval => |lval| lval,
-                    .AssignExpr => |exp| switch (exp.lhs.*) {
+                    .AssignExpr => |exp| switch (exp.lhs.expr) {
                         .Lval => |lval| lval,
                         else => EvalError.NotIdentifier,
                     },
@@ -534,7 +535,7 @@ pub fn evalStmt(statement: ast.Stmt, env: *venv.Env) EvalError!StmtReturn {
                         env.insert(id, venv.ObjectVal {.Undefined = {}});
 
                         // Evalute assignment expression
-                        switch (expr.*) {
+                        switch (expr.expr) {
                             .AssignExpr => |*exp| {
                                 var val: ast.Lit = try evalAssignExpr(exp, env);
                                 val.destroyAll(env.allocator);
@@ -547,7 +548,7 @@ pub fn evalStmt(statement: ast.Stmt, env: *venv.Env) EvalError!StmtReturn {
                     .ListIndex => |li| {
 
                         // Make sure that id is a Var
-                        const id: ast.Var = switch (li.id.*) {
+                        const id: ast.Var = switch (li.id.expr) {
                             .Lval => |lv| switch (lv) {
                                 .Var => |v| v,
                                 .ListIndex, .PropertyAccess => return EvalError.NotIdentifier,
@@ -578,7 +579,7 @@ pub fn evalStmt(statement: ast.Stmt, env: *venv.Env) EvalError!StmtReturn {
                         env.insert(id, venv.ObjectVal {.Var = ast.Lit {.List = ptr}});
 
                         // Evaluate right-hand side and destroy if exists
-                        var val: ast.Lit = switch (expr.*) {
+                        var val: ast.Lit = switch (expr.expr) {
                             .AssignExpr => |as| try evalExpr(as.rhs, env),
                             .Lval => ast.Lit {.Void = {}},
                             else => unreachable
@@ -591,12 +592,21 @@ pub fn evalStmt(statement: ast.Stmt, env: *venv.Env) EvalError!StmtReturn {
 
                             const exp: ast.AssignExpr = ast.AssignExpr {
                                 .lhs = &ast.Expr {
-                                    .Lval = ast.Lval {.ListIndex = ast.ListIndex {
-                                        .id = li.id,
-                                        .idx = &ast.Expr {.Lit = ast.Lit {.Int = idx}}
-                                    }}
+                                    .location = expr.location,
+                                    .expr = ast.ExprInner {
+                                        .Lval = ast.Lval {.ListIndex = ast.ListIndex {
+                                            .id = li.id,
+                                            .idx = &ast.Expr {
+                                                .location = li.idx.location,
+                                                .expr = ast.ExprInner {.Lit = ast.Lit {.Int = idx}}
+                                            }
+                                        }}
+                                    }
                                 },
-                                .rhs = &ast.Expr {.Lit = val}
+                                .rhs = &ast.Expr {
+                                    .location = expr.location,
+                                    .expr = ast.ExprInner {.Lit = val}
+                                }
                             };
 
                             // Use reflection-like code to build initialization

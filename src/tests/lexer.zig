@@ -2093,7 +2093,6 @@ test "location extra line break" {
 
 test "location if statement" {
 
-    // TODO: Finish test
     const input =
         \\if (1 == 0)
         \\  return false

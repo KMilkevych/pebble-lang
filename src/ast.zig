@@ -1,6 +1,7 @@
 const std = @import("std");
 const token = @import("token.zig");
 const venv = @import("env.zig");
+const loc = @import("location.zig");
 
 pub const Callable = struct {
     params: []const Var,
@@ -409,7 +410,28 @@ pub const AsExpr = struct {
     }
 };
 
-pub const Expr = union(enum) {
+pub const Expr: type = struct {
+    expr: ExprInner,
+    location: loc.LocationRange,
+
+    pub fn destroyAll(self: *const Expr, allocator: std.mem.Allocator) void {
+        self.expr.destroyAll(allocator);
+        allocator.destroy(self);
+    }
+
+    pub fn format(
+        self: Expr,
+        comptime fmt: []const u8,
+        options: std.fmt.FormatOptions,
+        writer: anytype
+    ) !void {
+        _ = fmt;
+        _ = options;
+        try writer.print("{}", .{self.expr});
+    }
+};
+
+pub const ExprInner = union(enum) {
     BinOpExpr: BinOpExpr,
     UnOpExpr: UnOpExpr,
     Lit: Lit,
@@ -419,7 +441,7 @@ pub const Expr = union(enum) {
     ListExpr: []const *const Expr,
     AsExpr: AsExpr,
 
-    pub fn destroyAll(self: *const Expr, allocator: std.mem.Allocator) void {
+    pub fn destroyAll(self: *const ExprInner, allocator: std.mem.Allocator) void {
         switch (self.*) {
             .BinOpExpr => |*expr| expr.destroyAll(allocator),
             .UnOpExpr => |*expr| expr.destroyAll(allocator),
@@ -433,11 +455,10 @@ pub const Expr = union(enum) {
             },
             .AsExpr => |*expr| expr.destroyAll(allocator),
         }
-        allocator.destroy(self);
     }
 
     pub fn format(
-        self: Expr,
+        self: ExprInner,
         comptime fmt: []const u8,
         options: std.fmt.FormatOptions,
         writer: anytype
@@ -534,8 +555,27 @@ pub const FunDefStmt = struct {
 
 };
 
+pub const Stmt = struct {
+    location: loc.LocationRange,
+    stmt: StmtInner,
 
-pub const Stmt = union(enum) {
+    pub fn destroyAll(self: *const Stmt, allocator: std.mem.Allocator) void {
+        self.stmt.destroyAll(allocator);
+    }
+
+    pub fn format(
+        self: Stmt,
+        comptime fmt: []const u8,
+        options: std.fmt.FormatOptions,
+        writer: anytype
+    ) !void {
+        _ = options;
+        _ = fmt;
+        try writer.print("{}", .{self.stmt});
+    }
+};
+
+pub const StmtInner = union(enum) {
     DeclareStmt: []const *const Expr,
     ExprStmt: *const Expr,
     PrintStmt: []const *const Expr,
@@ -547,7 +587,7 @@ pub const Stmt = union(enum) {
     ReturnStmt: *const Expr,
     FunDefStmt: *const FunDefStmt,
 
-    pub fn destroyAll(self: *const Stmt, allocator: std.mem.Allocator) void {
+    pub fn destroyAll(self: *const StmtInner, allocator: std.mem.Allocator) void {
         switch (self.*) {
             .DeclareStmt => |exprs| {
                 for (exprs) |expr| expr.destroyAll(allocator);
@@ -572,7 +612,7 @@ pub const Stmt = union(enum) {
     }
 
     pub fn format(
-        self: Stmt,
+        self: StmtInner,
         comptime fmt: []const u8,
         options: std.fmt.FormatOptions,
         writer: anytype
