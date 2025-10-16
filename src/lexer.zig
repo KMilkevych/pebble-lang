@@ -98,6 +98,7 @@ pub const Lexer = struct {
 
     pos: usize,
     input: []const u8,
+    file: []const u8,
     allocator: std.mem.Allocator,
 
     line: usize = 0,
@@ -105,10 +106,11 @@ pub const Lexer = struct {
 
     storeLocation: bool = true,
 
-    pub fn new(input: []const u8, allocator: std.mem.Allocator) Self {
+    pub fn new(input: []const u8, file: []const u8, allocator: std.mem.Allocator) Self {
         return .{
             .pos = 0,
             .input = input,
+            .file = file,
             .allocator = allocator
         };
     }
@@ -120,8 +122,8 @@ pub const Lexer = struct {
             .to = loc.Location {.file = "", .line = 0, .column = 0},
         };
         return loc.LocationRange {
-            .from = loc.Location {.file = "TEST", .column = self.column, .line = self.line},
-            .to = loc.Location {.file = "TEST", .column = self.column + length, .line = self.line},
+            .from = loc.Location {.file = self.file, .column = self.column - length, .line = self.line},
+            .to = loc.Location {.file = self.file, .column = self.column - 1, .line = self.line},
         };
     }
 
@@ -207,7 +209,8 @@ pub const Lexer = struct {
                 };
 
                 return token.Token {
-                    .tokenType = token.TokenType { .FLOATLIT = lit }
+                    .tokenType = token.TokenType { .FLOATLIT = lit },
+                    .location = self.getLocationRange(buf.items.len)
                 };
             }
         } else |_| {}
@@ -227,7 +230,8 @@ pub const Lexer = struct {
 
         // Return constructed integer literal
         return token.Token {
-            .tokenType = token.TokenType { .INTLIT = lit }
+            .tokenType = token.TokenType { .INTLIT = lit },
+            .location = self.getLocationRange(buf.items.len)
         };
     }
 
@@ -378,15 +382,23 @@ pub const Lexer = struct {
         // Insert line break if last token is not a line break
         // and there are items before this
         if (buf.items.len == 0) return;
-        const lastToken = buf.getLast();
+        const lastToken: token.Token = buf.getLast();
         switch (lastToken.tokenType) {
             .LB => return,
             else => buf.append(
                 token.Token {
                     .tokenType = token.TokenType {.LB = {}},
                     .location = loc.LocationRange {
-                        .from = loc.Location {.file = "", .column = 0, .line = 0},
-                        .to = loc.Location {.file = "", .column = 0, .line = 0}
+                        .from = loc.Location {
+                            .file = lastToken.location.from.file,
+                            .column = lastToken.location.from.column,
+                            .line = lastToken.location.from.line
+                        },
+                        .to = loc.Location {
+                            .file = lastToken.location.to.file,
+                            .column = lastToken.location.to.column,
+                            .line = lastToken.location.to.line
+                        }
                     }
                 }
             ) catch unreachable,

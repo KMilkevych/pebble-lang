@@ -10,7 +10,7 @@ const std = @import("std");
 test "intlit" {
     const input: []const u8 = "8191";
 
-    var lxr: lexer.Lexer = lexer.Lexer.new(input, std.testing.allocator);
+    var lxr: lexer.Lexer = lexer.Lexer.new(input, "", std.testing.allocator);
     const tokens: std.ArrayList(token.Token) = lxr.lex();
     defer tokens.deinit();
 
@@ -28,7 +28,7 @@ test "intlit" {
 test "complicated intlit expression" {
     const input: []const u8 = "(3 + 5) * 7 - (13 + 17)";
 
-    var lxr: lexer.Lexer = lexer.Lexer.new(input, std.testing.allocator);
+    var lxr: lexer.Lexer = lexer.Lexer.new(input, "", std.testing.allocator);
     const tokens: std.ArrayList(token.Token) = lxr.lex();
     defer tokens.deinit();
 
@@ -47,7 +47,7 @@ test "complicated boolean expression" {
 
     const input: []const u8 = "!(false || true) && !false";
 
-    var lxr: lexer.Lexer = lexer.Lexer.new(input, std.testing.allocator);
+    var lxr: lexer.Lexer = lexer.Lexer.new(input, "", std.testing.allocator);
     const tokens: std.ArrayList(token.Token) = lxr.lex();
     defer tokens.deinit();
 
@@ -65,7 +65,7 @@ test "variable eval with premade environment" {
 
     const input: []const u8 = "-3+some_variable";
 
-    var lxr: lexer.Lexer = lexer.Lexer.new(input, std.testing.allocator);
+    var lxr: lexer.Lexer = lexer.Lexer.new(input, "", std.testing.allocator);
     const tokens: std.ArrayList(token.Token) = lxr.lex();
     defer tokens.deinit();
 
@@ -86,7 +86,7 @@ test "variable eval with premade environment" {
 test "assignment expression" {
     const input: []const u8 = "variable = 3";
 
-    var lxr: lexer.Lexer = lexer.Lexer.new(input, std.testing.allocator);
+    var lxr: lexer.Lexer = lexer.Lexer.new(input, "", std.testing.allocator);
     const tokens: std.ArrayList(token.Token) = lxr.lex();
     defer tokens.deinit();
 
@@ -107,7 +107,7 @@ test "assignment expression" {
 test "double assignment" {
     const input: []const u8 = "x = y = 581";
 
-    var lxr: lexer.Lexer = lexer.Lexer.new(input, std.testing.allocator);
+    var lxr: lexer.Lexer = lexer.Lexer.new(input, "", std.testing.allocator);
     const tokens: std.ArrayList(token.Token) = lxr.lex();
     defer tokens.deinit();
 
@@ -129,7 +129,7 @@ test "double assignment" {
 test "declare statement undefined" {
     const input: []const u8 = "declare x";
 
-    var lxr: lexer.Lexer = lexer.Lexer.new(input, std.testing.allocator);
+    var lxr: lexer.Lexer = lexer.Lexer.new(input, "", std.testing.allocator);
     const tokens: std.ArrayList(token.Token) = lxr.lex();
     defer tokens.deinit();
 
@@ -157,7 +157,7 @@ test "break statement" {
         \\}
     ;
 
-    var lxr: lexer.Lexer = lexer.Lexer.new(input, std.testing.allocator);
+    var lxr: lexer.Lexer = lexer.Lexer.new(input, "", std.testing.allocator);
     const tokens: std.ArrayList(token.Token) = lxr.lex();
     defer tokens.deinit();
 
@@ -187,7 +187,7 @@ test "continue statement" {
         \\y = y + 1
     ;
 
-    var lxr: lexer.Lexer = lexer.Lexer.new(input, std.testing.allocator);
+    var lxr: lexer.Lexer = lexer.Lexer.new(input, "", std.testing.allocator);
     const tokens: std.ArrayList(token.Token) = lxr.lex();
     defer tokens.deinit();
 
@@ -216,7 +216,7 @@ test "closure 1 test" {
         \\declare z = mul_by_x(5)
     ;
 
-    var lxr: lexer.Lexer = lexer.Lexer.new(input, std.testing.allocator);
+    var lxr: lexer.Lexer = lexer.Lexer.new(input, "", std.testing.allocator);
     const tokens: std.ArrayList(token.Token) = lxr.lex();
     defer tokens.deinit();
 
@@ -242,7 +242,7 @@ test "first-class values test" {
         \\declare x = apply(add, 3, 7)
     ;
 
-    var lxr: lexer.Lexer = lexer.Lexer.new(input, std.testing.allocator);
+    var lxr: lexer.Lexer = lexer.Lexer.new(input, "", std.testing.allocator);
     const tokens: std.ArrayList(token.Token) = lxr.lex();
     defer tokens.deinit();
 
@@ -269,7 +269,7 @@ test "prohibit upcalling" {
         \\declare f = make_function()
     ;
 
-    var lxr: lexer.Lexer = lexer.Lexer.new(input, std.testing.allocator);
+    var lxr: lexer.Lexer = lexer.Lexer.new(input, "", std.testing.allocator);
     const tokens: std.ArrayList(token.Token) = lxr.lex();
     defer tokens.deinit();
 

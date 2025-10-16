@@ -2,8 +2,11 @@ const ast = @import("../ast.zig");
 const interpreter = @import("../interpreter.zig");
 const lexer = @import("../lexer.zig");
 const token = @import("../token.zig");
+const loc = @import("../location.zig");
 const Token = token.Token;
 const TokenType = token.TokenType;
+const Location = loc.Location;
+const LocationRange = loc.LocationRange;
 
 const std = @import("std");
 const expect = std.testing.expect;
@@ -70,7 +73,7 @@ test "tokens_eql 3" {
 test "intlits" {
 
     const input = "12+2+891 + 21823 + 2";
-    var lx = lexer.Lexer.new(input, std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
     lx.storeLocation = false;
 
     const tokens: std.ArrayList(Token) = lx.lex();
@@ -96,7 +99,7 @@ test "intlits" {
 test "whitespace" {
 
     const input = "++ + \t+\t\t+ \t\r\t+ \r+\r\t+  \t \t \t +";
-    var lx = lexer.Lexer.new(input, std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
     lx.storeLocation = false;
 
     const tokens: std.ArrayList(Token) = lx.lex();
@@ -123,7 +126,7 @@ test "whitespace" {
 test "operators" {
 
     const input = "(1+3)*\t( 8912 || 123 )&&  4/5==12";
-    var lx = lexer.Lexer.new(input, std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
     lx.storeLocation = false;
 
     const tokens: std.ArrayList(Token) = lx.lex();
@@ -156,7 +159,7 @@ test "operators" {
 test "booleans" {
 
     const input = "!(true&&false)||!true==false";
-    var lx = lexer.Lexer.new(input, std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
     lx.storeLocation = false;
 
     const tokens: std.ArrayList(Token) = lx.lex();
@@ -183,7 +186,7 @@ test "booleans" {
 test "illegal" {
 
     const input = "12'32 ^23@3";
-    var lx = lexer.Lexer.new(input, std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
     lx.storeLocation = false;
 
     const tokens: std.ArrayList(Token) = lx.lex();
@@ -206,7 +209,7 @@ test "illegal" {
 test "bool literals" {
 
     const input = "true && false||true*false";
-    var lx = lexer.Lexer.new(input, std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
     lx.storeLocation = false;
 
     const tokens: std.ArrayList(Token) = lx.lex();
@@ -229,7 +232,7 @@ test "bool literals" {
 test "keyword" {
 
     const input = "declare && declare4declare";
-    var lx = lexer.Lexer.new(input, std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
     lx.storeLocation = false;
 
     const tokens: std.ArrayList(Token) = lx.lex();
@@ -248,7 +251,7 @@ test "keyword" {
 test "keyword 2" {
 
     const input = "print x declare y = 3";
-    var lx = lexer.Lexer.new(input, std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
     lx.storeLocation = false;
 
     const tokens: std.ArrayList(Token) = lx.lex();
@@ -271,7 +274,7 @@ test "keyword 2" {
 test "identifiers" {
 
     const input = "declare (bob == alice)||eve*b0b";
-    var lx = lexer.Lexer.new(input, std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
     lx.storeLocation = false;
 
     const tokens: std.ArrayList(Token) = lx.lex();
@@ -298,7 +301,7 @@ test "identifiers" {
 test "assignment" {
 
     const input = "declare eeve=bob&&alice";
-    var lx = lexer.Lexer.new(input, std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
     lx.storeLocation = false;
 
     const tokens: std.ArrayList(Token) = lx.lex();
@@ -321,7 +324,7 @@ test "assignment" {
 test "brackets" {
 
     const input = "()[(]{[}";
-    var lx = lexer.Lexer.new(input, std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
     lx.storeLocation = false;
 
     const tokens: std.ArrayList(Token) = lx.lex();
@@ -349,7 +352,7 @@ test "brackets" {
 
 test "smart line breaks" {
     const input = "declare x=x+1\n\n\ndeclare";
-    var lx = lexer.Lexer.new(input, std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
     lx.storeLocation = false;
 
     const tokens: std.ArrayList(Token) = lx.lex();
@@ -373,7 +376,7 @@ test "smart line breaks" {
 
 test "no line break before first statement" {
     const input = "\nprint x";
-    var lx = lexer.Lexer.new(input, std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
     lx.storeLocation = false;
 
     const tokens: std.ArrayList(Token) = lx.lex();
@@ -391,7 +394,7 @@ test "no line break before first statement" {
 
 test "no line break before first statement 2" {
     const input = "\n\n \n\n \nprint x";
-    var lx = lexer.Lexer.new(input, std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
     lx.storeLocation = false;
 
     const tokens: std.ArrayList(Token) = lx.lex();
@@ -409,7 +412,7 @@ test "no line break before first statement 2" {
 
 test "line break mixup" {
     const input = "\n\n \n\n \nprint x\n \n\n\r   \nprint x";
-    var lx = lexer.Lexer.new(input, std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
     lx.storeLocation = false;
 
     const tokens: std.ArrayList(Token) = lx.lex();
@@ -429,7 +432,7 @@ test "line break mixup" {
 
 test "single line statement" {
     const input = "print x";
-    var lx = lexer.Lexer.new(input, std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
     lx.storeLocation = false;
 
     const tokens: std.ArrayList(Token) = lx.lex();
@@ -447,7 +450,7 @@ test "single line statement" {
 
 test "single line statement 2" {
     const input = "\nprint x\n";
-    var lx = lexer.Lexer.new(input, std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
     lx.storeLocation = false;
 
     const tokens: std.ArrayList(Token) = lx.lex();
@@ -465,7 +468,7 @@ test "single line statement 2" {
 
 test "single line statement 3" {
     const input = "\n\n \nprint x\n \n";
-    var lx = lexer.Lexer.new(input, std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
     lx.storeLocation = false;
 
     const tokens: std.ArrayList(Token) = lx.lex();
@@ -484,7 +487,7 @@ test "single line statement 3" {
 
 test "single line two statements" {
     const input = "print x print y";
-    var lx = lexer.Lexer.new(input, std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
     lx.storeLocation = false;
 
     const tokens: std.ArrayList(Token) = lx.lex();
@@ -504,7 +507,7 @@ test "single line two statements" {
 
 test "single line two statements 2" {
     const input = "print x \n \n print y";
-    var lx = lexer.Lexer.new(input, std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
     lx.storeLocation = false;
 
     const tokens: std.ArrayList(Token) = lx.lex();
@@ -524,7 +527,7 @@ test "single line two statements 2" {
 
 test "single line two statements 3" {
     const input = "\n print x \n \n print y";
-    var lx = lexer.Lexer.new(input, std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
     lx.storeLocation = false;
 
     const tokens: std.ArrayList(Token) = lx.lex();
@@ -544,7 +547,7 @@ test "single line two statements 3" {
 
 test "single line with block statement" {
     const input = "\n print x \n \n {print y}";
-    var lx = lexer.Lexer.new(input, std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
     lx.storeLocation = false;
 
     const tokens: std.ArrayList(Token) = lx.lex();
@@ -572,7 +575,7 @@ test "multiline input" {
         \\print y
     ;
 
-    var lx = lexer.Lexer.new(input, std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
     lx.storeLocation = false;
 
     const tokens: std.ArrayList(Token) = lx.lex();
@@ -597,7 +600,7 @@ test "multiline input 2" {
         \\
     ;
 
-    var lx = lexer.Lexer.new(input, std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
     lx.storeLocation = false;
 
     const tokens: std.ArrayList(Token) = lx.lex();
@@ -626,7 +629,7 @@ test "multiline input with blocks" {
         \\}
     ;
 
-    var lx = lexer.Lexer.new(input, std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
     lx.storeLocation = false;
 
     const tokens: std.ArrayList(Token) = lx.lex();
@@ -658,7 +661,7 @@ test "multiline input with inline block" {
         \\{print y}
     ;
 
-    var lx = lexer.Lexer.new(input, std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
     lx.storeLocation = false;
 
     const tokens: std.ArrayList(Token) = lx.lex();
@@ -691,7 +694,7 @@ test "multiline input with inline block two statements" {
         \\{print y print x}
     ;
 
-    var lx = lexer.Lexer.new(input, std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
     lx.storeLocation = false;
 
     const tokens: std.ArrayList(Token) = lx.lex();
@@ -728,7 +731,7 @@ test "multiline input with inline block two statements 2" {
         \\print x}
     ;
 
-    var lx = lexer.Lexer.new(input, std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
     lx.storeLocation = false;
 
     const tokens: std.ArrayList(Token) = lx.lex();
@@ -767,7 +770,7 @@ test "multiline input with block two statements" {
         \\}
     ;
 
-    var lx = lexer.Lexer.new(input, std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
     lx.storeLocation = false;
 
     const tokens: std.ArrayList(Token) = lx.lex();
@@ -804,7 +807,7 @@ test "multiline input with empty block" {
         \\}
     ;
 
-    var lx = lexer.Lexer.new(input, std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
     lx.storeLocation = false;
 
     const tokens: std.ArrayList(Token) = lx.lex();
@@ -833,7 +836,7 @@ test "empty block" {
         \\}
     ;
 
-    var lx = lexer.Lexer.new(input, std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
     lx.storeLocation = false;
 
     const tokens: std.ArrayList(Token) = lx.lex();
@@ -855,7 +858,7 @@ test "empty block inline" {
         \\{}
     ;
 
-    var lx = lexer.Lexer.new(input, std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
     lx.storeLocation = false;
 
     const tokens: std.ArrayList(Token) = lx.lex();
@@ -880,7 +883,7 @@ test "nested blocks" {
         \\}
     ;
 
-    var lx = lexer.Lexer.new(input, std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
     lx.storeLocation = false;
 
     const tokens: std.ArrayList(Token) = lx.lex();
@@ -905,7 +908,7 @@ test "nested blocks inline" {
         \\{{}}
     ;
 
-    var lx = lexer.Lexer.new(input, std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
     lx.storeLocation = false;
 
     const tokens: std.ArrayList(Token) = lx.lex();
@@ -931,7 +934,7 @@ test "nested blocks semi-inline" {
         \\}}
     ;
 
-    var lx = lexer.Lexer.new(input, std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
     lx.storeLocation = false;
 
     const tokens: std.ArrayList(Token) = lx.lex();
@@ -957,7 +960,7 @@ test "nested blocks semi-inline 2" {
         \\{}}
     ;
 
-    var lx = lexer.Lexer.new(input, std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
     lx.storeLocation = false;
 
     const tokens: std.ArrayList(Token) = lx.lex();
@@ -983,7 +986,7 @@ test "nested blocks semi-inline 3" {
         \\}
     ;
 
-    var lx = lexer.Lexer.new(input, std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
     lx.storeLocation = false;
 
     const tokens: std.ArrayList(Token) = lx.lex();
@@ -1013,7 +1016,7 @@ test "advanced sequence with nested blocks" {
         \\print x
     ;
 
-    var lx = lexer.Lexer.new(input, std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
     lx.storeLocation = false;
 
     const tokens: std.ArrayList(Token) = lx.lex();
@@ -1064,7 +1067,7 @@ test "multiline if else" {
         \\} else {}
     ;
 
-    var lx = lexer.Lexer.new(input, std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
     lx.storeLocation = false;
 
     const tokens: std.ArrayList(Token) = lx.lex();
@@ -1094,7 +1097,7 @@ test "inline if else" {
         \\if x {} else {}
     ;
 
-    var lx = lexer.Lexer.new(input, std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
     lx.storeLocation = false;
 
     const tokens: std.ArrayList(Token) = lx.lex();
@@ -1124,7 +1127,7 @@ test "if else without curly braces" {
         \\if x print x else print y
     ;
 
-    var lx = lexer.Lexer.new(input, std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
     lx.storeLocation = false;
 
     const tokens: std.ArrayList(Token) = lx.lex();
@@ -1152,7 +1155,7 @@ test "if else with mixed curly braces" {
         \\if x {print x} else print y
     ;
 
-    var lx = lexer.Lexer.new(input, std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
     lx.storeLocation = false;
 
     const tokens: std.ArrayList(Token) = lx.lex();
@@ -1187,7 +1190,7 @@ test "multiline if else with mixed curly braces" {
         \\else print y
     ;
 
-    var lx = lexer.Lexer.new(input, std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
     lx.storeLocation = false;
 
     const tokens: std.ArrayList(Token) = lx.lex();
@@ -1222,7 +1225,7 @@ test "multiline while" {
         \\}
     ;
 
-    var lx = lexer.Lexer.new(input, std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
     lx.storeLocation = false;
 
     const tokens: std.ArrayList(Token) = lx.lex();
@@ -1248,7 +1251,7 @@ test "multiline while" {
 test "inline while" {
     const input = "while x print x";
 
-    var lx = lexer.Lexer.new(input, std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
     lx.storeLocation = false;
 
     const tokens: std.ArrayList(Token) = lx.lex();
@@ -1269,7 +1272,7 @@ test "inline while" {
 test "less than" {
     const input = "x < y";
 
-    var lx = lexer.Lexer.new(input, std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
     lx.storeLocation = false;
 
     const tokens: std.ArrayList(Token) = lx.lex();
@@ -1289,7 +1292,7 @@ test "less than" {
 test "greater than" {
     const input = "x > y";
 
-    var lx = lexer.Lexer.new(input, std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
     lx.storeLocation = false;
 
     const tokens: std.ArrayList(Token) = lx.lex();
@@ -1308,7 +1311,7 @@ test "greater than" {
 test "less than equal" {
     const input = "x <= y";
 
-    var lx = lexer.Lexer.new(input, std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
     lx.storeLocation = false;
 
     const tokens: std.ArrayList(Token) = lx.lex();
@@ -1328,7 +1331,7 @@ test "less than equal" {
 test "greater than equal" {
     const input = "x >= y";
 
-    var lx = lexer.Lexer.new(input, std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
     lx.storeLocation = false;
 
     const tokens: std.ArrayList(Token) = lx.lex();
@@ -1350,7 +1353,7 @@ test "expression statement after other statements" {
         \\x = x
     ;
 
-    var lx = lexer.Lexer.new(input, std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
     lx.storeLocation = false;
 
     const tokens: std.ArrayList(Token) = lx.lex();
@@ -1372,7 +1375,7 @@ test "expression statement after other statements" {
 test "break" {
     const input = "break";
 
-    var lx = lexer.Lexer.new(input, std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
     lx.storeLocation = false;
 
     const tokens: std.ArrayList(Token) = lx.lex();
@@ -1389,7 +1392,7 @@ test "break" {
 test "continue" {
     const input = "continue";
 
-    var lx = lexer.Lexer.new(input, std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
     lx.storeLocation = false;
 
     const tokens: std.ArrayList(Token) = lx.lex();
@@ -1410,7 +1413,7 @@ test "block break" {
         \\}
     ;
 
-    var lx = lexer.Lexer.new(input, std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
     lx.storeLocation = false;
 
     const tokens: std.ArrayList(Token) = lx.lex();
@@ -1439,7 +1442,7 @@ test "block continue" {
         \\}
     ;
 
-    var lx = lexer.Lexer.new(input, std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
     lx.storeLocation = false;
 
     const tokens: std.ArrayList(Token) = lx.lex();
@@ -1465,7 +1468,7 @@ test "inline block break" {
         \\while true break
     ;
 
-    var lx = lexer.Lexer.new(input, std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
     lx.storeLocation = false;
 
     const tokens: std.ArrayList(Token) = lx.lex();
@@ -1488,7 +1491,7 @@ test "newline block break" {
         \\break
     ;
 
-    var lx = lexer.Lexer.new(input, std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
     lx.storeLocation = false;
 
     const tokens: std.ArrayList(Token) = lx.lex();
@@ -1511,7 +1514,7 @@ test "comma declaration" {
         \\declare x = 1, y = 2, z, w = 5
     ;
 
-    var lx = lexer.Lexer.new(input, std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
     lx.storeLocation = false;
 
     const tokens: std.ArrayList(Token) = lx.lex();
@@ -1544,7 +1547,7 @@ test "inline simple function definition with return" {
         \\function last(x, y, z) return z
     ;
 
-    var lx = lexer.Lexer.new(input, std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
     lx.storeLocation = false;
 
     const tokens: std.ArrayList(Token) = lx.lex();
@@ -1579,7 +1582,7 @@ test "single make" {
         \\declare list[10]
     ;
 
-    var lx = lexer.Lexer.new(input, std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
     lx.storeLocation = false;
 
     const tokens: std.ArrayList(Token) = lx.lex();
@@ -1603,7 +1606,7 @@ test "multiline multi make" {
         \\print 10
     ;
 
-    var lx = lexer.Lexer.new(input, std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
     lx.storeLocation = false;
 
     const tokens: std.ArrayList(Token) = lx.lex();
@@ -1634,7 +1637,7 @@ test "property access" {
         \\mylist.size
     ;
 
-    var lx = lexer.Lexer.new(input, std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
     lx.storeLocation = false;
 
     const tokens: std.ArrayList(Token) = lx.lex();
@@ -1655,7 +1658,7 @@ test "multi property access" {
         \\obj.prop1.prop2
     ;
 
-    var lx = lexer.Lexer.new(input, std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
     lx.storeLocation = false;
 
     const tokens: std.ArrayList(Token) = lx.lex();
@@ -1680,7 +1683,7 @@ test "multiline property access not allowed" {
         \\  .prop2
     ;
 
-    var lx = lexer.Lexer.new(input, std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
     lx.storeLocation = false;
 
     const tokens: std.ArrayList(Token) = lx.lex();
@@ -1707,7 +1710,7 @@ test "line comment" {
         \\ declare x = 0
     ;
 
-    var lx = lexer.Lexer.new(input, std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
     lx.storeLocation = false;
 
     const tokens: std.ArrayList(Token) = lx.lex();
@@ -1730,7 +1733,7 @@ test "after line comment" {
         \\ print x # this is another descriptive comment
     ;
 
-    var lx = lexer.Lexer.new(input, std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
     lx.storeLocation = false;
 
     const tokens: std.ArrayList(Token) = lx.lex();
@@ -1756,7 +1759,7 @@ test "inline comment" {
         \\ print my_#variable print 0
     ;
 
-    var lx = lexer.Lexer.new(input, std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
     lx.storeLocation = false;
 
     const tokens: std.ArrayList(Token) = lx.lex();
@@ -1777,7 +1780,7 @@ test "inline comment" {
 test "float literal" {
     const input = "13.4";
 
-    var lx = lexer.Lexer.new(input, std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
     lx.storeLocation = false;
 
     const tokens: std.ArrayList(Token) = lx.lex();
@@ -1794,7 +1797,7 @@ test "float literal" {
 test "short form float literal" {
     const input = "13.";
 
-    var lx = lexer.Lexer.new(input, std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
     lx.storeLocation = false;
 
     const tokens: std.ArrayList(Token) = lx.lex();
@@ -1811,7 +1814,7 @@ test "short form float literal" {
 test "float expression" {
     const input = "13.4+1.-1.3434";
 
-    var lx = lexer.Lexer.new(input, std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
     lx.storeLocation = false;
 
     const tokens: std.ArrayList(Token) = lx.lex();
@@ -1832,7 +1835,7 @@ test "float expression" {
 test "mixed float" {
     const input = "13.,42";
 
-    var lx = lexer.Lexer.new(input, std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
     lx.storeLocation = false;
 
     const tokens: std.ArrayList(Token) = lx.lex();
@@ -1851,7 +1854,7 @@ test "mixed float" {
 test "booleans alternative" {
 
     const input = "!(true and false)or true==false";
-    var lx = lexer.Lexer.new(input, std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
     lx.storeLocation = false;
 
     const tokens: std.ArrayList(Token) = lx.lex();
@@ -1877,7 +1880,7 @@ test "booleans alternative" {
 test "as and type keywords" {
 
     const input = "true as Int as Float as Bool";
-    var lx = lexer.Lexer.new(input, std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
     lx.storeLocation = false;
 
     const tokens: std.ArrayList(Token) = lx.lex();
@@ -1895,4 +1898,284 @@ test "as and type keywords" {
     };
 
     try expect(tokens_eql(tokens.items, expected));
+}
+
+test "location one line" {
+
+    const input = "myvar + 3";
+    var lx = lexer.Lexer.new(input, "test.peb", std.testing.allocator);
+
+    const tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit();
+
+    const expected: []const Token = &[_]Token{
+        Token {
+            .tokenType = TokenType {.IDENT = "myvar"},
+            .location = LocationRange {
+                .from = Location {.file = "test.peb", .column = 0, .line = 0},
+                .to = Location {.file = "test.peb", .column = 4, .line = 0},
+            }
+        },
+        Token {
+            .tokenType = TokenType {.PLUS = {}},
+            .location = LocationRange {
+                .from = Location {.file = "test.peb", .column = 6, .line = 0},
+                .to = Location {.file = "test.peb", .column = 6, .line = 0},
+            }
+        },
+        Token {
+            .tokenType = TokenType {.INTLIT = 3},
+            .location = LocationRange {
+                .from = Location {.file = "test.peb", .column = 8, .line = 0},
+                .to = Location {.file = "test.peb", .column = 8, .line = 0},
+            }
+        },
+        Token {
+            .tokenType = TokenType {.EOF = {}},
+            .location = LocationRange {
+                .from = Location {.file = "test.peb", .column = 8, .line = 0},
+                .to = Location {.file = "test.peb", .column = 8, .line = 0},
+            }
+        },
+    };
+
+    try std.testing.expectEqualDeep(expected, tokens.items);
+}
+
+test "location two lines auto line break" {
+
+    const input =
+        \\declare myvar = 1
+        \\return 0.23
+    ;
+
+    var lx = lexer.Lexer.new(input, "tf", std.testing.allocator);
+
+    const tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit();
+
+    const expected: []const Token = &[_]Token{
+        Token {
+            .tokenType = TokenType {.DECLARE = {}},
+            .location = LocationRange {
+                .from = Location {.file = "tf", .column = 0, .line = 0},
+                .to = Location {.file = "tf", .column = 6, .line = 0},
+            }
+        },
+        Token {
+            .tokenType = TokenType {.IDENT = "myvar"},
+            .location = LocationRange {
+                .from = Location {.file = "tf", .column = 8, .line = 0},
+                .to = Location {.file = "tf", .column = 12, .line = 0},
+            }
+        },
+        Token {
+            .tokenType = TokenType {.EQ  = {}},
+            .location = LocationRange {
+                .from = Location {.file = "tf", .column = 14, .line = 0},
+                .to = Location {.file = "tf", .column = 14, .line = 0},
+            }
+        },
+        Token {
+            .tokenType = TokenType {.INTLIT = 1},
+            .location = LocationRange {
+                .from = Location {.file = "tf", .column = 16, .line = 0},
+                .to = Location {.file = "tf", .column = 16, .line = 0},
+            }
+        },
+        Token {
+            .tokenType = TokenType {.LB = {}},
+            .location = LocationRange {
+                .from = Location {.file = "tf", .column = 16, .line = 0},
+                .to = Location {.file = "tf", .column = 16, .line = 0},
+            }
+        },
+        Token {
+            .tokenType = TokenType {.RETURN = {}},
+            .location = LocationRange {
+                .from = Location {.file = "tf", .column = 0, .line = 1},
+                .to = Location {.file = "tf", .column = 5, .line = 1},
+            }
+        },
+        Token {
+            .tokenType = TokenType {.FLOATLIT = 0.23},
+            .location = LocationRange {
+                .from = Location {.file = "tf", .column = 7, .line = 1},
+                .to = Location {.file = "tf", .column = 10, .line = 1},
+            }
+        },
+        Token {
+            .tokenType = TokenType {.EOF = {}},
+            .location = LocationRange {
+                .from = Location {.file = "tf", .column = 10, .line = 1},
+                .to = Location {.file = "tf", .column = 10, .line = 1},
+            }
+        },
+    };
+
+    try std.testing.expectEqualDeep(expected, tokens.items);
+}
+
+test "location extra line break" {
+
+    const input =
+        \\declare myvar = 1
+        \\
+        \\return 0.23
+    ;
+
+    var lx = lexer.Lexer.new(input, "tf", std.testing.allocator);
+
+    const tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit();
+
+    const expected: []const Token = &[_]Token{
+        Token {
+            .tokenType = TokenType {.DECLARE = {}},
+            .location = LocationRange {
+                .from = Location {.file = "tf", .column = 0, .line = 0},
+                .to = Location {.file = "tf", .column = 6, .line = 0},
+            }
+        },
+        Token {
+            .tokenType = TokenType {.IDENT = "myvar"},
+            .location = LocationRange {
+                .from = Location {.file = "tf", .column = 8, .line = 0},
+                .to = Location {.file = "tf", .column = 12, .line = 0},
+            }
+        },
+        Token {
+            .tokenType = TokenType {.EQ  = {}},
+            .location = LocationRange {
+                .from = Location {.file = "tf", .column = 14, .line = 0},
+                .to = Location {.file = "tf", .column = 14, .line = 0},
+            }
+        },
+        Token {
+            .tokenType = TokenType {.INTLIT = 1},
+            .location = LocationRange {
+                .from = Location {.file = "tf", .column = 16, .line = 0},
+                .to = Location {.file = "tf", .column = 16, .line = 0},
+            }
+        },
+        Token {
+            .tokenType = TokenType {.LB = {}},
+            .location = LocationRange {
+                .from = Location {.file = "tf", .column = 16, .line = 0},
+                .to = Location {.file = "tf", .column = 16, .line = 0},
+            }
+        },
+        Token {
+            .tokenType = TokenType {.RETURN = {}},
+            .location = LocationRange {
+                .from = Location {.file = "tf", .column = 0, .line = 2},
+                .to = Location {.file = "tf", .column = 5, .line = 2},
+            }
+        },
+        Token {
+            .tokenType = TokenType {.FLOATLIT = 0.23},
+            .location = LocationRange {
+                .from = Location {.file = "tf", .column = 7, .line = 2},
+                .to = Location {.file = "tf", .column = 10, .line = 2},
+            }
+        },
+        Token {
+            .tokenType = TokenType {.EOF = {}},
+            .location = LocationRange {
+                .from = Location {.file = "tf", .column = 10, .line = 2},
+                .to = Location {.file = "tf", .column = 10, .line = 2},
+            }
+        },
+    };
+
+    try std.testing.expectEqualDeep(expected, tokens.items);
+}
+
+test "location if statement" {
+
+    // TODO: Finish test
+    const input =
+        \\if (1 == 0)
+        \\  return false
+    ;
+
+    var lx = lexer.Lexer.new(input, "tf", std.testing.allocator);
+
+    const tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit();
+
+    const expected: []const Token = &[_]Token{
+        Token {
+            .tokenType = TokenType {.IF = {}},
+            .location = LocationRange {
+                .from = Location {.file = "tf", .column = 0, .line = 0},
+                .to = Location {.file = "tf", .column = 1, .line = 0},
+            }
+        },
+        Token {
+            .tokenType = TokenType {.LPAREN = {}},
+            .location = LocationRange {
+                .from = Location {.file = "tf", .column = 3, .line = 0},
+                .to = Location {.file = "tf", .column = 3, .line = 0},
+            }
+        },
+        Token {
+            .tokenType = TokenType {.INTLIT = 1},
+            .location = LocationRange {
+                .from = Location {.file = "tf", .column = 4, .line = 0},
+                .to = Location {.file = "tf", .column = 4, .line = 0},
+            }
+        },
+        Token {
+            .tokenType = TokenType {.DEQ  = {}},
+            .location = LocationRange {
+                .from = Location {.file = "tf", .column = 6, .line = 0},
+                .to = Location {.file = "tf", .column = 7, .line = 0},
+            }
+        },
+        Token {
+            .tokenType = TokenType {.INTLIT = 0},
+            .location = LocationRange {
+                .from = Location {.file = "tf", .column = 9, .line = 0},
+                .to = Location {.file = "tf", .column = 9, .line = 0},
+            }
+        },
+        Token {
+            .tokenType = TokenType {.RPAREN = {}},
+            .location = LocationRange {
+                .from = Location {.file = "tf", .column = 10, .line = 0},
+                .to = Location {.file = "tf", .column = 10, .line = 0},
+            }
+        },
+        Token {
+            .tokenType = TokenType {.LB = {}},
+            .location = LocationRange {
+                .from = Location {.file = "tf", .column = 10, .line = 0},
+                .to = Location {.file = "tf", .column = 10, .line = 0},
+            }
+        },
+        Token {
+            .tokenType = TokenType {.RETURN = {}},
+            .location = LocationRange {
+                .from = Location {.file = "tf", .column = 2, .line = 1},
+                .to = Location {.file = "tf", .column = 7, .line = 1},
+            }
+        },
+        Token {
+            .tokenType = TokenType {.BOOLLIT = false},
+            .location = LocationRange {
+                .from = Location {.file = "tf", .column = 9, .line = 1},
+                .to = Location {.file = "tf", .column = 13, .line = 1},
+            }
+        },
+        Token {
+            .tokenType = TokenType {.EOF = {}},
+            .location = LocationRange {
+                .from = Location {.file = "tf", .column = 13, .line = 1},
+                .to = Location {.file = "tf", .column = 13, .line = 1},
+            }
+        },
+    };
+
+    try std.testing.expectEqualDeep(expected, tokens.items);
 }
