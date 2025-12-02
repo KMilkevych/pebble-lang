@@ -1,6 +1,9 @@
 const ast = @import("../ast.zig");
 const interpreter = @import("../interpreter.zig");
 const venv = @import("../env.zig");
+const loc = @import("../location.zig");
+const nolocation = loc.LocationRange.none;
+
 const std = @import("std");
 
 const expect = std.testing.expect;
@@ -8,17 +11,29 @@ const expect = std.testing.expect;
 
 test "simple not" {
     const t: ast.Expr = ast.Expr {
-        .UnOpExpr = ast.UnOpExpr {
-            .rhs = &ast.Expr { .Lit = ast.Lit {.Bool = true} },
-            .op = ast.UnOp.Not
-        }
+        .expr = ast.ExprInner {
+            .UnOpExpr = ast.UnOpExpr {
+                .rhs = &ast.Expr {
+                    .expr = ast.ExprInner { .Lit = ast.Lit {.Bool = true} },
+                    .location = nolocation(),
+                },
+                .op = ast.UnOp.Not
+            }
+        },
+        .location = nolocation(),
     };
 
     const f: ast.Expr = ast.Expr {
-        .UnOpExpr = ast.UnOpExpr {
-            .rhs = &ast.Expr { .Lit = ast.Lit {.Bool = false} },
-            .op = ast.UnOp.Not
-        }
+        .expr = ast.ExprInner {
+            .UnOpExpr = ast.UnOpExpr {
+                .rhs = &ast.Expr {
+                    .expr = ast.ExprInner { .Lit = ast.Lit {.Bool = false} },
+                    .location = nolocation()
+                },
+                .op = ast.UnOp.Not
+            }
+        },
+        .location = nolocation()
     };
 
     var env = venv.Env.new(std.testing.allocator);
@@ -36,24 +51,42 @@ test "simple not" {
 
 test "simple neg" {
     const l3: ast.Expr = ast.Expr {
-        .UnOpExpr = ast.UnOpExpr {
-            .rhs = &ast.Expr { .Lit = ast.Lit {.Int = 3} },
-            .op = ast.UnOp.Neg
-        }
+        .expr = ast.ExprInner {
+            .UnOpExpr = ast.UnOpExpr {
+                .rhs = &ast.Expr {
+                    .expr = ast.ExprInner {.Lit = ast.Lit {.Int = 3}},
+                    .location = nolocation()
+                },
+                .op = ast.UnOp.Neg
+            }
+        },
+        .location = nolocation()
     };
 
     const lm19: ast.Expr = ast.Expr {
-        .UnOpExpr = ast.UnOpExpr {
-            .rhs = &ast.Expr { .Lit = ast.Lit {.Int = -19} },
-            .op = ast.UnOp.Neg
-        }
+        .expr = ast.ExprInner {
+            .UnOpExpr = ast.UnOpExpr {
+                .rhs = &ast.Expr {
+                    .expr = ast.ExprInner {.Lit = ast.Lit {.Int = -19}},
+                    .location = nolocation()
+                },
+                .op = ast.UnOp.Neg
+            }
+        },
+        .location = nolocation()
     };
 
     const l0: ast.Expr = ast.Expr {
-        .UnOpExpr = ast.UnOpExpr {
-            .rhs = &ast.Expr { .Lit = ast.Lit {.Int = 0} },
-            .op = ast.UnOp.Neg
-        }
+        .expr = ast.ExprInner {
+            .UnOpExpr = ast.UnOpExpr {
+                .rhs = &ast.Expr {
+                    .expr = ast.ExprInner {.Lit = ast.Lit {.Int = 0}},
+                    .location = nolocation()
+                },
+                .op = ast.UnOp.Neg
+            }
+        },
+        .location = nolocation()
     };
 
     var env = venv.Env.new(std.testing.allocator);
@@ -81,7 +114,10 @@ test "variable lookup" {
     env.insert(identifier, venv.ObjectVal { .Var = ast.Lit {.Int = 32}});
 
     const exp: ast.Expr = ast.Expr {
-        .Lval = ast.Lval {.Var = identifier}
+        .expr = ast.ExprInner {
+            .Lval = ast.Lval {.Var = identifier}
+        },
+        .location = nolocation()
     };
 
     try std.testing.expectEqual(
@@ -98,10 +134,19 @@ test "variable assignment" {
     defer env.deinit();
 
     const exp: ast.Expr = ast.Expr {
-        .AssignExpr = ast.AssignExpr {
-            .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-            .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 13}}
-        }
+        .expr = ast.ExprInner {
+            .AssignExpr = ast.AssignExpr {
+                .lhs = &ast.Expr {
+                    .expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},
+                    .location = nolocation(),
+                },
+                .rhs = &ast.Expr {
+                    .expr = ast.ExprInner {.Lit = ast.Lit {.Int = 13}},
+                    .location = nolocation(),
+                }
+            }
+        },
+        .location = nolocation()
     };
 
     try std.testing.expectEqual(
@@ -117,9 +162,19 @@ test "let x (= undefined)" {
     defer env.deinit();
 
     // Prepare statement
-    const stmt: ast.Stmt = ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {
-        &ast.Expr {.Lval = ast.Lval {.Var = "x"}}
-    }};
+    const stmt: ast.Stmt = ast.Stmt {
+        .stmt = ast.StmtInner {
+            .DeclareStmt = &[_]*const ast.Expr {
+                &ast.Expr {
+                    .expr = ast.ExprInner {
+                        .Lval = ast.Lval {.Var = "x"}
+                    },
+                    .location = nolocation()
+                }
+            }
+        },
+        .location = nolocation()
+    };
 
     // Evaluate statement
     _ = try interpreter.evalStmt(stmt, &env);
@@ -137,12 +192,30 @@ test "let x = 49" {
     defer env.deinit();
 
     // Prepare statement
-    const stmt: ast.Stmt = ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {
-        &ast.Expr {.AssignExpr = ast.AssignExpr {
-            .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-            .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 49}}
-        }}
-    }};
+    const stmt: ast.Stmt = ast.Stmt {
+        .stmt = ast.StmtInner {
+            .DeclareStmt = &[_]*const ast.Expr {
+                &ast.Expr {.expr = ast.ExprInner {
+                    .AssignExpr = ast.AssignExpr {
+                        .lhs = &ast.Expr {
+                            .expr = ast.ExprInner {
+                                .Lval = ast.Lval {.Var = "x"}
+                            },
+                            .location = nolocation()
+                        },
+                        .rhs = &ast.Expr {
+                            .expr = ast.ExprInner {
+                                .Lit = ast.Lit {.Int = 49}
+                            },
+                            .location = nolocation()
+                        }
+                    }
+                },
+                .location = nolocation()}
+            }
+        },
+        .location = nolocation()
+    };
 
     // Evaluate statement
     _ = try interpreter.evalStmt(stmt, &env);
@@ -160,15 +233,32 @@ test "invalid chain declaration" {
     defer env.deinit();
 
     // Prepare statement
-    const stmt: ast.Stmt = ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {
-        &ast.Expr {.AssignExpr = ast.AssignExpr {
-            .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-            .rhs = &ast.Expr {.AssignExpr = ast.AssignExpr {
-                .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "y"}},
-                .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 19}}
-            }}
-        }
-    }}};
+    const stmt: ast.Stmt = ast.Stmt {
+        .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {
+            &ast.Expr {.expr = ast.ExprInner {
+                .AssignExpr = ast.AssignExpr {
+                    .lhs = &ast.Expr {
+                        .expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},
+                        .location = nolocation()
+                    },
+                    .rhs = &ast.Expr {
+                        .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
+                            .lhs = &ast.Expr {
+                                .expr = ast.ExprInner {.Lval = ast.Lval {.Var = "y"}},
+                                .location = nolocation()
+                            },
+                            .rhs = &ast.Expr {
+                                .expr = ast.ExprInner {.Lit = ast.Lit {.Int = 19}},
+                                .location = nolocation()
+                            }
+                        }},
+                        .location = nolocation()
+                    }
+                }},
+                .location = nolocation()
+            }}},
+            .location = nolocation()
+        };
 
     // Evaluate statement to error for z
     const err: interpreter.EvalError!interpreter.StmtReturn = interpreter.evalStmt(stmt, &env);
@@ -183,11 +273,16 @@ test "redeclaration error" {
     defer env.deinit();
 
     // Prepare statement
-    const stmt: ast.Stmt = ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {&ast.Expr {.AssignExpr = ast.AssignExpr {
-        .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-        .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 1}}
-        }
-    }}};
+    const stmt: ast.Stmt = ast.Stmt {
+        .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {&ast.Expr {
+            .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
+                .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}}, .location = nolocation()},
+                .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}}, .location = nolocation()}
+            }},
+            .location = nolocation()
+        }}},
+        .location = nolocation()
+    };
 
     // Evaluate statement to error for z
     const err: interpreter.EvalError!interpreter.StmtReturn = interpreter.evalStmt(stmt, &env);

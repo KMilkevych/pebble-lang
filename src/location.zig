@@ -31,4 +31,11 @@ pub const LocationRange = struct {
         _ = options;
         try writer.print("{} - {}", .{self.from, self.to});
     }
+
+    pub fn none() LocationRange {
+        return LocationRange {
+            .from = Location {.column = 0, .file = "", .line = 0},
+            .to = Location {.column = 0, .file = "", .line = 0},
+        };
+    }
 };
