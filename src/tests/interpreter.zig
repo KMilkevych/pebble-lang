@@ -3511,25 +3511,43 @@ test "return list immediate" {
     // Prepare procedure
     const proc: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
 
-        ast.Stmt {.FunDefStmt = &ast.FunDefStmt {
-            .id = "f",
-            .params = &[_]ast.Var {},
-            .body = ast.Stmt {.ReturnStmt = &ast.Expr {
-                .ListExpr = &[_]*const ast.Expr {
-                    &ast.Expr {.Lit = ast.Lit {.Int = -1}},
+        ast.Stmt {
+            .stmt = ast.StmtInner {.FunDefStmt = &ast.FunDefStmt {
+                .id = "f",
+                .params = &[_]ast.Var {},
+                .body = ast.Stmt {
+                    .stmt = ast.StmtInner {.ReturnStmt = &ast.Expr {
+                        .expr = ast.ExprInner {
+                            .ListExpr = &[_]*const ast.Expr {
+                                &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = -1}},.location = nolocation()},
+                            }
+                        },
+                        .location = nolocation()
+                    }},
+                    .location = nolocation()
                 }
-            }}
-        }},
+            }},
+            .location = nolocation()
+        },
 
-        ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {
-            &ast.Expr {.AssignExpr = ast.AssignExpr {
-                .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-                .rhs = &ast.Expr {.CallExpr = ast.CallExpr {
-                    .id = &ast.Expr {.Lval = ast.Lval {.Var = "f"}},
-                    .args = &[_]*const ast.Expr {}
-                }}
-            }}
-        }},
+        ast.Stmt {
+            .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {
+                &ast.Expr {
+                    .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
+                        .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+                        .rhs = &ast.Expr {
+                            .expr = ast.ExprInner {.CallExpr = ast.CallExpr {
+                                .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "f"}},.location = nolocation()},
+                                .args = &[_]*const ast.Expr {}
+                            }},
+                            .location = nolocation()
+                        }
+                    }},
+                    .location = nolocation()
+                }
+            }},
+            .location = nolocation()
+        },
 
     }};
 
@@ -3560,20 +3578,35 @@ test "list immediate assign expression" {
     // Prepare procedure
     const proc: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
 
-        ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {
-            &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-            &ast.Expr {.Lval = ast.Lval {.Var = "y"}},
-        }},
+        ast.Stmt {
+            .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {
+                &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+                &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "y"}},.location = nolocation()},
+            }},
+            .location = nolocation()
+        },
 
-        ast.Stmt {.ExprStmt = &ast.Expr {.AssignExpr = ast.AssignExpr {
-            .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-            .rhs = &ast.Expr {.AssignExpr = ast.AssignExpr {
-                .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "y"}},
-                .rhs = &ast.Expr {.ListExpr = &[_]*const ast.Expr {
-                    &ast.Expr {.Lit = ast.Lit {.Int = 1}}
-                }}
-            }}
-        }}},
+        ast.Stmt {
+            .stmt = ast.StmtInner {.ExprStmt = &ast.Expr {
+                .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
+                    .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+                    .rhs = &ast.Expr {
+                        .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
+                            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "y"}},.location = nolocation()},
+                            .rhs = &ast.Expr {
+                                .expr = ast.ExprInner {.ListExpr = &[_]*const ast.Expr {
+                                    &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},.location = nolocation()}
+                                }},
+                                .location = nolocation()
+                            }
+                        }},
+                        .location = nolocation()
+                    }
+                }},
+                .location = nolocation()
+            }},
+            .location = nolocation()
+        },
 
     }};
 
@@ -3609,23 +3642,35 @@ test "list immediate indexing" {
     defer env.deinit();
 
     // Test less-than expressions
-    const exp1: ast.Expr = ast.Expr {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
-        .id = &ast.Expr {.ListExpr = &[_]*const ast.Expr {
-            &ast.Expr {.Lit = ast.Lit {.Int = 1}},
-            &ast.Expr {.Lit = ast.Lit {.Int = 2}},
-            &ast.Expr {.Lit = ast.Lit {.Int = 3}},
-        }},
-        .idx = &ast.Expr {.Lit = ast.Lit {.Int = 0}}
-    }}};
+    const exp1: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
+            .id = &ast.Expr {
+                .expr = ast.ExprInner {.ListExpr = &[_]*const ast.Expr {
+                    &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},.location = nolocation()},
+                    &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 2}},.location = nolocation()},
+                    &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 3}},.location = nolocation()},
+                }},
+                .location = nolocation()
+            },
+            .idx = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 0}},.location = nolocation()}
+        }}},
+        .location = nolocation()
+    };
 
-    const exp2: ast.Expr = ast.Expr {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
-        .id = &ast.Expr {.ListExpr = &[_]*const ast.Expr {
-            &ast.Expr {.Lit = ast.Lit {.Int = 1}},
-            &ast.Expr {.Lit = ast.Lit {.Int = 2}},
-            &ast.Expr {.Lit = ast.Lit {.Int = 3}},
-        }},
-        .idx = &ast.Expr {.Lit = ast.Lit {.Int = 2}}
-    }}};
+    const exp2: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
+            .id = &ast.Expr {
+                .expr = ast.ExprInner {.ListExpr = &[_]*const ast.Expr {
+                    &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},.location = nolocation()},
+                    &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 2}},.location = nolocation()},
+                    &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 3}},.location = nolocation()},
+                }},
+                .location = nolocation()
+            },
+            .idx = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 2}},.location = nolocation()}
+        }}},
+        .location = nolocation()
+    };
 
     try std.testing.expectEqual(
         try interpreter.evalExpr(&exp1, &env),
@@ -3647,19 +3692,31 @@ test "nested list immediate" {
     const proc: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
 
 
-        ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {
-            &ast.Expr {.AssignExpr = ast.AssignExpr {
-                .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-                .rhs = &ast.Expr {.ListExpr = &[_]*const ast.Expr {
-                    &ast.Expr {.Lit = ast.Lit {.Int = 0}},
-                    &ast.Expr {.ListExpr = &[_]*const ast.Expr {
-                        &ast.Expr {.Lit = ast.Lit {.Int = -1}},
-                        &ast.Expr {.Lit = ast.Lit {.Int = -1}},
+        ast.Stmt {
+            .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {
+                &ast.Expr {
+                    .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
+                        .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+                        .rhs = &ast.Expr {
+                            .expr = ast.ExprInner {.ListExpr = &[_]*const ast.Expr {
+                                &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 0}},.location = nolocation()},
+                                &ast.Expr {
+                                    .expr = ast.ExprInner {.ListExpr = &[_]*const ast.Expr {
+                                        &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = -1}},.location = nolocation()},
+                                        &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = -1}},.location = nolocation()},
+                                    }},
+                                    .location = nolocation()
+                                },
+                                &ast.Expr {.expr = ast.ExprInner {.ListExpr = &[_]*const ast.Expr {}},.location = nolocation()},
+                            }},
+                            .location = nolocation()
+                        }
                     }},
-                    &ast.Expr {.ListExpr = &[_]*const ast.Expr {}},
-                }}
-            }}
-        }},
+                    .location = nolocation()
+                }
+            }},
+            .location = nolocation()
+        },
 
     }};
 
@@ -3716,11 +3773,17 @@ test "list immediate expression statement" {
     // Prepare procedure
     const proc: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
 
-        ast.Stmt {.ExprStmt = &ast.Expr {.ListExpr = &[_]*const ast.Expr {
-            &ast.Expr {.Lit = ast.Lit {.Int = -1}},
-            &ast.Expr {.Lit = ast.Lit {.Int = 3}},
-            &ast.Expr {.Lit = ast.Lit {.Int = 7}},
-        }}}
+        ast.Stmt {
+            .stmt = ast.StmtInner {.ExprStmt = &ast.Expr {
+                .expr = ast.ExprInner {.ListExpr = &[_]*const ast.Expr {
+                    &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = -1}},.location = nolocation()},
+                    &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 3}},.location = nolocation()},
+                    &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 7}},.location = nolocation()},
+                }},
+                .location = nolocation()
+            }},
+            .location = nolocation()
+        }
 
     }};
 
@@ -3735,21 +3798,36 @@ test "callable in list immediate" {
     // Prepare procedure
     const proc: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
 
-        ast.Stmt {.FunDefStmt = &ast.FunDefStmt {
-            .id = "f",
-            .params = &[_]ast.Var {"x"},
-            .body = ast.Stmt {.ReturnStmt = &ast.Expr {
-                .Lval = ast.Lval {.ListIndex = ast.ListIndex {
-                    .id = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-                    .idx = &ast.Expr {.Lit = ast.Lit {.Int = 0}}
-                }}
-            }}
-        }},
+        ast.Stmt {
+            .stmt = ast.StmtInner {.FunDefStmt = &ast.FunDefStmt {
+                .id = "f",
+                .params = &[_]ast.Var {"x"},
+                .body = ast.Stmt {
+                    .stmt = ast.StmtInner {.ReturnStmt = &ast.Expr {
+                        .expr = ast.ExprInner {
+                            .Lval = ast.Lval {.ListIndex = ast.ListIndex {
+                                .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+                                .idx = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 0}},.location = nolocation()}
+                            }}
+                        },
+                        .location = nolocation()
+                    }},
+                    .location = nolocation()
+                }
+            }},
+            .location = nolocation()
+        },
 
-        ast.Stmt {.ExprStmt = &ast.Expr {.ListExpr = &[_]*const ast.Expr {
-            &ast.Expr {.Lit = ast.Lit {.Int = 0}},
-            &ast.Expr {.Lval = ast.Lval {.Var = "f"}},
-        }}}
+        ast.Stmt {
+            .stmt = ast.StmtInner {.ExprStmt = &ast.Expr {
+                .expr = ast.ExprInner {.ListExpr = &[_]*const ast.Expr {
+                    &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 0}},.location = nolocation()},
+                    &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "f"}},.location = nolocation()},
+                }},
+                .location = nolocation()
+            }},
+            .location = nolocation()
+        }
 
     }};
 
@@ -3767,58 +3845,79 @@ test "type conversion int - bool" {
     defer env.deinit();
 
     // Test different cases
-    const e1: ast.Expr = ast.Expr {.AsExpr = ast.AsExpr {
-        .lhs = &ast.Expr {.Lit = ast.Lit {.Int = 1}},
-        .as = &ast.Expr {.Lit = ast.Lit {.Type = .Bool}}
-    }};
+    const e1: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.AsExpr = ast.AsExpr {
+            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},.location = nolocation()},
+            .as = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Type = .Bool}},.location = nolocation()}
+        }},
+        .location = nolocation()
+    };
     try std.testing.expectEqualDeep(
         try interpreter.evalExpr(&e1, &env),
         ast.Lit {.Bool = true}
     );
-    const e2: ast.Expr = ast.Expr {.AsExpr = ast.AsExpr {
-        .lhs = &ast.Expr {.Lit = ast.Lit {.Int = 0}},
-        .as = &ast.Expr {.Lit = ast.Lit {.Type = .Bool}}
-    }};
+    const e2: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.AsExpr = ast.AsExpr {
+            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 0}},.location = nolocation()},
+            .as = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Type = .Bool}},.location = nolocation()}
+        }},
+        .location = nolocation()
+    };
     try std.testing.expectEqualDeep(
         try interpreter.evalExpr(&e2, &env),
         ast.Lit {.Bool = false}
     );
-    const e3: ast.Expr = ast.Expr {.AsExpr = ast.AsExpr {
-        .lhs = &ast.Expr {.Lit = ast.Lit {.Bool = true}},
-        .as = &ast.Expr {.Lit = ast.Lit {.Type = .Int}}
-    }};
+    const e3: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.AsExpr = ast.AsExpr {
+            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Bool = true}},.location = nolocation()},
+            .as = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Type = .Int}},.location = nolocation()}
+        }},
+        .location = nolocation()
+    };
     try std.testing.expectEqualDeep(
         try interpreter.evalExpr(&e3, &env),
         ast.Lit {.Int = 1}
     );
-    const e4: ast.Expr = ast.Expr {.AsExpr = ast.AsExpr {
-        .lhs = &ast.Expr {.Lit = ast.Lit {.Bool = false}},
-        .as = &ast.Expr {.Lit = ast.Lit {.Type = .Int}}
-    }};
+    const e4: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.AsExpr = ast.AsExpr {
+            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Bool = false}},.location = nolocation()},
+            .as = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Type = .Int}},.location = nolocation()}
+        }},
+        .location = nolocation()
+    };
     try std.testing.expectEqualDeep(
         try interpreter.evalExpr(&e4, &env),
         ast.Lit {.Int = 0}
     );
-    const e5: ast.Expr = ast.Expr {.AsExpr = ast.AsExpr {
-        .lhs = &ast.Expr {.Lit = ast.Lit {.Int = 2}},
-        .as = &ast.Expr {.Lit = ast.Lit {.Type = .Bool}}
-    }};
+    const e5: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.AsExpr = ast.AsExpr {
+            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 2}},.location = nolocation()},
+            .as = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Type = .Bool}},.location = nolocation()}
+        }},
+        .location = nolocation()
+    };
     try std.testing.expectEqualDeep(
         try interpreter.evalExpr(&e5, &env),
         ast.Lit {.Bool = true}
     );
-    const e6: ast.Expr = ast.Expr {.AsExpr = ast.AsExpr {
-        .lhs = &ast.Expr {.Lit = ast.Lit {.Int = -124}},
-        .as = &ast.Expr {.Lit = ast.Lit {.Type = .Bool}}
-    }};
+    const e6: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.AsExpr = ast.AsExpr {
+            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = -124}},.location = nolocation()},
+            .as = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Type = .Bool}},.location = nolocation()}
+        }},
+        .location = nolocation()
+    };
     try std.testing.expectEqualDeep(
         try interpreter.evalExpr(&e6, &env),
         ast.Lit {.Bool = true}
     );
-    const e7: ast.Expr = ast.Expr {.AsExpr = ast.AsExpr {
-        .lhs = &ast.Expr {.Lit = ast.Lit {.Int = -(0)}},
-        .as = &ast.Expr {.Lit = ast.Lit {.Type = .Bool}}
-    }};
+    const e7: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.AsExpr = ast.AsExpr {
+            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = -(0)}},.location = nolocation()},
+            .as = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Type = .Bool}},.location = nolocation()}
+        }},
+        .location = nolocation()
+    };
     try std.testing.expectEqualDeep(
         try interpreter.evalExpr(&e7, &env),
         ast.Lit {.Bool = false}
@@ -3831,66 +3930,90 @@ test "type conversion float - bool" {
     defer env.deinit();
 
     // Test different cases
-    const e1: ast.Expr = ast.Expr {.AsExpr = ast.AsExpr {
-        .lhs = &ast.Expr {.Lit = ast.Lit {.Float = 1.0}},
-        .as = &ast.Expr {.Lit = ast.Lit {.Type = .Bool}}
-    }};
+    const e1: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.AsExpr = ast.AsExpr {
+            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Float = 1.0}},.location = nolocation()},
+            .as = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Type = .Bool}},.location = nolocation()}
+        }},
+        .location = nolocation()
+    };
     try std.testing.expectEqualDeep(
         try interpreter.evalExpr(&e1, &env),
         ast.Lit {.Bool = true}
     );
-    const e2: ast.Expr = ast.Expr {.AsExpr = ast.AsExpr {
-        .lhs = &ast.Expr {.Lit = ast.Lit {.Float = 0.0}},
-        .as = &ast.Expr {.Lit = ast.Lit {.Type = .Bool}}
-    }};
+    const e2: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.AsExpr = ast.AsExpr {
+            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Float = 0.0}},.location = nolocation()},
+            .as = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Type = .Bool}},.location = nolocation()}
+        }},
+        .location = nolocation()
+    };
     try std.testing.expectEqualDeep(
         try interpreter.evalExpr(&e2, &env),
         ast.Lit {.Bool = false}
     );
-    const e3: ast.Expr = ast.Expr {.AsExpr = ast.AsExpr {
-        .lhs = &ast.Expr {.Lit = ast.Lit {.Bool = true}},
-        .as = &ast.Expr {.Lit = ast.Lit {.Type = .Float}}
-    }};
+    const e3: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.AsExpr = ast.AsExpr {
+            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Bool = true}},.location = nolocation()},
+            .as = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Type = .Float}},.location = nolocation()}
+        }},
+        .location = nolocation()
+    };
     try std.testing.expectEqualDeep(
         try interpreter.evalExpr(&e3, &env),
         ast.Lit {.Float = 1.0}
     );
-    const e4: ast.Expr = ast.Expr {.AsExpr = ast.AsExpr {
-        .lhs = &ast.Expr {.Lit = ast.Lit {.Bool = false}},
-        .as = &ast.Expr {.Lit = ast.Lit {.Type = .Float}}
-    }};
+    const e4: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.AsExpr = ast.AsExpr {
+            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Bool = false}},.location = nolocation()},
+            .as = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Type = .Float}},.location = nolocation()}
+        }},
+        .location = nolocation()
+    };
     try std.testing.expectEqualDeep(
         try interpreter.evalExpr(&e4, &env),
         ast.Lit {.Float = 0.0}
     );
-    const e5: ast.Expr = ast.Expr {.AsExpr = ast.AsExpr {
-        .lhs = &ast.Expr {.Lit = ast.Lit {.Float = 2.00203}},
-        .as = &ast.Expr {.Lit = ast.Lit {.Type = .Bool}}
-    }};
+    const e5: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.AsExpr = ast.AsExpr {
+            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Float = 2.00203}},.location = nolocation()},
+            .as = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Type = .Bool}},.location = nolocation()}
+        }},
+        .location = nolocation()
+    };
     try std.testing.expectEqualDeep(
         try interpreter.evalExpr(&e5, &env),
         ast.Lit {.Bool = true}
     );
-    const e6: ast.Expr = ast.Expr {.AsExpr = ast.AsExpr {
-        .lhs = &ast.Expr {.Lit = ast.Lit {.Float = -1.3232042}},
-        .as = &ast.Expr {.Lit = ast.Lit {.Type = .Bool}}
-    }};
+    const e6: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.AsExpr = ast.AsExpr {
+            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Float = -1.3232042}},.location = nolocation()},
+            .as = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Type = .Bool}},.location = nolocation()}
+        }},
+        .location = nolocation()
+    };
     try std.testing.expectEqualDeep(
         try interpreter.evalExpr(&e6, &env),
         ast.Lit {.Bool = true}
     );
-    const e7: ast.Expr = ast.Expr {.AsExpr = ast.AsExpr {
-        .lhs = &ast.Expr {.Lit = ast.Lit {.Float = -(0.0)}},
-        .as = &ast.Expr {.Lit = ast.Lit {.Type = .Bool}}
-    }};
+    const e7: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.AsExpr = ast.AsExpr {
+            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Float = -(0.0)}},.location = nolocation()},
+            .as = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Type = .Bool}},.location = nolocation()}
+        }},
+        .location = nolocation()
+    };
     try std.testing.expectEqualDeep(
         try interpreter.evalExpr(&e7, &env),
         ast.Lit {.Bool = false}
     );
-    const e8: ast.Expr = ast.Expr {.AsExpr = ast.AsExpr {
-        .lhs = &ast.Expr {.Lit = ast.Lit {.Float = 0.000001}},
-        .as = &ast.Expr {.Lit = ast.Lit {.Type = .Bool}}
-    }};
+    const e8: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.AsExpr = ast.AsExpr {
+            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Float = 0.000001}},.location = nolocation()},
+            .as = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Type = .Bool}},.location = nolocation()}
+        }},
+        .location = nolocation()
+    };
     try std.testing.expectEqualDeep(
         try interpreter.evalExpr(&e8, &env),
         ast.Lit {.Bool = true}
@@ -3904,66 +4027,89 @@ test "type conversion int - float" {
     defer env.deinit();
 
     // Test different cases
-    const e1: ast.Expr = ast.Expr {.AsExpr = ast.AsExpr {
-        .lhs = &ast.Expr {.Lit = ast.Lit {.Float = 1.0}},
-        .as = &ast.Expr {.Lit = ast.Lit {.Type = .Int}}
-    }};
+    const e1: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.AsExpr = ast.AsExpr {
+            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Float = 1.0}},.location = nolocation()},
+            .as = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Type = .Int}},.location = nolocation()}
+        }},
+        .location = nolocation()
+    };
     try std.testing.expectEqualDeep(
         try interpreter.evalExpr(&e1, &env),
         ast.Lit {.Int = 1}
     );
-    const e2: ast.Expr = ast.Expr {.AsExpr = ast.AsExpr {
-        .lhs = &ast.Expr {.Lit = ast.Lit {.Float = 0.0}},
-        .as = &ast.Expr {.Lit = ast.Lit {.Type = .Int}}
-    }};
+    const e2: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.AsExpr = ast.AsExpr {
+            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Float = 0.0}},.location = nolocation()},
+            .as = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Type = .Int}},.location = nolocation()}
+        }},
+        .location = nolocation()
+    };
     try std.testing.expectEqualDeep(
         try interpreter.evalExpr(&e2, &env),
         ast.Lit {.Int = 0}
     );
-    const e3: ast.Expr = ast.Expr {.AsExpr = ast.AsExpr {
-        .lhs = &ast.Expr {.Lit = ast.Lit {.Int = 1}},
-        .as = &ast.Expr {.Lit = ast.Lit {.Type = .Float}}
-    }};
+    const e3: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.AsExpr = ast.AsExpr {
+            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},.location = nolocation()},
+            .as = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Type = .Float}},.location = nolocation()}
+        }},
+        .location = nolocation()
+    };
     try std.testing.expectEqualDeep(
         try interpreter.evalExpr(&e3, &env),
         ast.Lit {.Float = 1.0}
     );
-    const e4: ast.Expr = ast.Expr {.AsExpr = ast.AsExpr {
-        .lhs = &ast.Expr {.Lit = ast.Lit {.Int = 0}},
-        .as = &ast.Expr {.Lit = ast.Lit {.Type = .Float}}
-    }};
+    const e4: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.AsExpr = ast.AsExpr {
+            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 0}},.location = nolocation()},
+            .as = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Type = .Float}},.location = nolocation()}
+        }},
+        .location = nolocation()
+    };
     try std.testing.expectEqualDeep(
         try interpreter.evalExpr(&e4, &env),
         ast.Lit {.Float = 0.0}
     );
-    const e5: ast.Expr = ast.Expr {.AsExpr = ast.AsExpr {
-        .lhs = &ast.Expr {.Lit = ast.Lit {.Float = 2.00203}},
-        .as = &ast.Expr {.Lit = ast.Lit {.Type = .Int}}
-    }};
+    const e5: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.AsExpr = ast.AsExpr {
+            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Float = 2.00203}},.location = nolocation()},
+            .as = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Type = .Int}},.location = nolocation()}
+        }},
+        .location = nolocation()
+    };
     try std.testing.expectEqualDeep(
         try interpreter.evalExpr(&e5, &env),
         ast.Lit {.Int = 2}
     );
-    const e6: ast.Expr = ast.Expr {.AsExpr = ast.AsExpr {
-        .lhs = &ast.Expr {.Lit = ast.Lit {.Float = -1.3232042}},
-        .as = &ast.Expr {.Lit = ast.Lit {.Type = .Int}}
-    }};
+    const e6: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.AsExpr = ast.AsExpr {
+            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Float = -1.3232042}},.location = nolocation()},
+            .as = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Type = .Int}},.location = nolocation()}
+        }},
+        .location = nolocation()
+    };
     try std.testing.expectEqualDeep(
         try interpreter.evalExpr(&e6, &env),
         ast.Lit {.Int = -1}
     );
-    const e7: ast.Expr = ast.Expr {.AsExpr = ast.AsExpr {
-        .lhs = &ast.Expr {.Lit = ast.Lit {.Float = -(0.0)}},
-        .as = &ast.Expr {.Lit = ast.Lit {.Type = .Int}}
-    }};
+    const e7: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.AsExpr = ast.AsExpr {
+            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Float = -(0.0)}},.location = nolocation()},
+            .as = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Type = .Int}},.location = nolocation()}
+        }},
+        .location = nolocation()
+    };
     try std.testing.expectEqualDeep(
         try interpreter.evalExpr(&e7, &env),
         ast.Lit {.Int = 0}
     );
-    const e8: ast.Expr = ast.Expr {.AsExpr = ast.AsExpr {
-        .lhs = &ast.Expr {.Lit = ast.Lit {.Float = 0.000001}},
-        .as = &ast.Expr {.Lit = ast.Lit {.Type = .Int}}
-    }};
+    const e8: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.AsExpr = ast.AsExpr {
+            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Float = 0.000001}},.location = nolocation()},
+            .as = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Type = .Int}},.location = nolocation()}
+        }},
+        .location = nolocation()};
     try std.testing.expectEqualDeep(
         try interpreter.evalExpr(&e8, &env),
         ast.Lit {.Int = 0}
