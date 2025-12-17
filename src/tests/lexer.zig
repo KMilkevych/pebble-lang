@@ -1933,8 +1933,8 @@ test "location one line" {
         Token {
             .tokenType = TokenType {.EOF = {}},
             .location = LocationRange {
-                .from = Location {.file = "test.peb", .column = 8, .line = 0},
-                .to = Location {.file = "test.peb", .column = 8, .line = 0},
+                .from = Location {.file = "test.peb", .column = 9, .line = 0},
+                .to = Location {.file = "test.peb", .column = 9, .line = 0},
             }
         },
     };
@@ -2007,8 +2007,8 @@ test "location two lines auto line break" {
         Token {
             .tokenType = TokenType {.EOF = {}},
             .location = LocationRange {
-                .from = Location {.file = "tf", .column = 10, .line = 1},
-                .to = Location {.file = "tf", .column = 10, .line = 1},
+                .from = Location {.file = "tf", .column = 11, .line = 1},
+                .to = Location {.file = "tf", .column = 11, .line = 1},
             }
         },
     };
@@ -2082,8 +2082,8 @@ test "location extra line break" {
         Token {
             .tokenType = TokenType {.EOF = {}},
             .location = LocationRange {
-                .from = Location {.file = "tf", .column = 10, .line = 2},
-                .to = Location {.file = "tf", .column = 10, .line = 2},
+                .from = Location {.file = "tf", .column = 11, .line = 2},
+                .to = Location {.file = "tf", .column = 11, .line = 2},
             }
         },
     };
@@ -2170,8 +2170,32 @@ test "location if statement" {
         Token {
             .tokenType = TokenType {.EOF = {}},
             .location = LocationRange {
-                .from = Location {.file = "tf", .column = 13, .line = 1},
-                .to = Location {.file = "tf", .column = 13, .line = 1},
+                .from = Location {.file = "tf", .column = 14, .line = 1},
+                .to = Location {.file = "tf", .column = 14, .line = 1},
+            }
+        },
+    };
+
+    try std.testing.expectEqualDeep(expected, tokens.items);
+}
+
+test "location early eof" {
+
+    const input =
+        \\
+    ;
+
+    var lx = lexer.Lexer.new(input, "tf", std.testing.allocator);
+
+    const tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit();
+
+    const expected: []const Token = &[_]Token{
+        Token {
+            .tokenType = TokenType {.EOF = {}},
+            .location = LocationRange {
+                .from = Location {.file = "tf", .column = 0, .line = 0},
+                .to = Location {.file = "tf", .column = 0, .line = 0},
             }
         },
     };

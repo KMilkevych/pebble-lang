@@ -115,15 +115,58 @@ pub const Lexer = struct {
         };
     }
 
+    fn getLocationAtPoint(self: *Self, offset: usize) loc.LocationRange {
+        if (!self.storeLocation) return loc.LocationRange {
+            .from = loc.Location {
+                .file = "",
+                .line = 0,
+                .column = 0
+            },
+            .to = loc.Location {
+                .file = "",
+                .line = 0,
+                .column = 0
+            },
+        };
+        return loc.LocationRange {
+            .from = loc.Location {
+                .file = self.file,
+                .column = self.column + offset,
+                .line = self.line
+            },
+            .to = loc.Location {
+                .file = self.file,
+                .column = self.column + offset,
+                .line = self.line
+            },
+        };
+    }
+
 
     fn getLocationRange(self: *Self, length: usize) loc.LocationRange {
         if (!self.storeLocation) return loc.LocationRange {
-            .from = loc.Location {.file = "", .line = 0, .column = 0},
-            .to = loc.Location {.file = "", .line = 0, .column = 0},
+            .from = loc.Location {
+                .file = "",
+                .line = 0,
+                .column = 0
+            },
+            .to = loc.Location {
+                .file = "",
+                .line = 0,
+                .column = 0
+            },
         };
         return loc.LocationRange {
-            .from = loc.Location {.file = self.file, .column = self.column - length, .line = self.line},
-            .to = loc.Location {.file = self.file, .column = self.column - 1, .line = self.line},
+            .from = loc.Location {
+                .file = self.file,
+                .column = self.column - length,
+                .line = self.line
+            },
+            .to = loc.Location {
+                .file = self.file,
+                .column = self.column - 1,
+                .line = self.line
+            },
         };
     }
 
@@ -338,7 +381,7 @@ pub const Lexer = struct {
         self.skipWhitespace() catch |err| switch (err) {
             error.EndOfFile => return token.Token {
                 .tokenType = token.TokenType {.EOF = {}},
-                .location = self.getLocationRange(1),
+                .location = self.getLocationAtPoint(0),
             },
             else => unreachable
         };
@@ -347,7 +390,7 @@ pub const Lexer = struct {
         const c: u8 = self.topdigit() catch |err| switch (err) {
             error.EndOfFile => return token.Token {
                 .tokenType = token.TokenType {.EOF = {}},
-                .location = self.getLocationRange(1),
+                .location = self.getLocationAtPoint(0),
             },
             else => unreachable
         };

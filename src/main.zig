@@ -52,7 +52,7 @@ fn run(loc: [:0]const u8) !void {
         .readAllAlloc(allocator, 4096 * 4096);
 
     // Perform lexing parsing and interpreting...
-    var lxr: lexer.Lexer = lexer.Lexer.new(input, allocator);
+    var lxr: lexer.Lexer = lexer.Lexer.new(input, loc, allocator);
     var tokens: std.ArrayList(token.Token) = lxr.lex();
     defer tokens.deinit();
 
@@ -80,7 +80,7 @@ fn interactive() !void {
 
         const input: []u8 = (try inr.readUntilDelimiterOrEofAlloc(std.heap.page_allocator, '\n', 1024)).?;
 
-        var lxr: lexer.Lexer = lexer.Lexer.new(input, std.heap.page_allocator);
+        var lxr: lexer.Lexer = lexer.Lexer.new(input, "", std.heap.page_allocator);
         var tokens = lxr.lex();
         defer tokens.deinit();
 
@@ -94,7 +94,7 @@ fn interactive() !void {
         // issues with lists and strings in the future
         // defer tree.destroyAll(std.heap.page_allocator);
 
-        const res: ?ast.Lit = blk: switch (tree) {
+        const res: ?ast.Lit = blk: switch (tree.stmt) {
             .ExprStmt => |exp| interpreter.evalExpr(exp, &env) catch |err| {
                 try outw.print("{}\n", .{err});
                 break :blk null;
