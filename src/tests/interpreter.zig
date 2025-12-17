@@ -3097,41 +3097,44 @@ test "nested list function return assignexpr" {
                 .params = &[_]ast.Var {},
                 .body = ast.Stmt {
                     .stmt = ast.StmtInner {.BlockStmt = &[_]ast.Stmt {
-                        ast.Stmt {.FunDefStmt = &ast.FunDefStmt {
-                            .id = "g",
-                            .params = &[_]ast.Var {},
-                            .body = ast.Stmt {
-                                .stmt = ast.StmtInner {.BlockStmt = &[_]ast.Stmt {
-                                    ast.Stmt {
-                                        .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {
-                                            &ast.Expr {
-                                                .expr = ast.ExprInner {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
-                                                    .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "lst"}},.location = nolocation()},
-                                                    .idx = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 10}},.location = nolocation()}
-                                                }}},
-                                                .location = nolocation()
-                                            },
+                        ast.Stmt {
+                            .stmt = ast.StmtInner {.FunDefStmt = &ast.FunDefStmt {
+                                .id = "g",
+                                .params = &[_]ast.Var {},
+                                .body = ast.Stmt {
+                                    .stmt = ast.StmtInner {.BlockStmt = &[_]ast.Stmt {
+                                        ast.Stmt {
+                                            .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {
+                                                &ast.Expr {
+                                                    .expr = ast.ExprInner {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
+                                                        .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "lst"}},.location = nolocation()},
+                                                        .idx = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 10}},.location = nolocation()}
+                                                    }}},
+                                                    .location = nolocation()
+                                                },
 
-                                            &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "var"}},.location = nolocation()}
-                                        }},
-                                        .location = nolocation()
-                                    },
-                                    ast.Stmt {
-                                        .stmt = ast.StmtInner {.ReturnStmt = &ast.Expr {
-                                            .expr = ast.ExprInner {
-                                                .AssignExpr = ast.AssignExpr {
-                                                    .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "var"}},.location = nolocation()},
-                                                    .rhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "lst"}},.location = nolocation()}
-                                                }
-                                            },
+                                                &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "var"}},.location = nolocation()}
+                                            }},
                                             .location = nolocation()
-                                        }},
-                                        .location = nolocation()
-                                    }
-                                }},
-                                .location = nolocation()
-                            }
-                        }},
+                                        },
+                                        ast.Stmt {
+                                            .stmt = ast.StmtInner {.ReturnStmt = &ast.Expr {
+                                                .expr = ast.ExprInner {
+                                                    .AssignExpr = ast.AssignExpr {
+                                                        .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "var"}},.location = nolocation()},
+                                                        .rhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "lst"}},.location = nolocation()}
+                                                    }
+                                                },
+                                                .location = nolocation()
+                                            }},
+                                            .location = nolocation()
+                                        }
+                                    }},
+                                    .location = nolocation()
+                                }
+                            }},
+                            .location = nolocation()
+                        },
                         ast.Stmt {
                             .stmt = ast.StmtInner {.ReturnStmt = &ast.Expr{
                                 .expr = ast.ExprInner {.CallExpr = ast.CallExpr {
@@ -3211,26 +3214,47 @@ test "list function return print statement" {
     // Prepare procedure
     const proc: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
 
-        ast.Stmt {.FunDefStmt = &ast.FunDefStmt {
-            .id = "f",
-            .params = &[_]ast.Var {},
-            .body = ast.Stmt {.BlockStmt = &[_]ast.Stmt {
-                ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {
-                    &ast.Expr {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
-                        .id = &ast.Expr {.Lval = ast.Lval {.Var = "lst"}},
-                        .idx = &ast.Expr {.Lit = ast.Lit {.Int = 10}}
-                    }}}
-                }},
-                ast.Stmt {.ReturnStmt = &ast.Expr {.Lval = ast.Lval {.Var = "lst"}}}
-            }}
-        }},
+        ast.Stmt {
+            .stmt = ast.StmtInner {.FunDefStmt = &ast.FunDefStmt {
+                .id = "f",
+                .params = &[_]ast.Var {},
+                .body = ast.Stmt {
+                    .stmt = ast.StmtInner {.BlockStmt = &[_]ast.Stmt {
+                        ast.Stmt {
+                            .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {
+                                &ast.Expr {
+                                    .expr = ast.ExprInner {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
+                                        .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "lst"}},.location = nolocation()},
+                                        .idx = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 10}},.location = nolocation()}
+                                    }}},
+                                    .location = nolocation()
+                                }
+                            }},
+                            .location = nolocation()
+                        },
+                        ast.Stmt {
+                            .stmt = ast.StmtInner {.ReturnStmt = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "lst"}},.location = nolocation()}},
+                            .location = nolocation()
+                        }
+                    }},
+                    .location = nolocation()
+                }
+            }},
+            .location = nolocation()
+        },
 
-        ast.Stmt {.PrintStmt = &[_]*const ast.Expr {
-            &ast.Expr {.CallExpr = ast.CallExpr {
-                .id = &ast.Expr {.Lval = ast.Lval {.Var = "f"}},
-                .args = &[_]*const ast.Expr {}
-            }}
-        }},
+        ast.Stmt {
+            .stmt = ast.StmtInner {.PrintStmt = &[_]*const ast.Expr {
+                &ast.Expr {
+                    .expr = ast.ExprInner {.CallExpr = ast.CallExpr {
+                        .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "f"}},.location = nolocation()},
+                        .args = &[_]*const ast.Expr {}
+                    }},
+                    .location = nolocation()
+                }
+            }},
+            .location = nolocation()
+        },
 
     }};
 
@@ -3248,26 +3272,47 @@ test "immediate list function return" {
     // Prepare procedure
     const proc: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
 
-        ast.Stmt {.FunDefStmt = &ast.FunDefStmt {
-            .id = "f",
-            .params = &[_]ast.Var {},
-            .body = ast.Stmt {.ReturnStmt = &ast.Expr {.ListExpr = &[_]*const ast.Expr {
-                &ast.Expr {.Lit = ast.Lit {.Int = 1}}
-            }}}
-        }},
+        ast.Stmt {
+            .stmt = ast.StmtInner {.FunDefStmt = &ast.FunDefStmt {
+                .id = "f",
+                .params = &[_]ast.Var {},
+                .body = ast.Stmt {
+                    .stmt = ast.StmtInner {.ReturnStmt = &ast.Expr {
+                        .expr = ast.ExprInner {.ListExpr = &[_]*const ast.Expr {
+                            &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},.location = nolocation()}
+                        }},
+                        .location = nolocation()
+                    }},
+                    .location = nolocation()
+                }
+            }},
+            .location = nolocation()
+        },
 
-        ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {
-            &ast.Expr {.AssignExpr = ast.AssignExpr {
-                .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-                .rhs = &ast.Expr {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
-                    .idx = &ast.Expr {.Lit = ast.Lit {.Int = 0}},
-                    .id = &ast.Expr {.CallExpr = ast.CallExpr {
-                        .id = &ast.Expr {.Lval = ast.Lval {.Var = "f"}},
-                        .args = &[_]*const ast.Expr {}
-                    }}
-                }}}
-            }}
-        }},
+        ast.Stmt {
+            .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {
+                &ast.Expr {
+                    .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
+                        .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+                        .rhs = &ast.Expr {
+                            .expr = ast.ExprInner {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
+                                .idx = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 0}},.location = nolocation()},
+                                .id = &ast.Expr {
+                                    .expr = ast.ExprInner {.CallExpr = ast.CallExpr {
+                                        .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "f"}},.location = nolocation()},
+                                        .args = &[_]*const ast.Expr {}
+                                    }},
+                                    .location = nolocation()
+                                }
+                            }}},
+                            .location = nolocation()
+                        }
+                    }},
+                    .location = nolocation()
+                }
+            }},
+            .location = nolocation()
+        },
 
     }};
 
@@ -3287,14 +3332,25 @@ test "declare list immediate" {
     // Prepare procedure
     const proc: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
 
-        ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {
-            &ast.Expr {.AssignExpr = ast.AssignExpr {
-                .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-                .rhs = &ast.Expr {.ListExpr = &[_]*const ast.Expr {
-                    &ast.Expr {.Lit = ast.Lit {.Int = 1}},
-                }}
-            }}
-        }},
+        ast.Stmt {
+            .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {
+                &ast.Expr {
+                    .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
+                        .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+                        .rhs = &ast.Expr {
+                            .expr = ast.ExprInner {.ListExpr = &[_]*const ast.Expr {
+                                &ast.Expr {
+                                    .expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},
+                                    .location = nolocation()
+                                },
+                            }},
+                            .location = nolocation()
+                        }
+                    }},
+                    .location = nolocation()}
+            }},
+            .location = nolocation()
+        },
 
     }};
 
@@ -3326,17 +3382,29 @@ test "declare list of list immediates" {
     // Prepare procedure
     const proc: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
 
-        ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {
-            &ast.Expr {.AssignExpr = ast.AssignExpr {
-                .lhs = &ast.Expr {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
-                    .id = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-                    .idx = &ast.Expr {.Lit = ast.Lit {.Int = 5}}
-                }}},
-                .rhs = &ast.Expr {.ListExpr = &[_]*const ast.Expr {
-                    &ast.Expr {.Lit = ast.Lit {.Int = 1}},
-                }}
-            }}
-        }},
+        ast.Stmt {
+            .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {
+                &ast.Expr {
+                    .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
+                        .lhs = &ast.Expr {
+                            .expr = ast.ExprInner {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
+                                .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+                                .idx = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 5}},.location = nolocation()}
+                            }}},
+                            .location = nolocation()
+                        },
+                        .rhs = &ast.Expr {
+                            .expr = ast.ExprInner {.ListExpr = &[_]*const ast.Expr {
+                                &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},.location = nolocation()},
+                            }},
+                            .location = nolocation()
+                        }
+                    }},
+                    .location = nolocation()
+                }
+            }},
+            .location = nolocation()
+        },
 
     }};
 
@@ -3377,32 +3445,53 @@ test "list immediate to funcall" {
     // Prepare procedure
     const proc: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
 
-        ast.Stmt {.FunDefStmt = &ast.FunDefStmt {
-            .id = "f",
-            .params = &[_]ast.Var {"x"},
-            .body = ast.Stmt {.ReturnStmt = &ast.Expr {
-                .Lval = ast.Lval {.ListIndex = ast.ListIndex {
-                    .id = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-                    .idx = &ast.Expr {.Lit = ast.Lit {.Int = 0}}
-                }}
-            }}
-        }},
+        ast.Stmt {
+            .stmt = ast.StmtInner {.FunDefStmt = &ast.FunDefStmt {
+                .id = "f",
+                .params = &[_]ast.Var {"x"},
+                .body = ast.Stmt {
+                    .stmt = ast.StmtInner {.ReturnStmt = &ast.Expr {
+                        .expr = ast.ExprInner {
+                            .Lval = ast.Lval {.ListIndex = ast.ListIndex {
+                                .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+                                .idx = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 0}},.location = nolocation()}
+                            }}
+                        },
+                        .location = nolocation()
+                    }},
+                    .location = nolocation()
+                }
+            }},
+            .location = nolocation()
+        },
 
-        ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {
-            &ast.Expr {.AssignExpr = ast.AssignExpr {
-                .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-                .rhs = &ast.Expr {.CallExpr = ast.CallExpr {
-                    .id = &ast.Expr {.Lval = ast.Lval {.Var = "f"}},
-                    .args = &[_]*const ast.Expr {
-                        &ast.Expr {.ListExpr = &[_]*const ast.Expr {
-                            &ast.Expr {.Lit = ast.Lit {.Int = 9}},
-                            &ast.Expr {.Lit = ast.Lit {.Int = 8}},
-                            &ast.Expr {.Lit = ast.Lit {.Int = 7}},
-                        }}
-                    }
-                }}
-            }}
-        }},
+        ast.Stmt {
+            .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {
+                &ast.Expr {
+                    .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
+                        .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+                        .rhs = &ast.Expr {
+                            .expr = ast.ExprInner {.CallExpr = ast.CallExpr {
+                                .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "f"}},.location = nolocation()},
+                                .args = &[_]*const ast.Expr {
+                                    &ast.Expr {
+                                        .expr = ast.ExprInner {.ListExpr = &[_]*const ast.Expr {
+                                            &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 9}},.location = nolocation()},
+                                            &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 8}},.location = nolocation()},
+                                            &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 7}},.location = nolocation()},
+                                        }},
+                                        .location = nolocation()
+                                    }
+                                }
+                            }},
+                            .location = nolocation()
+                        }
+                    }},
+                    .location = nolocation()
+                }
+            }},
+            .location = nolocation()
+        },
 
     }};
 
