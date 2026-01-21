@@ -5,6 +5,9 @@ const token = @import("../token.zig");
 const Token = token.Token;
 const TokenType = token.TokenType;
 
+const loc = @import("../location.zig");
+const nolocation = loc.LocationRange.none;
+
 const std = @import("std");
 
 test "destroyAll" {
@@ -12,45 +15,60 @@ test "destroyAll" {
     // Make sure that destroyAll does not leak memory or crash
 
     const llrhs: *ast.Expr = try std.testing.allocator.create(ast.Expr);
-    llrhs.* = ast.Expr {.Lit = ast.Lit {.Int = 2}};
+    llrhs.* = ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 2}},.location = nolocation()};
 
     const llhs: *ast.Expr = try std.testing.allocator.create(ast.Expr);
-    llhs.* = ast.Expr {.UnOpExpr = ast.UnOpExpr {
-        .op = ast.UnOp.Neg,
-        .rhs = llrhs
-    }};
+    llhs.* = ast.Expr {
+        .expr = ast.ExprInner {.UnOpExpr = ast.UnOpExpr {
+            .op = ast.UnOp.Neg,
+            .rhs = llrhs
+        }},
+        .location = nolocation()
+    };
 
     const lrrhs: *ast.Expr = try std.testing.allocator.create(ast.Expr);
-    lrrhs.* = ast.Expr {.Lit = ast.Lit {.Int = 3}};
+    lrrhs.* = ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 3}},.location = nolocation()};
 
     const lrhs: *ast.Expr = try std.testing.allocator.create(ast.Expr);
-    lrhs.* = ast.Expr {.UnOpExpr = ast.UnOpExpr {
-        .op = ast.UnOp.Neg,
-        .rhs = lrrhs
-    }};
+    lrhs.* = ast.Expr {
+        .expr = ast.ExprInner {.UnOpExpr = ast.UnOpExpr {
+            .op = ast.UnOp.Neg,
+            .rhs = lrrhs
+        }},
+        .location = nolocation()
+    };
 
     const lhs: *ast.Expr = try std.testing.allocator.create(ast.Expr);
-    lhs.* = ast.Expr {.BinOpExpr = ast.BinOpExpr {
-        .lhs = llhs,
-        .op = ast.BinOp.Mul,
-        .rhs = lrhs
-    }};
+    lhs.* = ast.Expr {
+        .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
+            .lhs = llhs,
+            .op = ast.BinOp.Mul,
+            .rhs = lrhs
+        }},
+        .location = nolocation()
+    };
 
     const rrhs: *ast.Expr = try std.testing.allocator.create(ast.Expr);
-    rrhs.* = ast.Expr {.Lit = ast.Lit {.Bool = false}};
+    rrhs.* = ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Bool = false}},.location = nolocation()};
 
     const rhs: *ast.Expr = try std.testing.allocator.create(ast.Expr);
-    rhs.* = ast.Expr {.UnOpExpr = ast.UnOpExpr {
-        .op = ast.UnOp.Neg,
-        .rhs = rrhs
-    }};
+    rhs.* = ast.Expr {
+        .expr = ast.ExprInner {.UnOpExpr = ast.UnOpExpr {
+            .op = ast.UnOp.Neg,
+            .rhs = rrhs
+        }},
+        .location = nolocation()
+    };
 
     const ptr: *ast.Expr = try std.testing.allocator.create(ast.Expr);
-    ptr.* = ast.Expr {.BinOpExpr = ast.BinOpExpr {
-        .lhs = lhs,
-        .op = ast.BinOp.Add,
-        .rhs = rhs
-    }};
+    ptr.* = ast.Expr {
+        .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
+            .lhs = lhs,
+            .op = ast.BinOp.Add,
+            .rhs = rhs
+        }},
+        .location = nolocation()
+    };
 
     ptr.destroyAll(std.testing.allocator);
 }
@@ -66,7 +84,7 @@ test "single literal" {
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
 
-    const expect: ast.Expr = ast.Expr {.Lit = ast.Lit { .Int = 13 }};
+    const expect: ast.Expr = ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit { .Int = 13 }},.location = nolocation()};
     try std.testing.expectEqualDeep(expect, result.*);
 }
 
@@ -83,11 +101,14 @@ test "single binary add" {
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
 
-    const expect: ast.Expr = ast.Expr {.BinOpExpr = ast.BinOpExpr {
-        .lhs = &ast.Expr {.Lit = ast.Lit {.Int = 5}},
-        .op = ast.BinOp.Add,
-        .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 13}}
-    }};
+    const expect: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
+            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 5}},.location = nolocation()},
+            .op = ast.BinOp.Add,
+            .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 13}},.location = nolocation()}
+        }},
+        .location = nolocation()
+    };
     try std.testing.expectEqualDeep(expect, result.*);
 }
 
@@ -107,15 +128,21 @@ test "double binary left-associative" {
     defer result.destroyAll(std.testing.allocator);
 
 
-    const expect: ast.Expr = ast.Expr {.BinOpExpr = ast.BinOpExpr {
-        .lhs = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
-            .lhs = &ast.Expr {.Lit = ast.Lit {.Int = 5}},
-            .op = ast.BinOp.Add,
-            .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 7}}
+    const expect: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
+            .lhs = &ast.Expr {
+                .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
+                    .lhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 5}},.location = nolocation()},
+                    .op = ast.BinOp.Add,
+                    .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 7}},.location = nolocation()}
+                }},
+                .location = nolocation()
+            },
+            .op = ast.BinOp.Sub,
+            .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 13}},.location = nolocation()}
         }},
-        .op = ast.BinOp.Sub,
-        .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 13}}
-    }};
+        .location = nolocation()
+    };
 
     try std.testing.expectEqualDeep(expect, result.*);
 }
@@ -136,15 +163,24 @@ test "precedence 1" {
     defer result.destroyAll(std.testing.allocator);
 
 
-    const expect: ast.Expr = ast.Expr {.BinOpExpr = ast.BinOpExpr {
-        .lhs = &ast.Expr {.Lit = ast.Lit {.Int = 5}},
-        .op = ast.BinOp.Add,
-        .rhs = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
-            .lhs = &ast.Expr {.Lit = ast.Lit {.Int = 7}},
-            .op = ast.BinOp.Mul,
-            .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 13}}
+    const expect: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
+            .lhs = &ast.Expr {
+                .expr = ast.ExprInner {.Lit = ast.Lit {.Int = 5}},
+                .location = nolocation()
+            },
+            .op = ast.BinOp.Add,
+            .rhs = &ast.Expr {
+                .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
+                    .lhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 7}},.location = nolocation()},
+                    .op = ast.BinOp.Mul,
+                    .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 13}},.location = nolocation()}
+                }},
+                .location = nolocation()
+            },
         }},
-    }};
+        .location = nolocation()
+    };
 
     try std.testing.expectEqualDeep(expect, result.*);
 }
@@ -162,10 +198,13 @@ test "unary int" {
     defer result.destroyAll(std.testing.allocator);
 
 
-    const expect: ast.Expr = ast.Expr {.UnOpExpr = ast.UnOpExpr {
-        .op = .Neg,
-        .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 3}}
-    }};
+    const expect: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.UnOpExpr = ast.UnOpExpr {
+            .op = .Neg,
+            .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 3}},.location = nolocation()}
+        }},
+        .location = nolocation()
+    };
 
     try std.testing.expectEqualDeep(expect, result.*);
 }
@@ -187,17 +226,26 @@ test "unary int unary bool" {
     defer result.destroyAll(std.testing.allocator);
 
 
-    const expect: ast.Expr = ast.Expr {.BinOpExpr = ast.BinOpExpr {
-        .lhs = &ast.Expr {.UnOpExpr = ast.UnOpExpr {
-            .op = .Neg,
-            .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 3}}
+    const expect: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
+            .lhs = &ast.Expr {
+                .expr = ast.ExprInner {.UnOpExpr = ast.UnOpExpr {
+                    .op = .Neg,
+                    .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 3}},.location = nolocation()}
+                }},
+                .location = nolocation()
+            },
+            .op = .Mul,
+            .rhs = &ast.Expr {
+                .expr = ast.ExprInner {.UnOpExpr = ast.UnOpExpr {
+                    .op = .Not,
+                    .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Bool = true}},.location = nolocation()}
+                }},
+                .location = nolocation()
+            }
         }},
-        .op = .Mul,
-        .rhs = &ast.Expr {.UnOpExpr = ast.UnOpExpr {
-            .op = .Not,
-            .rhs = &ast.Expr {.Lit = ast.Lit {.Bool = true}}
-        }}
-    }};
+        .location = nolocation()
+    };
 
     try std.testing.expectEqualDeep(expect, result.*);
 }
@@ -216,14 +264,20 @@ test "int plus unary int" {
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
 
-    const expect: ast.Expr = ast.Expr {.BinOpExpr = ast.BinOpExpr {
-        .lhs = &ast.Expr {.Lit = ast.Lit {.Int = 3}},
-        .op = .Add,
-        .rhs = &ast.Expr {.UnOpExpr = ast.UnOpExpr {
-            .op = .Neg,
-            .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 5}}
-        }}
-    }};
+    const expect: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
+            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 3}},.location = nolocation()},
+            .op = .Add,
+            .rhs = &ast.Expr {
+                .expr = ast.ExprInner {.UnOpExpr = ast.UnOpExpr {
+                    .op = .Neg,
+                    .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 5}},.location = nolocation()}
+                }},
+                .location = nolocation()
+            }
+        }},
+        .location = nolocation()
+    };
 
     try std.testing.expectEqualDeep(expect, result.*);
 }
@@ -243,14 +297,20 @@ test "unary int plus int" {
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
 
-    const expect: ast.Expr = ast.Expr {.BinOpExpr = ast.BinOpExpr {
-        .lhs = &ast.Expr {.UnOpExpr = ast.UnOpExpr {
-            .op = .Neg,
-            .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 3}}
+    const expect: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
+            .lhs = &ast.Expr {
+                .expr = ast.ExprInner {.UnOpExpr = ast.UnOpExpr {
+                    .op = .Neg,
+                    .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 3}},.location = nolocation()}
+                }},
+                .location = nolocation()
+            },
+            .op = .Add,
+            .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 5}},.location = nolocation()}
         }},
-        .op = .Add,
-        .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 5}}
-    }};
+        .location = nolocation()
+    };
 
     try std.testing.expectEqualDeep(expect, result.*);
 }
@@ -271,14 +331,20 @@ test "unary int plus int parantheses" {
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
 
-    const expect: ast.Expr = ast.Expr {.UnOpExpr = ast.UnOpExpr {
-        .op = .Neg,
-        .rhs = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
-            .lhs = &ast.Expr {.Lit = ast.Lit {.Int = 3}},
-            .op = .Add,
-            .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 5}},
-        }}
-    }};
+    const expect: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.UnOpExpr = ast.UnOpExpr {
+            .op = .Neg,
+            .rhs = &ast.Expr {
+                .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
+                    .lhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 3}},.location = nolocation()},
+                    .op = .Add,
+                    .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 5}},.location = nolocation()},
+                }},
+                .location = nolocation()
+            }
+        }},
+        .location = nolocation()
+    };
 
     try std.testing.expectEqualDeep(expect, result.*);
 }
@@ -300,7 +366,7 @@ test "many parentheses" {
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
 
-    const expect: ast.Expr = ast.Expr {.Lit = ast.Lit {.Int = 11}};
+    const expect: ast.Expr = ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 11}},.location = nolocation()};
 
     try std.testing.expectEqualDeep(expect, result.*);
 }
@@ -323,15 +389,21 @@ test "precedence 2" {
     defer result.destroyAll(std.testing.allocator);
 
 
-    const expect: ast.Expr = ast.Expr {.BinOpExpr = ast.BinOpExpr {
-        .lhs = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
-            .lhs = &ast.Expr {.Lit = ast.Lit {.Int = 5}},
-            .op = ast.BinOp.Add,
-            .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 7}}
+    const expect: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
+            .lhs = &ast.Expr {
+                .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
+                    .lhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 5}},.location = nolocation()},
+                    .op = ast.BinOp.Add,
+                    .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 7}},.location = nolocation()}
+                }},
+                .location = nolocation()
+            },
+            .op = ast.BinOp.Mul,
+            .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 13}},.location = nolocation()},
         }},
-        .op = ast.BinOp.Mul,
-        .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 13}},
-    }};
+        .location = nolocation()
+    };
 
     try std.testing.expectEqualDeep(expect, result.*);
 }
@@ -354,15 +426,21 @@ test "precedence 2 div minus" {
     defer result.destroyAll(std.testing.allocator);
 
 
-    const expect: ast.Expr = ast.Expr {.BinOpExpr = ast.BinOpExpr {
-        .lhs = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
-            .lhs = &ast.Expr {.Lit = ast.Lit {.Int = 5}},
-            .op = ast.BinOp.Sub,
-            .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 7}}
+    const expect: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
+            .lhs = &ast.Expr {
+                .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
+                    .lhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 5}},.location = nolocation()},
+                    .op = ast.BinOp.Sub,
+                    .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 7}},.location = nolocation()}
+                }},
+                .location = nolocation()
+            },
+            .op = ast.BinOp.Div,
+            .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 13}},.location = nolocation()},
         }},
-        .op = ast.BinOp.Div,
-        .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 13}},
-    }};
+        .location = nolocation()
+    };
 
     try std.testing.expectEqualDeep(expect, result.*);
 }
@@ -388,21 +466,33 @@ test "boolean operations" {
     defer result.destroyAll(std.testing.allocator);
 
 
-    const expect: ast.Expr = ast.Expr {.BinOpExpr = ast.BinOpExpr {
-        .lhs = &ast.Expr {.UnOpExpr = ast.UnOpExpr {
-            .op = .Not,
-            .rhs = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
-                .lhs = &ast.Expr {.Lit = ast.Lit {.Bool = false}},
-                .op = ast.BinOp.Or,
-                .rhs = &ast.Expr {.Lit = ast.Lit {.Bool = true}}
-            }}
+    const expect: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
+            .lhs = &ast.Expr {
+                .expr = ast.ExprInner {.UnOpExpr = ast.UnOpExpr {
+                    .op = .Not,
+                    .rhs = &ast.Expr {
+                        .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
+                            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Bool = false}},.location = nolocation()},
+                            .op = ast.BinOp.Or,
+                            .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Bool = true}},.location = nolocation()}
+                        }},
+                        .location = nolocation()
+                    }
+                }},
+                .location = nolocation()
+            },
+            .op = ast.BinOp.And,
+            .rhs = &ast.Expr {
+                .expr = ast.ExprInner {.UnOpExpr = ast.UnOpExpr {
+                    .op = .Not,
+                    .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Bool = false}},.location = nolocation()}
+                }},
+                .location = nolocation()
+            },
         }},
-        .op = ast.BinOp.And,
-        .rhs = &ast.Expr {.UnOpExpr = ast.UnOpExpr {
-            .op = .Not,
-            .rhs = &ast.Expr {.Lit = ast.Lit {.Bool = false}}
-        }},
-    }};
+        .location = nolocation()
+    };
 
     try std.testing.expectEqualDeep(expect, result.*);
 }
@@ -426,19 +516,28 @@ test "integer comparison and boolean operations precedence" {
     defer result.destroyAll(std.testing.allocator);
 
 
-    const expect: ast.Expr = ast.Expr {.BinOpExpr = ast.BinOpExpr {
-        .lhs = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
-            .lhs = &ast.Expr {.Lit = ast.Lit {.Int = 5}},
-            .op = .Eq,
-            .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 5}}
+    const expect: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
+            .lhs = &ast.Expr {
+                .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
+                    .lhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 5}},.location = nolocation()},
+                    .op = .Eq,
+                    .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 5}},.location = nolocation()}
+                }},
+                .location = nolocation()
+            },
+            .op = ast.BinOp.And,
+            .rhs = &ast.Expr {
+                .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
+                    .lhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 3}},.location = nolocation()},
+                    .op = .Eq,
+                    .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 3}},.location = nolocation()}
+                }},
+                .location = nolocation()
+            },
         }},
-        .op = ast.BinOp.And,
-        .rhs = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
-            .lhs = &ast.Expr {.Lit = ast.Lit {.Int = 3}},
-            .op = .Eq,
-            .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 3}}
-        }},
-    }};
+        .location = nolocation()
+    };
 
     try std.testing.expectEqualDeep(expect, result.*);
 }
@@ -454,7 +553,7 @@ test "single ident" {
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
 
-    const expect: ast.Expr = ast.Expr {.Lval = ast.Lval {.Var = "abekat"}};
+    const expect: ast.Expr = ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "abekat"}},.location = nolocation()};
 
     try std.testing.expectEqualDeep(expect, result.*);
 }
@@ -473,14 +572,20 @@ test "variable expression" {
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
 
-    const expect: ast.Expr = ast.Expr {.BinOpExpr = ast.BinOpExpr {
-        .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "abe"}},
-        .op = .Add,
-        .rhs = &ast.Expr {.UnOpExpr = ast.UnOpExpr {
-            .op = .Neg,
-            .rhs = &ast.Expr {.Lval = ast.Lval {.Var = "kat"}}
-        }}
-    }};
+    const expect: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
+            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "abe"}},.location = nolocation()},
+            .op = .Add,
+            .rhs = &ast.Expr {
+                .expr = ast.ExprInner {.UnOpExpr = ast.UnOpExpr {
+                    .op = .Neg,
+                    .rhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "kat"}},.location = nolocation()}
+                }},
+                .location = nolocation()
+            }
+        }},
+        .location = nolocation()
+    };
 
     try std.testing.expectEqualDeep(expect, result.*);
 }
@@ -498,10 +603,13 @@ test "assignment expression" {
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
 
-    const expect: ast.Expr = ast.Expr {.AssignExpr = ast.AssignExpr {
-        .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-        .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 13}}
-    }};
+    const expect: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
+            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+            .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 13}},.location = nolocation()}
+        }},
+        .location = nolocation()
+    };
 
     try std.testing.expectEqualDeep(expect, result.*);
 }
@@ -522,13 +630,19 @@ test "right associative assignment" {
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
 
-    const expect: ast.Expr = ast.Expr {.AssignExpr = ast.AssignExpr {
-        .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-        .rhs = &ast.Expr {.AssignExpr = ast.AssignExpr {
-            .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "y"}},
-            .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 47}}
+    const expect: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
+            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+            .rhs = &ast.Expr {
+                .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
+                    .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "y"}},.location = nolocation()},
+                    .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 47}},.location = nolocation()}
+                }},
+                .location = nolocation()
+            },
         }},
-    }};
+        .location = nolocation()
+    };
 
     try std.testing.expectEqualDeep(expect, result.*);
 }
@@ -549,14 +663,20 @@ test "left evaluated assignment" {
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
 
-    const expect: ast.Expr = ast.Expr {.AssignExpr = ast.AssignExpr {
-        .lhs = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
-            .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-            .op = .Add,
-            .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 1}}
+    const expect: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
+            .lhs = &ast.Expr {
+                .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
+                    .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+                    .op = .Add,
+                    .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},.location = nolocation()}
+                }},
+                .location = nolocation()
+            },
+            .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 13}},.location = nolocation()}
         }},
-        .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 13}}
-    }};
+        .location = nolocation()
+    };
 
     try std.testing.expectEqualDeep(expect, result.*);
 }
@@ -576,14 +696,20 @@ test "right associative assignment 2" {
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
 
-    const expect: ast.Expr = ast.Expr {.AssignExpr = ast.AssignExpr {
-        .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-        .rhs = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
-            .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "y"}},
-            .op = .Add,
-            .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 13}}
+    const expect: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
+            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+            .rhs = &ast.Expr {
+                .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
+                    .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "y"}},.location = nolocation()},
+                    .op = .Add,
+                    .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 13}},.location = nolocation()}
+                }},
+                .location = nolocation()
+            },
         }},
-    }};
+        .location = nolocation()
+    };
 
     try std.testing.expectEqualDeep(expect, result.*);
 }
@@ -603,14 +729,20 @@ test "x + y = 13 == (x + y) = 13" {
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
 
-    const expect: ast.Expr = ast.Expr {.AssignExpr = ast.AssignExpr {
-        .lhs = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
-            .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-            .op = .Add,
-            .rhs = &ast.Expr {.Lval = ast.Lval {.Var = "y"}},
+    const expect: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
+            .lhs = &ast.Expr {
+                .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
+                    .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+                    .op = .Add,
+                    .rhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "y"}},.location = nolocation()},
+                }},
+                .location = nolocation()
+            },
+            .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 13}},.location = nolocation()}
         }},
-        .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 13}}
-    }};
+        .location = nolocation()
+    };
 
     try std.testing.expectEqualDeep(expect, result.*);
 }
@@ -629,13 +761,19 @@ test "-x = 13 == (-x) = 13" {
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
 
-    const expect: ast.Expr = ast.Expr {.AssignExpr = ast.AssignExpr {
-        .lhs = &ast.Expr {.UnOpExpr = ast.UnOpExpr {
-            .op = .Neg,
-            .rhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
+    const expect: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
+            .lhs = &ast.Expr {
+                .expr = ast.ExprInner {.UnOpExpr = ast.UnOpExpr {
+                    .op = .Neg,
+                    .rhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+                }},
+                .location = nolocation()
+            },
+            .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 13}},.location = nolocation()}
         }},
-        .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 13}}
-    }};
+        .location = nolocation()
+    };
 
     try std.testing.expectEqualDeep(expect, result.*);
 }
@@ -714,9 +852,17 @@ test "print statement" {
     const result: ast.Stmt = try prs.parseStmt();
     defer result.destroyAll(std.testing.allocator);
 
-    const expect: ast.Stmt = ast.Stmt {.PrintStmt = &[_]*const ast.Expr {&ast.Expr {
-        .Lval = ast.Lval {.Var = "x"}
-    }}};
+    const expect: ast.Stmt = ast.Stmt {
+        .stmt = ast.StmtInner {.PrintStmt = &[_]*const ast.Expr {
+            &ast.Expr {
+                .expr = ast.ExprInner {
+                    .Lval = ast.Lval {.Var = "x"}
+                },
+                .location = nolocation()
+            }
+        }},
+        .location = nolocation()
+    };
 
     try std.testing.expectEqualDeep(expect, result);
 }
@@ -734,9 +880,17 @@ test "declare statement" {
     const result: ast.Stmt = try prs.parseStmt();
     defer result.destroyAll(std.testing.allocator);
 
-    const expect: ast.Stmt = ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {&ast.Expr {
-        .Lval = ast.Lval {.Var = "x"}
-    }}};
+    const expect: ast.Stmt = ast.Stmt {
+        .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {
+            &ast.Expr {
+                .expr = ast.ExprInner {
+                    .Lval = ast.Lval {.Var = "x"}
+                },
+                .location = nolocation()
+            }
+        }},
+        .location = nolocation()
+    };
 
     try std.testing.expectEqualDeep(expect, result);
 }
@@ -753,9 +907,15 @@ test "expression statement" {
     const result: ast.Stmt = try prs.parseStmt();
     defer result.destroyAll(std.testing.allocator);
 
-    const expect: ast.Stmt = ast.Stmt {.ExprStmt = &ast.Expr {
-        .Lval = ast.Lval {.Var = "x"}
-    }};
+    const expect: ast.Stmt = ast.Stmt {
+        .stmt = ast.StmtInner {.ExprStmt = &ast.Expr {
+            .expr = ast.ExprInner {
+                .Lval = ast.Lval {.Var = "x"}
+            },
+            .location = nolocation()
+        }},
+        .location = nolocation()
+    };
 
     try std.testing.expectEqualDeep(expect, result);
 }
@@ -777,18 +937,30 @@ test "print statement sequence" {
     const result: ast.Stmt = try prs.parseStmt();
     defer result.destroyAll(std.testing.allocator);
 
-    const expect: ast.Stmt = ast.Stmt {.PrintStmt = &[_]*const ast.Expr {&ast.Expr {
-        .Lval = ast.Lval {.Var = "x"}
-    }}};
+    const expect: ast.Stmt = ast.Stmt {
+        .stmt = ast.StmtInner {.PrintStmt = &[_]*const ast.Expr {&ast.Expr {
+            .expr = ast.ExprInner {
+                .Lval = ast.Lval {.Var = "x"}
+            },
+            .location = nolocation()
+        }}},
+        .location = nolocation()
+    };
 
     try std.testing.expectEqualDeep(expect, result);
 
     const result2: ast.Stmt = try prs.parseStmt();
     defer result2.destroyAll(std.testing.allocator);
 
-    const expect2: ast.Stmt = ast.Stmt {.PrintStmt = &[_]*const ast.Expr {&ast.Expr {
-        .Lval = ast.Lval {.Var = "y"}
-    }}};
+    const expect2: ast.Stmt = ast.Stmt {
+        .stmt = ast.StmtInner {.PrintStmt = &[_]*const ast.Expr {&ast.Expr {
+            .expr = ast.ExprInner {
+                .Lval = ast.Lval {.Var = "y"}
+            },
+            .location = nolocation()
+        }}},
+        .location = nolocation()
+    };
     try std.testing.expectEqualDeep(expect2, result2);
 }
 
@@ -819,7 +991,7 @@ test "empty block statement" {
 
     var prs: parser.Parser = .new(tokens, std.testing.allocator);
 
-    const expect: ast.Stmt = ast.Stmt {.BlockStmt = &[_]ast.Stmt {}};
+    const expect: ast.Stmt = ast.Stmt {.stmt = ast.StmtInner {.BlockStmt = &[_]ast.Stmt {}},.location = nolocation()};
     defer expect.destroyAll(std.testing.allocator);
 
     try std.testing.expectEqualDeep(expect, try prs.parseStmt());
@@ -840,9 +1012,20 @@ test "block statement" {
 
     var prs: parser.Parser = .new(tokens, std.testing.allocator);
 
-    const expect: ast.Stmt = ast.Stmt {.BlockStmt = &[_]ast.Stmt {
-        ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {&ast.Expr {.Lval = ast.Lval {.Var = "x"}}}}
-    }};
+    const expect: ast.Stmt = ast.Stmt {
+        .stmt = ast.StmtInner {.BlockStmt = &[_]ast.Stmt {
+            ast.Stmt {
+                .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {
+                    &ast.Expr {
+                        .expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},
+                        .location = nolocation()
+                    }
+                }},
+                .location = nolocation()
+            }
+        }},
+        .location = nolocation()
+    };
 
     const actual: ast.Stmt = try prs.parseStmt();
     defer actual.destroyAll(std.testing.allocator);
@@ -872,12 +1055,28 @@ test "nested block statement" {
 
     var prs: parser.Parser = .new(tokens, std.testing.allocator);
 
-    const expect: ast.Stmt = ast.Stmt {.BlockStmt = &[_]ast.Stmt {
-        ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {&ast.Expr {.Lval = ast.Lval {.Var = "x"}}}},
-        ast.Stmt {.BlockStmt = &[_]ast.Stmt {
-            ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {&ast.Expr {.Lval = ast.Lval {.Var = "x"}}}},
-        }}
-    }};
+    const expect: ast.Stmt = ast.Stmt {
+        .stmt = ast.StmtInner {.BlockStmt = &[_]ast.Stmt {
+            ast.Stmt {
+                .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {
+                    &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()}
+                }},
+                .location = nolocation()
+            },
+            ast.Stmt {
+                .stmt = ast.StmtInner {.BlockStmt = &[_]ast.Stmt {
+                    ast.Stmt {
+                        .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {
+                            &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()}
+                        }},
+                        .location = nolocation()
+                    },
+                }},
+                .location = nolocation()
+            }
+        }},
+        .location = nolocation()
+    };
 
     const actual: ast.Stmt = try prs.parseStmt();
     defer actual.destroyAll(std.testing.allocator);
@@ -904,11 +1103,24 @@ test "if else statement" {
 
     var prs: parser.Parser = .new(tokens, std.testing.allocator);
 
-    const expect: ast.Stmt = ast.Stmt {.IfElseStmt = &ast.IfElseStmt {
-        .cond = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-        .ifStmt = ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {&ast.Expr {.Lval = ast.Lval {.Var = "x"}}}},
-        .elseStmt = ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {&ast.Expr {.Lval = ast.Lval {.Var = "y"}}}},
-    }};
+    const expect: ast.Stmt = ast.Stmt {
+        .stmt = ast.StmtInner {.IfElseStmt = &ast.IfElseStmt {
+            .cond = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+            .ifStmt = ast.Stmt {
+                .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {
+                    &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()}
+                }},
+                .location = nolocation()
+            },
+            .elseStmt = ast.Stmt {
+                .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {
+                    &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "y"}},.location = nolocation()}
+                }},
+                .location = nolocation()
+            },
+        }},
+        .location = nolocation()
+    };
 
     const actual: ast.Stmt = try prs.parseStmt();
     defer actual.destroyAll(std.testing.allocator);
@@ -943,15 +1155,34 @@ test "if else block statement" {
 
     var prs: parser.Parser = .new(tokens, std.testing.allocator);
 
-    const expect: ast.Stmt = ast.Stmt {.IfElseStmt = &ast.IfElseStmt {
-        .cond = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-        .ifStmt = ast.Stmt {.BlockStmt = &[_]ast.Stmt {
-            ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {&ast.Expr {.Lval = ast.Lval {.Var = "x"}}}}
+    const expect: ast.Stmt = ast.Stmt {
+        .stmt = ast.StmtInner {.IfElseStmt = &ast.IfElseStmt {
+            .cond = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+            .ifStmt = ast.Stmt {
+                .stmt = ast.StmtInner {.BlockStmt = &[_]ast.Stmt {
+                    ast.Stmt {
+                        .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {
+                            &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()}
+                        }},
+                        .location = nolocation()
+                    }
+                }},
+                .location = nolocation()
+            },
+            .elseStmt = ast.Stmt {
+                .stmt = ast.StmtInner {.BlockStmt = &[_]ast.Stmt {
+                    ast.Stmt {
+                        .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {
+                            &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "y"}},.location = nolocation()}
+                        }},
+                        .location = nolocation()
+                    }
+                }},
+                .location = nolocation()
+            },
         }},
-        .elseStmt = ast.Stmt {.BlockStmt = &[_]ast.Stmt {
-            ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {&ast.Expr {.Lval = ast.Lval {.Var = "y"}}}}
-        }},
-    }};
+        .location = nolocation()
+    };
 
     const actual: ast.Stmt = try prs.parseStmt();
     defer actual.destroyAll(std.testing.allocator);
@@ -992,17 +1223,46 @@ test "if else block statement 2" {
 
     var prs: parser.Parser = .new(tokens, std.testing.allocator);
 
-    const expect: ast.Stmt = ast.Stmt {.IfElseStmt = &ast.IfElseStmt {
-        .cond = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-        .ifStmt = ast.Stmt {.BlockStmt = &[_]ast.Stmt {
-            ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {&ast.Expr {.Lval = ast.Lval {.Var = "x"}}}},
-            ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {&ast.Expr {.Lval = ast.Lval {.Var = "y"}}}}
+    const expect: ast.Stmt = ast.Stmt {
+        .stmt = ast.StmtInner {.IfElseStmt = &ast.IfElseStmt {
+            .cond = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+            .ifStmt = ast.Stmt {
+                .stmt = ast.StmtInner {.BlockStmt = &[_]ast.Stmt {
+                    ast.Stmt {
+                        .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {
+                            &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()}
+                        }},
+                        .location = nolocation()
+                    },
+                    ast.Stmt {
+                        .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {
+                            &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "y"}},.location = nolocation()}
+                        }},
+                        .location = nolocation()
+                    }
+                }},
+                .location = nolocation()
+            },
+            .elseStmt = ast.Stmt {
+                .stmt = ast.StmtInner {.BlockStmt = &[_]ast.Stmt {
+                    ast.Stmt {
+                        .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {
+                            &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "y"}},.location = nolocation()}
+                        }},
+                        .location = nolocation()
+                    },
+                    ast.Stmt {
+                        .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {
+                            &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()}
+                        }},
+                        .location = nolocation()
+                    }
+                }},
+                .location = nolocation()
+            },
         }},
-        .elseStmt = ast.Stmt {.BlockStmt = &[_]ast.Stmt {
-            ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {&ast.Expr {.Lval = ast.Lval {.Var = "y"}}}},
-            ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {&ast.Expr {.Lval = ast.Lval {.Var = "x"}}}}
-        }},
-    }};
+        .location = nolocation()
+    };
 
     const actual: ast.Stmt = try prs.parseStmt();
     defer actual.destroyAll(std.testing.allocator);
@@ -1059,30 +1319,71 @@ test "complicated if-else branch" {
 
     const expect: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
 
-        ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {&ast.Expr {.AssignExpr = ast.AssignExpr {
-            .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-            .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 10}}
-        }}}},
-
-        ast.Stmt {.IfElseStmt = &ast.IfElseStmt {
-            .cond = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
-                .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-                .op = ast.BinOp.Eq,
-                .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 10}},
+        ast.Stmt {
+            .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {
+                &ast.Expr {
+                    .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
+                        .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+                        .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 10}},.location = nolocation()}
+                    }},
+                    .location = nolocation()
+                }
             }},
-            .ifStmt = ast.Stmt {.BlockStmt = &[_]ast.Stmt {
-                ast.Stmt {.ExprStmt = &ast.Expr {.AssignExpr = ast.AssignExpr {
-                    .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-                    .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 20}},
-                }}},
-                ast.Stmt {.PrintStmt = &[_]*const ast.Expr {&ast.Expr {.Lval = ast.Lval {.Var = "x"}}}}
-            }},
-            .elseStmt = ast.Stmt {.BlockStmt = &[_]ast.Stmt {
-                ast.Stmt {.PrintStmt = &[_]*const ast.Expr {&ast.Expr {.Lit = ast.Lit {.Int = 1}}}}
-            }}
-        }},
+            .location = nolocation()
+        },
 
-        ast.Stmt {.PrintStmt = &[_]*const ast.Expr {&ast.Expr {.Lval = ast.Lval {.Var = "x"}}}}
+        ast.Stmt {
+            .stmt = ast.StmtInner {.IfElseStmt = &ast.IfElseStmt {
+                .cond = &ast.Expr {
+                    .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
+                        .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+                        .op = ast.BinOp.Eq,
+                        .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 10}},.location = nolocation()},
+                    }},
+                    .location = nolocation()
+                },
+                .ifStmt = ast.Stmt {
+                    .stmt = ast.StmtInner {.BlockStmt = &[_]ast.Stmt {
+                        ast.Stmt {
+                            .stmt = ast.StmtInner {.ExprStmt = &ast.Expr {
+                                .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
+                                    .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+                                    .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 20}},.location = nolocation()},
+                                }},
+                                .location = nolocation()
+                            }},
+                            .location = nolocation()
+                        },
+                        ast.Stmt {
+                            .stmt = ast.StmtInner {.PrintStmt = &[_]*const ast.Expr {
+                                &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()}
+                            }},
+                            .location = nolocation()
+                        }
+                    }},
+                    .location = nolocation()
+                },
+                .elseStmt = ast.Stmt {
+                    .stmt = ast.StmtInner {.BlockStmt = &[_]ast.Stmt {
+                        ast.Stmt {
+                            .stmt = ast.StmtInner {.PrintStmt = &[_]*const ast.Expr {
+                                &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},.location = nolocation()}
+                            }},
+                            .location = nolocation()
+                        }
+                    }},
+                    .location = nolocation()
+                }
+            }},
+            .location = nolocation()
+        },
+
+        ast.Stmt {
+            .stmt = ast.StmtInner {.PrintStmt = &[_]*const ast.Expr {
+                &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()}
+            }},
+            .location = nolocation()
+        }
     }};
 
     const actual: ast.Proc = try prs.parseProcedure();
@@ -1121,21 +1422,43 @@ test "simple while with condition" {
 
     const expect: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
 
-        ast.Stmt {.DeclareStmt = &[_]*const ast.Expr { &ast.Expr {.AssignExpr = ast.AssignExpr {
-            .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-            .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 10}}
-        }}}},
+        ast.Stmt {
+            .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {
+                &ast.Expr {
+                    .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
+                        .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+                        .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 10}},.location = nolocation()}
+                    }},
+                    .location = nolocation()
+                }
+            }},
+            .location = nolocation()
+        },
 
-        ast.Stmt {.WhileStmt = &ast.WhileStmt {
-            .cond = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
-                .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-                .op = ast.BinOp.Gt,
-                .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 1}},
+        ast.Stmt {
+            .stmt = ast.StmtInner {.WhileStmt = &ast.WhileStmt {
+                .cond = &ast.Expr {
+                    .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
+                        .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+                        .op = ast.BinOp.Gt,
+                        .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},.location = nolocation()},
+                    }},
+                    .location = nolocation()
+                },
+                .body = ast.Stmt {
+                    .stmt = ast.StmtInner {.BlockStmt = &[_]ast.Stmt {
+                        ast.Stmt {
+                            .stmt = ast.StmtInner {.PrintStmt = &[_]*const ast.Expr {
+                                &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()}
+                            }},
+                            .location = nolocation()
+                        }
+                    }},
+                    .location = nolocation()
+                },
             }},
-            .body = ast.Stmt {.BlockStmt = &[_]ast.Stmt {
-                ast.Stmt {.PrintStmt = &[_]*const ast.Expr {&ast.Expr {.Lval = ast.Lval {.Var = "x"}}}}
-            }},
-        }},
+            .location = nolocation()
+        },
     }};
 
     const actual: ast.Proc = try prs.parseProcedure();
@@ -1180,29 +1503,60 @@ test "more interesting while" {
 
     const expect: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
 
-        ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {&ast.Expr {.AssignExpr = ast.AssignExpr {
-            .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-            .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 10}}
-        }}}},
+        ast.Stmt {
+            .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {
+                &ast.Expr {
+                    .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
+                        .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+                        .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 10}},.location = nolocation()}
+                    }},
+                    .location = nolocation()
+                }
+            }},
+            .location = nolocation()
+        },
 
-        ast.Stmt {.WhileStmt = &ast.WhileStmt {
-            .cond = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
-                .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-                .op = ast.BinOp.Gt,
-                .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 1}},
+        ast.Stmt {
+            .stmt = ast.StmtInner {.WhileStmt = &ast.WhileStmt {
+                .cond = &ast.Expr {
+                    .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
+                        .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+                        .op = ast.BinOp.Gt,
+                        .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},.location = nolocation()},
+                    }},
+                    .location = nolocation()
+                },
+                .body = ast.Stmt {
+                    .stmt = ast.StmtInner {.BlockStmt = &[_]ast.Stmt {
+                        ast.Stmt {
+                            .stmt = ast.StmtInner {.PrintStmt = &[_]*const ast.Expr {
+                                &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()}
+                            }},
+                            .location = nolocation()
+                        },
+                        ast.Stmt {
+                            .stmt = ast.StmtInner {.ExprStmt = &ast.Expr {
+                                .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
+                                    .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+                                    .rhs = &ast.Expr {
+                                        .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
+                                            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+                                            .op = .Sub,
+                                            .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},.location = nolocation()},
+                                        }},
+                                        .location = nolocation()
+                                    }
+                                }},
+                                .location = nolocation()
+                            }},
+                            .location = nolocation()
+                        }
+                    }},
+                    .location = nolocation()
+                },
             }},
-            .body = ast.Stmt {.BlockStmt = &[_]ast.Stmt {
-                ast.Stmt {.PrintStmt = &[_]*const ast.Expr {&ast.Expr {.Lval = ast.Lval {.Var = "x"}}}},
-                ast.Stmt {.ExprStmt = &ast.Expr {.AssignExpr = ast.AssignExpr {
-                    .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-                    .rhs = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
-                        .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-                        .op = .Sub,
-                        .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 1}},
-                    }}
-                }}}
-            }},
-        }},
+            .location = nolocation()
+        },
     }};
 
     const actual: ast.Proc = try prs.parseProcedure();
@@ -1244,22 +1598,47 @@ test "while with break statement" {
 
     const expect: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
 
-        ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {&ast.Expr {.AssignExpr = ast.AssignExpr {
-            .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-            .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 10}}
-        }}}},
+        ast.Stmt {
+            .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {
+                &ast.Expr {
+                    .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
+                        .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+                        .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 10}},.location = nolocation()}
+                    }},
+                    .location = nolocation()
+                }
+            }},
+            .location = nolocation()
+        },
 
-        ast.Stmt {.WhileStmt = &ast.WhileStmt {
-            .cond = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
-                .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-                .op = ast.BinOp.Gt,
-                .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 1}},
+        ast.Stmt {
+            .stmt = ast.StmtInner {.WhileStmt = &ast.WhileStmt {
+                .cond = &ast.Expr {
+                    .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
+                        .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+                        .op = ast.BinOp.Gt,
+                        .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},.location = nolocation()},
+                    }},
+                    .location = nolocation()
+                },
+                .body = ast.Stmt {
+                    .stmt = ast.StmtInner {.BlockStmt = &[_]ast.Stmt {
+                        ast.Stmt {
+                            .stmt = ast.StmtInner {.PrintStmt = &[_]*const ast.Expr {
+                                &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()}
+                            }},
+                            .location = nolocation()
+                        },
+                        ast.Stmt {
+                            .stmt = ast.StmtInner {.BreakStmt = {}},
+                            .location = nolocation()
+                        },
+                    }},
+                    .location = nolocation()
+                },
             }},
-            .body = ast.Stmt {.BlockStmt = &[_]ast.Stmt {
-                ast.Stmt {.PrintStmt = &[_]*const ast.Expr {&ast.Expr {.Lval = ast.Lval {.Var = "x"}}}},
-                ast.Stmt {.BreakStmt = {}},
-            }},
-        }},
+            .location = nolocation()
+        },
     }};
 
     const actual: ast.Proc = try prs.parseProcedure();
@@ -1300,22 +1679,44 @@ test "while with continue statement" {
 
     const expect: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
 
-        ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {&ast.Expr {.AssignExpr = ast.AssignExpr {
-            .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-            .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 10}}
-        }}}},
+        ast.Stmt {
+            .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {
+                &ast.Expr {
+                    .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
+                        .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+                        .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 10}},.location = nolocation()}
+                    }},
+                    .location = nolocation()
+                }
+            }},
+            .location = nolocation()
+        },
 
-        ast.Stmt {.WhileStmt = &ast.WhileStmt {
-            .cond = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
-                .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-                .op = ast.BinOp.Gt,
-                .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 1}},
+        ast.Stmt {
+            .stmt = ast.StmtInner {.WhileStmt = &ast.WhileStmt {
+                .cond = &ast.Expr {
+                    .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
+                        .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+                        .op = ast.BinOp.Gt,
+                        .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},.location = nolocation()},
+                    }},
+                    .location = nolocation()
+                },
+                .body = ast.Stmt {
+                    .stmt = ast.StmtInner {.BlockStmt = &[_]ast.Stmt {
+                        ast.Stmt {
+                            .stmt = ast.StmtInner {.PrintStmt = &[_]*const ast.Expr {
+                                &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()}
+                            }},
+                            .location = nolocation()
+                        },
+                        ast.Stmt {.stmt = ast.StmtInner {.ContinueStmt = {}},.location = nolocation()},
+                    }},
+                    .location = nolocation()
+                },
             }},
-            .body = ast.Stmt {.BlockStmt = &[_]ast.Stmt {
-                ast.Stmt {.PrintStmt = &[_]*const ast.Expr {&ast.Expr {.Lval = ast.Lval {.Var = "x"}}}},
-                ast.Stmt {.ContinueStmt = {}},
-            }},
-        }},
+            .location = nolocation()
+        },
     }};
 
     const actual: ast.Proc = try prs.parseProcedure();
@@ -1350,21 +1751,33 @@ test "comma declaration" {
 
     const expect: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
 
-        ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {
-            &ast.Expr {.AssignExpr = ast.AssignExpr {
-                .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-                .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 1}}
+        ast.Stmt {
+            .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {
+                &ast.Expr {
+                    .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
+                        .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+                        .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},.location = nolocation()}
+                    }},
+                    .location = nolocation()
+                },
+                &ast.Expr {
+                    .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
+                        .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "y"}},.location = nolocation()},
+                        .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 2}},.location = nolocation()}
+                    }},
+                    .location = nolocation()
+                },
+                &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "z"}},.location = nolocation()},
+                &ast.Expr {
+                    .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
+                        .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "w"}},.location = nolocation()},
+                        .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},.location = nolocation()}
+                    }},
+                    .location = nolocation()
+                },
             }},
-            &ast.Expr {.AssignExpr = ast.AssignExpr {
-                .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "y"}},
-                .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 2}}
-            }},
-            &ast.Expr {.Lval = ast.Lval {.Var = "z"}},
-            &ast.Expr {.AssignExpr = ast.AssignExpr {
-                .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "w"}},
-                .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 1}}
-            }},
-        }},
+            .location = nolocation()
+        },
     }};
 
     const actual: ast.Proc = try prs.parseProcedure();
@@ -1418,14 +1831,20 @@ test "comma print" {
 
     const expect: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
 
-        ast.Stmt {.PrintStmt = &[_]*const ast.Expr {
-            &ast.Expr {.BinOpExpr = ast.BinOpExpr {
-                .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-                .op = .Add,
-                .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 1}}
+        ast.Stmt {
+            .stmt = ast.StmtInner {.PrintStmt = &[_]*const ast.Expr {
+                &ast.Expr {
+                    .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
+                        .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+                        .op = .Add,
+                        .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},.location = nolocation()}
+                    }},
+                    .location = nolocation()
+                },
+                &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "y"}},.location = nolocation()},
             }},
-            &ast.Expr {.Lval = ast.Lval {.Var = "y"}},
-        }},
+            .location = nolocation()
+        },
     }};
 
     const actual: ast.Proc = try prs.parseProcedure();
@@ -1468,11 +1887,14 @@ test "call expression no args" {
     defer result.destroyAll(std.testing.allocator);
 
 
-    const expect: ast.Expr = ast.Expr {.CallExpr = ast.CallExpr {
-        .id = &ast.Expr {.Lval = ast.Lval {.Var = "myfun"}},
-        .args = &[_]*const ast.Expr {
-        }
-    }};
+    const expect: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.CallExpr = ast.CallExpr {
+            .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "myfun"}},.location = nolocation()},
+            .args = &[_]*const ast.Expr {
+            }
+        }},
+        .location = nolocation()
+    };
 
     try std.testing.expectEqualDeep(expect, result.*);
 }
@@ -1492,12 +1914,15 @@ test "call expression one arg" {
     defer result.destroyAll(std.testing.allocator);
 
 
-    const expect: ast.Expr = ast.Expr {.CallExpr = ast.CallExpr {
-        .id = &ast.Expr {.Lval = ast.Lval {.Var = "myfun"}},
-        .args = &[_]*const ast.Expr {
-            &ast.Expr {.Lval = ast.Lval {.Var = "y"}},
-        }
-    }};
+    const expect: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.CallExpr = ast.CallExpr {
+            .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "myfun"}},.location = nolocation()},
+            .args = &[_]*const ast.Expr {
+                &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "y"}},.location = nolocation()},
+            }
+        }},
+        .location = nolocation()
+    };
 
     try std.testing.expectEqualDeep(expect, result.*);
 }
@@ -1519,13 +1944,16 @@ test "call expression two args" {
     defer result.destroyAll(std.testing.allocator);
 
 
-    const expect: ast.Expr = ast.Expr {.CallExpr = ast.CallExpr {
-        .id = &ast.Expr {.Lval = ast.Lval {.Var = "myfun"}},
-        .args = &[_]*const ast.Expr {
-            &ast.Expr {.Lval = ast.Lval {.Var = "y"}},
-            &ast.Expr {.Lval = ast.Lval {.Var = "somevar"}},
-        }
-    }};
+    const expect: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.CallExpr = ast.CallExpr {
+            .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "myfun"}},.location = nolocation()},
+            .args = &[_]*const ast.Expr {
+                &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "y"}},.location = nolocation()},
+                &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "somevar"}},.location = nolocation()},
+            }
+        }},
+        .location = nolocation()
+    };
 
     try std.testing.expectEqualDeep(expect, result.*);
 }
@@ -1551,20 +1979,29 @@ test "call expression complex expressions as args" {
     defer result.destroyAll(std.testing.allocator);
 
 
-    const expect: ast.Expr = ast.Expr {.CallExpr = ast.CallExpr {
-        .id = &ast.Expr {.Lval = ast.Lval {.Var = "myfun"}},
-        .args = &[_]*const ast.Expr {
-            &ast.Expr {.CallExpr = ast.CallExpr {
-                .id = &ast.Expr {.Lval = ast.Lval {.Var = "otherfun"}},
-                .args = &[_]*const ast.Expr {},
-            }},
-            &ast.Expr {.BinOpExpr = ast.BinOpExpr {
-                .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "y"}},
-                .op = .Add,
-                .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 3}}
-            }}
-        }
-    }};
+    const expect: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.CallExpr = ast.CallExpr {
+            .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "myfun"}},.location = nolocation()},
+            .args = &[_]*const ast.Expr {
+                &ast.Expr {
+                    .expr = ast.ExprInner {.CallExpr = ast.CallExpr {
+                        .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "otherfun"}},.location = nolocation()},
+                        .args = &[_]*const ast.Expr {},
+                    }},
+                    .location = nolocation()
+                },
+                &ast.Expr {
+                    .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
+                        .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "y"}},.location = nolocation()},
+                        .op = .Add,
+                        .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 3}},.location = nolocation()}
+                    }},
+                    .location = nolocation()
+                }
+            }
+        }},
+        .location = nolocation()
+    };
 
     try std.testing.expectEqualDeep(expect, result.*);
 }
@@ -1587,14 +2024,20 @@ test "expression as function funcall" {
     defer result.destroyAll(std.testing.allocator);
 
 
-    const expect: ast.Expr = ast.Expr {.CallExpr = ast.CallExpr {
-        .id = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
-            .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-            .op = .Mul,
-            .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 3}}
+    const expect: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.CallExpr = ast.CallExpr {
+            .id = &ast.Expr {
+                .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
+                    .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+                    .op = .Mul,
+                    .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 3}},.location = nolocation()}
+                }},
+                .location = nolocation()
+            },
+            .args = &[_]*const ast.Expr {}
         }},
-        .args = &[_]*const ast.Expr {}
-    }};
+        .location = nolocation()
+    };
 
     try std.testing.expectEqualDeep(expect, result.*);
 }
@@ -1615,13 +2058,19 @@ test "funcall funcall" {
     defer result.destroyAll(std.testing.allocator);
 
 
-    const expect: ast.Expr = ast.Expr {.CallExpr = ast.CallExpr {
-        .id = &ast.Expr {.CallExpr = ast.CallExpr {
-            .id = &ast.Expr {.Lval = ast.Lval {.Var = "myfun"}},
+    const expect: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.CallExpr = ast.CallExpr {
+            .id = &ast.Expr {
+                .expr = ast.ExprInner {.CallExpr = ast.CallExpr {
+                    .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "myfun"}},.location = nolocation()},
+                    .args = &[_]*const ast.Expr {},
+                }},
+                .location = nolocation()
+            },
             .args = &[_]*const ast.Expr {},
         }},
-        .args = &[_]*const ast.Expr {},
-    }};
+        .location = nolocation()
+    };
 
     try std.testing.expectEqualDeep(expect, result.*);
 }
