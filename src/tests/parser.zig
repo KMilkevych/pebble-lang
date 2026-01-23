@@ -2093,16 +2093,25 @@ test "funcall funcall funcall" {
     defer result.destroyAll(std.testing.allocator);
 
 
-    const expect: ast.Expr = ast.Expr {.CallExpr = ast.CallExpr {
-        .id = &ast.Expr {.CallExpr = ast.CallExpr {
-            .id = &ast.Expr {.CallExpr = ast.CallExpr {
-                .id = &ast.Expr {.Lval = ast.Lval {.Var = "myfun"}},
-                .args = &[_]*const ast.Expr {},
-            }},
-            .args = &[_]*const ast.Expr {},
+    const expect: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.CallExpr = ast.CallExpr {
+            .id = &ast.Expr {
+                .expr = ast.ExprInner {.CallExpr = ast.CallExpr {
+                    .id = &ast.Expr {
+                        .expr = ast.ExprInner {.CallExpr = ast.CallExpr {
+                            .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "myfun"}},.location = nolocation()},
+                            .args = &[_]*const ast.Expr {},
+                        }},
+                        .location = nolocation()
+                    },
+                    .args = &[_]*const ast.Expr {},
+                }},
+                .location = nolocation()
+            },
+            .args = &[_]*const ast.Expr {}
         }},
-        .args = &[_]*const ast.Expr {}
-    }};
+        .location = nolocation()
+    };
 
     try std.testing.expectEqualDeep(expect, result.*);
 }
@@ -2119,7 +2128,13 @@ test "empty return statement" {
 
     var prs: parser.Parser = .new(tokens, std.testing.allocator);
 
-    const expect: ast.Stmt = ast.Stmt {.ReturnStmt = &ast.Expr {.Lit = ast.Lit {.Void = {}}}};
+    const expect: ast.Stmt = ast.Stmt {
+        .stmt = ast.StmtInner {.ReturnStmt = &ast.Expr {
+            .expr = ast.ExprInner {.Lit = ast.Lit {.Void = {}}},
+            .location = nolocation()
+        }},
+        .location = nolocation()
+    };
 
     const actual: ast.Stmt = try prs.parseStmt();
     defer actual.destroyAll(std.testing.allocator);
@@ -2143,11 +2158,17 @@ test "return statement with expression" {
 
     var prs: parser.Parser = .new(tokens, std.testing.allocator);
 
-    const expect: ast.Stmt = ast.Stmt {.ReturnStmt = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
-        .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-        .op = .Add,
-        .rhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-    }}};
+    const expect: ast.Stmt = ast.Stmt {
+        .stmt = ast.StmtInner {.ReturnStmt = &ast.Expr {
+            .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
+                .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+                .op = .Add,
+                .rhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+            }},
+            .location = nolocation()
+        }},
+        .location = nolocation()
+    };
 
     const actual: ast.Stmt = try prs.parseStmt();
     defer actual.destroyAll(std.testing.allocator);
@@ -2166,7 +2187,13 @@ test "empty return statement at the end" {
 
     var prs: parser.Parser = .new(tokens, std.testing.allocator);
 
-    const expect: ast.Stmt = ast.Stmt {.ReturnStmt = &ast.Expr {.Lit = ast.Lit {.Void = {}}}};
+    const expect: ast.Stmt = ast.Stmt {
+        .stmt = ast.StmtInner {.ReturnStmt = &ast.Expr {
+            .expr = ast.ExprInner {.Lit = ast.Lit {.Void = {}}},
+            .location = nolocation()
+        }},
+        .location = nolocation()
+    };
 
     const actual: ast.Stmt = try prs.parseStmt();
     defer actual.destroyAll(std.testing.allocator);
@@ -2187,11 +2214,17 @@ test "return statement with expression at the end" {
 
     var prs: parser.Parser = .new(tokens, std.testing.allocator);
 
-    const expect: ast.Stmt = ast.Stmt {.ReturnStmt = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
-        .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-        .op = .Add,
-        .rhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-    }}};
+    const expect: ast.Stmt = ast.Stmt {
+        .stmt = ast.StmtInner {.ReturnStmt = &ast.Expr {
+            .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
+                .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+                .op = .Add,
+                .rhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+            }},
+            .location = nolocation()
+        }},
+        .location = nolocation()
+    };
 
     const actual: ast.Stmt = try prs.parseStmt();
     defer actual.destroyAll(std.testing.allocator);
@@ -2220,11 +2253,20 @@ test "simple inline function definition" {
 
     var prs: parser.Parser = .new(tokens, std.testing.allocator);
 
-    const expect: ast.Stmt = ast.Stmt {.FunDefStmt = &ast.FunDefStmt {
-        .id = "last",
-        .params = &[_]ast.Var {"x", "y", "z"},
-        .body = ast.Stmt {.ReturnStmt = &ast.Expr {.Lval = ast.Lval {.Var = "z"}}}
-    }};
+    const expect: ast.Stmt = ast.Stmt {
+        .stmt = ast.StmtInner {.FunDefStmt = &ast.FunDefStmt {
+            .id = "last",
+            .params = &[_]ast.Var {"x", "y", "z"},
+            .body = ast.Stmt {
+                .stmt = ast.StmtInner {.ReturnStmt = &ast.Expr {
+                    .expr = ast.ExprInner {.Lval = ast.Lval {.Var = "z"}},
+                    .location = nolocation()
+                }},
+                .location = nolocation()
+            }
+        }},
+        .location = nolocation()
+    };
 
     const actual: ast.Stmt = try prs.parseStmt();
     defer actual.destroyAll(std.testing.allocator);
