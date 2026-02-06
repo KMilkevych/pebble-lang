@@ -6,6 +6,9 @@ const TokenType = token.TokenType;
 const Location = loc.Location;
 const LocationRange = loc.LocationRange;
 
+const log = @import("logger.zig");
+const Logger = log.Logger;
+
 const std = @import("std");
 const ArrayList = std.ArrayList;
 
@@ -41,8 +44,21 @@ pub const Parser = struct {
 
     tokens: ArrayList(Token),
     allocator: std.mem.Allocator,
+    logger: Logger,
 
-    pub fn new(tokens: ArrayList(Token), allocator: std.mem.Allocator) Self {
+    // NOTE: Old version without error logging
+    // pub fn new(tokens: ArrayList(Token), allocator: std.mem.Allocator) Self {
+
+    //     // NOTE: Reversing token list to allow
+    //     // using tokens.pop and tokens.getLast
+    //     std.mem.reverse(Token, tokens.items);
+    //     return .{
+    //         .tokens = tokens,
+    //         .allocator = allocator,
+    //     };
+    // }
+
+    pub fn new(tokens: ArrayList(Token), allocator: std.mem.Allocator, errLogger: Logger) Self {
 
         // NOTE: Reversing token list to allow
         // using tokens.pop and tokens.getLast
@@ -50,6 +66,7 @@ pub const Parser = struct {
         return .{
             .tokens = tokens,
             .allocator = allocator,
+            .logger = errLogger,
         };
     }
 

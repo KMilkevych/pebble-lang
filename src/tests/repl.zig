@@ -4,6 +4,7 @@ const parser = @import("../parser.zig");
 const token = @import("../token.zig");
 const interpreter = @import("../interpreter.zig");
 const venv = @import("../env.zig");
+const Log = @import("../logger.zig");
 
 const std = @import("std");
 
@@ -14,7 +15,7 @@ test "intlit" {
     const tokens: std.ArrayList(token.Token) = lxr.lex();
     defer tokens.deinit();
 
-    var prsr: parser.Parser = parser.Parser.new(tokens, std.testing.allocator);
+    var prsr: parser.Parser = parser.Parser.new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
     const expr: *ast.Expr = try prsr.parseExpr();
     defer expr.destroyAll(std.testing.allocator);
 
@@ -32,7 +33,7 @@ test "complicated intlit expression" {
     const tokens: std.ArrayList(token.Token) = lxr.lex();
     defer tokens.deinit();
 
-    var prsr: parser.Parser = parser.Parser.new(tokens, std.testing.allocator);
+    var prsr: parser.Parser = parser.Parser.new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
     const expr: *ast.Expr = try prsr.parseExpr();
     defer expr.destroyAll(std.testing.allocator);
 
@@ -51,7 +52,7 @@ test "complicated boolean expression" {
     const tokens: std.ArrayList(token.Token) = lxr.lex();
     defer tokens.deinit();
 
-    var prsr: parser.Parser = parser.Parser.new(tokens, std.testing.allocator);
+    var prsr: parser.Parser = parser.Parser.new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
     const expr: *ast.Expr = try prsr.parseExpr();
     defer expr.destroyAll(std.testing.allocator);
 
@@ -69,7 +70,7 @@ test "variable eval with premade environment" {
     const tokens: std.ArrayList(token.Token) = lxr.lex();
     defer tokens.deinit();
 
-    var prsr: parser.Parser = parser.Parser.new(tokens, std.testing.allocator);
+    var prsr: parser.Parser = parser.Parser.new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
     const expr: *ast.Expr = try prsr.parseExpr();
     defer expr.destroyAll(std.testing.allocator);
 
@@ -90,7 +91,7 @@ test "assignment expression" {
     const tokens: std.ArrayList(token.Token) = lxr.lex();
     defer tokens.deinit();
 
-    var prsr: parser.Parser = parser.Parser.new(tokens, std.testing.allocator);
+    var prsr: parser.Parser = parser.Parser.new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
     const expr: *ast.Expr = try prsr.parseExpr();
     defer expr.destroyAll(std.testing.allocator);
 
@@ -111,7 +112,7 @@ test "double assignment" {
     const tokens: std.ArrayList(token.Token) = lxr.lex();
     defer tokens.deinit();
 
-    var prsr: parser.Parser = parser.Parser.new(tokens, std.testing.allocator);
+    var prsr: parser.Parser = parser.Parser.new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
     const expr: *ast.Expr = try prsr.parseExpr();
     defer expr.destroyAll(std.testing.allocator);
 
@@ -133,7 +134,7 @@ test "declare statement undefined" {
     const tokens: std.ArrayList(token.Token) = lxr.lex();
     defer tokens.deinit();
 
-    var prsr: parser.Parser = parser.Parser.new(tokens, std.testing.allocator);
+    var prsr: parser.Parser = parser.Parser.new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
     const stmt: ast.Stmt = try prsr.parseStmt();
     defer stmt.destroyAll(std.testing.allocator);
 
@@ -161,7 +162,7 @@ test "break statement" {
     const tokens: std.ArrayList(token.Token) = lxr.lex();
     defer tokens.deinit();
 
-    var prsr: parser.Parser = parser.Parser.new(tokens, std.testing.allocator);
+    var prsr: parser.Parser = parser.Parser.new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
     const proc: ast.Proc = try prsr.parseProcedure();
     defer proc.destroyAll(std.testing.allocator);
 
@@ -191,7 +192,7 @@ test "continue statement" {
     const tokens: std.ArrayList(token.Token) = lxr.lex();
     defer tokens.deinit();
 
-    var prsr: parser.Parser = parser.Parser.new(tokens, std.testing.allocator);
+    var prsr: parser.Parser = parser.Parser.new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
     const proc: ast.Proc = try prsr.parseProcedure();
     defer proc.destroyAll(std.testing.allocator);
 
@@ -220,7 +221,7 @@ test "closure 1 test" {
     const tokens: std.ArrayList(token.Token) = lxr.lex();
     defer tokens.deinit();
 
-    var prsr: parser.Parser = parser.Parser.new(tokens, std.testing.allocator);
+    var prsr: parser.Parser = parser.Parser.new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
     const proc: ast.Proc = try prsr.parseProcedure();
     defer proc.destroyAll(std.testing.allocator);
 
@@ -246,7 +247,7 @@ test "first-class values test" {
     const tokens: std.ArrayList(token.Token) = lxr.lex();
     defer tokens.deinit();
 
-    var prsr: parser.Parser = parser.Parser.new(tokens, std.testing.allocator);
+    var prsr: parser.Parser = parser.Parser.new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
     const proc: ast.Proc = try prsr.parseProcedure();
     defer proc.destroyAll(std.testing.allocator);
 
@@ -273,7 +274,7 @@ test "prohibit upcalling" {
     const tokens: std.ArrayList(token.Token) = lxr.lex();
     defer tokens.deinit();
 
-    var prsr: parser.Parser = parser.Parser.new(tokens, std.testing.allocator);
+    var prsr: parser.Parser = parser.Parser.new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
     const proc: ast.Proc = try prsr.parseProcedure();
     defer proc.destroyAll(std.testing.allocator);
 

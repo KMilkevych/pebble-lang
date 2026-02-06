@@ -8,6 +8,8 @@ const TokenType = token.TokenType;
 const loc = @import("../location.zig");
 const nolocation = loc.LocationRange.none;
 
+const Log = @import("../logger.zig");
+
 const std = @import("std");
 
 test "destroyAll" {
@@ -79,7 +81,7 @@ test "single literal" {
 
     try tokens.append(Token {.tokenType = TokenType {.INTLIT = 13}});
     try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
@@ -96,7 +98,7 @@ test "single binary add" {
     try tokens.append(Token {.tokenType = TokenType {.PLUS = {}}});
     try tokens.append(Token {.tokenType = TokenType {.INTLIT = 13}});
     try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
@@ -122,7 +124,7 @@ test "double binary left-associative" {
     try tokens.append(Token {.tokenType = TokenType {.MINUS = {}}});
     try tokens.append(Token {.tokenType = TokenType {.INTLIT = 13}});
     try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
@@ -157,7 +159,7 @@ test "precedence 1" {
     try tokens.append(Token {.tokenType = TokenType {.MUL = {}}});
     try tokens.append(Token {.tokenType = TokenType {.INTLIT = 13}});
     try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
@@ -192,7 +194,7 @@ test "unary int" {
     try tokens.append(Token {.tokenType = TokenType {.MINUS = {}}});
     try tokens.append(Token {.tokenType = TokenType {.INTLIT = 3}});
     try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
@@ -220,7 +222,7 @@ test "unary int unary bool" {
     try tokens.append(Token {.tokenType = TokenType {.NOT = {}}});
     try tokens.append(Token {.tokenType = TokenType {.BOOLLIT = true}});
     try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
@@ -259,7 +261,7 @@ test "int plus unary int" {
     try tokens.append(Token {.tokenType = TokenType {.MINUS = {}}});
     try tokens.append(Token {.tokenType = TokenType {.INTLIT = 5}});
     try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
@@ -292,7 +294,7 @@ test "unary int plus int" {
     try tokens.append(Token {.tokenType = TokenType {.PLUS = {}}});
     try tokens.append(Token {.tokenType = TokenType {.INTLIT = 5}});
     try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
@@ -326,7 +328,7 @@ test "unary int plus int parantheses" {
     try tokens.append(Token {.tokenType = TokenType {.INTLIT = 5}});
     try tokens.append(Token {.tokenType = TokenType {.RPAREN = {}}});
     try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
@@ -361,7 +363,7 @@ test "many parentheses" {
     try tokens.append(Token {.tokenType = TokenType {.RPAREN = {}}});
     try tokens.append(Token {.tokenType = TokenType {.RPAREN = {}}});
     try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
@@ -383,7 +385,7 @@ test "precedence 2" {
     try tokens.append(Token {.tokenType = TokenType {.MUL = {}}});
     try tokens.append(Token {.tokenType = TokenType {.INTLIT = 13}});
     try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
@@ -420,7 +422,7 @@ test "precedence 2 div minus" {
     try tokens.append(Token {.tokenType = TokenType {.DIV = {}}});
     try tokens.append(Token {.tokenType = TokenType {.INTLIT = 13}});
     try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
@@ -460,7 +462,7 @@ test "boolean operations" {
     try tokens.append(Token {.tokenType = TokenType {.NOT = {}}});
     try tokens.append(Token {.tokenType = TokenType {.BOOLLIT = false}});
     try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
@@ -510,7 +512,7 @@ test "integer comparison and boolean operations precedence" {
     try tokens.append(Token {.tokenType = TokenType {.DEQ = {}}});
     try tokens.append(Token {.tokenType = TokenType {.INTLIT = 3}});
     try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
@@ -548,7 +550,7 @@ test "single ident" {
 
     try tokens.append(Token {.tokenType = TokenType {.IDENT = "abekat"}});
     try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
@@ -567,7 +569,7 @@ test "variable expression" {
     try tokens.append(Token {.tokenType = TokenType {.MINUS = {}}});
     try tokens.append(Token {.tokenType = TokenType {.IDENT = "kat"}});
     try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
@@ -598,7 +600,7 @@ test "assignment expression" {
     try tokens.append(Token {.tokenType = TokenType {.EQ = {}}});
     try tokens.append(Token {.tokenType = TokenType {.INTLIT = 13}});
     try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
@@ -625,7 +627,7 @@ test "right associative assignment" {
     try tokens.append(Token {.tokenType = TokenType {.EQ = {}}});
     try tokens.append(Token {.tokenType = TokenType {.INTLIT = 47}});
     try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
@@ -658,7 +660,7 @@ test "left evaluated assignment" {
     try tokens.append(Token {.tokenType = TokenType {.EQ = {}}});
     try tokens.append(Token {.tokenType = TokenType {.INTLIT = 13}});
     try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
@@ -691,7 +693,7 @@ test "right associative assignment 2" {
     try tokens.append(Token {.tokenType = TokenType {.PLUS = {}}});
     try tokens.append(Token {.tokenType = TokenType {.INTLIT = 13}});
     try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
@@ -724,7 +726,7 @@ test "x + y = 13 == (x + y) = 13" {
     try tokens.append(Token {.tokenType = TokenType {.EQ = {}}});
     try tokens.append(Token {.tokenType = TokenType {.INTLIT = 13}});
     try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
@@ -756,7 +758,7 @@ test "-x = 13 == (-x) = 13" {
     try tokens.append(Token {.tokenType = TokenType {.EQ = {}}});
     try tokens.append(Token {.tokenType = TokenType {.INTLIT = 13}});
     try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
@@ -787,7 +789,7 @@ test "unmatched parentheses" {
     try tokens.append(Token {.tokenType = TokenType {.EQ = {}}});
     try tokens.append(Token {.tokenType = TokenType {.INTLIT = 13}});
     try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: parser.ParseError!*ast.Expr = prs.parseExpr();
 
@@ -805,7 +807,7 @@ test "unfinished expression" {
     try tokens.append(Token {.tokenType = TokenType {.PLUS = {}}});
     try tokens.append(Token {.tokenType = TokenType {.RPAREN = {}}});
     try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: parser.ParseError!*ast.Expr = prs.parseExpr();
     try std.testing.expectEqualDeep(parser.ParseError.ExpectedExpression, result);
@@ -816,7 +818,7 @@ test "expect token or EOF" {
     defer tokens.deinit();
 
     try tokens.append(Token {.tokenType = TokenType {.IDENT = "x"}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: parser.ParseError!*ast.Expr = prs.parseExpr();
 
@@ -831,7 +833,7 @@ test "expect token or EOF 2" {
     try tokens.append(Token {.tokenType = TokenType {.LPAREN = {}}});
     try tokens.append(Token {.tokenType = TokenType {.IDENT = "x"}});
     try tokens.append(Token {.tokenType = TokenType {.RPAREN = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: parser.ParseError!*ast.Expr = prs.parseExpr();
 
@@ -847,7 +849,7 @@ test "print statement" {
     try tokens.append(Token {.tokenType = TokenType {.IDENT = "x"}});
     try tokens.append(Token {.tokenType = TokenType {.LB = {}}});
     try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: ast.Stmt = try prs.parseStmt();
     defer result.destroyAll(std.testing.allocator);
@@ -875,7 +877,7 @@ test "declare statement" {
     try tokens.append(Token {.tokenType = TokenType {.IDENT = "x"}});
     try tokens.append(Token {.tokenType = TokenType {.LB = {}}});
     try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: ast.Stmt = try prs.parseStmt();
     defer result.destroyAll(std.testing.allocator);
@@ -902,7 +904,7 @@ test "expression statement" {
     try tokens.append(Token {.tokenType = TokenType {.IDENT = "x"}});
     try tokens.append(Token {.tokenType = TokenType {.LB = {}}});
     try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: ast.Stmt = try prs.parseStmt();
     defer result.destroyAll(std.testing.allocator);
@@ -932,7 +934,7 @@ test "print statement sequence" {
     try tokens.append(Token {.tokenType = TokenType {.IDENT = "y"}});
     try tokens.append(Token {.tokenType = TokenType {.LB = {}}});
     try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: ast.Stmt = try prs.parseStmt();
     defer result.destroyAll(std.testing.allocator);
@@ -974,7 +976,7 @@ test "expect line break between statements" {
     try tokens.append(Token {.tokenType = TokenType {.IDENT = "x"}});
     try tokens.append(Token {.tokenType = TokenType {.LB = {}}});
     try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: parser.ParseError!ast.Stmt = prs.parseStmt();
     try std.testing.expectEqualDeep(parser.ParseError.ExpectedLineBreak, result);
@@ -989,7 +991,7 @@ test "empty block statement" {
     try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
     defer tokens.deinit();
 
-    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const expect: ast.Stmt = ast.Stmt {.stmt = ast.StmtInner {.BlockStmt = &[_]ast.Stmt {}},.location = nolocation()};
     defer expect.destroyAll(std.testing.allocator);
@@ -1010,7 +1012,7 @@ test "block statement" {
     try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
     defer tokens.deinit();
 
-    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const expect: ast.Stmt = ast.Stmt {
         .stmt = ast.StmtInner {.BlockStmt = &[_]ast.Stmt {
@@ -1053,7 +1055,7 @@ test "nested block statement" {
     try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
     defer tokens.deinit();
 
-    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const expect: ast.Stmt = ast.Stmt {
         .stmt = ast.StmtInner {.BlockStmt = &[_]ast.Stmt {
@@ -1101,7 +1103,7 @@ test "if else statement" {
     try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
     defer tokens.deinit();
 
-    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const expect: ast.Stmt = ast.Stmt {
         .stmt = ast.StmtInner {.IfElseStmt = &ast.IfElseStmt {
@@ -1153,7 +1155,7 @@ test "if else block statement" {
     try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
     defer tokens.deinit();
 
-    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const expect: ast.Stmt = ast.Stmt {
         .stmt = ast.StmtInner {.IfElseStmt = &ast.IfElseStmt {
@@ -1221,7 +1223,7 @@ test "if else block statement 2" {
     try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
     defer tokens.deinit();
 
-    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const expect: ast.Stmt = ast.Stmt {
         .stmt = ast.StmtInner {.IfElseStmt = &ast.IfElseStmt {
@@ -1315,7 +1317,7 @@ test "complicated if-else branch" {
     try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
     defer tokens.deinit();
 
-    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const expect: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
 
@@ -1418,7 +1420,7 @@ test "simple while with condition" {
     try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
     defer tokens.deinit();
 
-    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const expect: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
 
@@ -1499,7 +1501,7 @@ test "more interesting while" {
     try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
     defer tokens.deinit();
 
-    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const expect: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
 
@@ -1594,7 +1596,7 @@ test "while with break statement" {
     try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
     defer tokens.deinit();
 
-    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const expect: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
 
@@ -1675,7 +1677,7 @@ test "while with continue statement" {
     try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
     defer tokens.deinit();
 
-    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const expect: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
 
@@ -1747,7 +1749,7 @@ test "comma declaration" {
     try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
     defer tokens.deinit();
 
-    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const expect: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
 
@@ -1808,7 +1810,7 @@ test "comma declaration double comma error" {
     try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
     defer tokens.deinit();
 
-    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
     const res: parser.ParseError!ast.Proc = prs.parseProcedure();
 
     try std.testing.expectEqualDeep(res, parser.ParseError.ExpectedExpression);
@@ -1827,7 +1829,7 @@ test "comma print" {
     try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
     defer tokens.deinit();
 
-    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const expect: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
 
@@ -1866,7 +1868,7 @@ test "comma print multiple comma error" {
     try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
     defer tokens.deinit();
 
-    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const actual: parser.ParseError!ast.Proc = prs.parseProcedure();
 
@@ -1881,7 +1883,7 @@ test "call expression no args" {
     try tokens.append(Token {.tokenType = TokenType {.LPAREN = {}}});
     try tokens.append(Token {.tokenType = TokenType {.RPAREN = {}}});
     try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
@@ -1908,7 +1910,7 @@ test "call expression one arg" {
     try tokens.append(Token {.tokenType = TokenType {.IDENT = "y"}});
     try tokens.append(Token {.tokenType = TokenType {.RPAREN = {}}});
     try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
@@ -1938,7 +1940,7 @@ test "call expression two args" {
     try tokens.append(Token {.tokenType = TokenType {.IDENT = "somevar"}});
     try tokens.append(Token {.tokenType = TokenType {.RPAREN = {}}});
     try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
@@ -1973,7 +1975,7 @@ test "call expression complex expressions as args" {
     try tokens.append(Token {.tokenType = TokenType {.INTLIT = 3}});
     try tokens.append(Token {.tokenType = TokenType {.RPAREN = {}}});
     try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
@@ -2018,7 +2020,7 @@ test "expression as function funcall" {
     try tokens.append(Token {.tokenType = TokenType {.LPAREN = {}}});
     try tokens.append(Token {.tokenType = TokenType {.RPAREN = {}}});
     try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
@@ -2052,7 +2054,7 @@ test "funcall funcall" {
     try tokens.append(Token {.tokenType = TokenType {.LPAREN = {}}});
     try tokens.append(Token {.tokenType = TokenType {.RPAREN = {}}});
     try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
@@ -2087,7 +2089,7 @@ test "funcall funcall funcall" {
     try tokens.append(Token {.tokenType = TokenType {.LPAREN = {}}});
     try tokens.append(Token {.tokenType = TokenType {.RPAREN = {}}});
     try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
@@ -2126,7 +2128,7 @@ test "empty return statement" {
     try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
     defer tokens.deinit();
 
-    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const expect: ast.Stmt = ast.Stmt {
         .stmt = ast.StmtInner {.ReturnStmt = &ast.Expr {
@@ -2156,7 +2158,7 @@ test "return statement with expression" {
     try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
     defer tokens.deinit();
 
-    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const expect: ast.Stmt = ast.Stmt {
         .stmt = ast.StmtInner {.ReturnStmt = &ast.Expr {
@@ -2185,7 +2187,7 @@ test "empty return statement at the end" {
     try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
     defer tokens.deinit();
 
-    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const expect: ast.Stmt = ast.Stmt {
         .stmt = ast.StmtInner {.ReturnStmt = &ast.Expr {
@@ -2212,7 +2214,7 @@ test "return statement with expression at the end" {
     try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
     defer tokens.deinit();
 
-    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const expect: ast.Stmt = ast.Stmt {
         .stmt = ast.StmtInner {.ReturnStmt = &ast.Expr {
@@ -2251,7 +2253,7 @@ test "simple inline function definition" {
     try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
     defer tokens.deinit();
 
-    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const expect: ast.Stmt = ast.Stmt {
         .stmt = ast.StmtInner {.FunDefStmt = &ast.FunDefStmt {
@@ -2293,7 +2295,7 @@ test "simple inline function definition" {
 //     try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
 //     defer tokens.deinit();
 
-//     var prs: parser.Parser = .new(tokens, std.testing.allocator);
+//     var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 //     const res: parser.ParseError!ast.Stmt = prs.parseStmt();
 
 //     try std.testing.expectEqualDeep(parser.ParseError.ExpectedIdentifier, res);
@@ -2316,7 +2318,7 @@ test "function definition no name" {
     try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
     defer tokens.deinit();
 
-    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
     const res: parser.ParseError!ast.Stmt = prs.parseStmt();
 
     try std.testing.expectEqualDeep(parser.ParseError.ExpectedIdentifier, res);
@@ -2337,7 +2339,7 @@ test "function definition no body" {
     try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
     defer tokens.deinit();
 
-    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
     const res: parser.ParseError!ast.Stmt = prs.parseStmt();
 
     try std.testing.expectEqualDeep(parser.ParseError.ExpectedLineBreak, res);
@@ -2358,7 +2360,7 @@ test "function definition no body 2" {
     try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
     defer tokens.deinit();
 
-    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
     const res: parser.ParseError!ast.Stmt = prs.parseStmt();
 
     try std.testing.expectEqualDeep(parser.ParseError.ExpectedStatement, res);
@@ -2375,7 +2377,7 @@ test "make statement" {
     try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
     defer tokens.deinit();
 
-    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const expect: ast.Stmt = ast.Stmt {
         .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {
@@ -2412,7 +2414,7 @@ test "multi make statement" {
     try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
     defer tokens.deinit();
 
-    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const expect: ast.Stmt = ast.Stmt {
         .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {
@@ -2450,7 +2452,7 @@ test "list index expression" {
     try tokens.append(Token {.tokenType = TokenType {.INTLIT = 3}});
     try tokens.append(Token {.tokenType = TokenType {.RBRACK = {}}});
     try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
@@ -2485,7 +2487,7 @@ test "complex list index expression" {
     try tokens.append(Token {.tokenType = TokenType {.RPAREN = {}}});
     try tokens.append(Token {.tokenType = TokenType {.RBRACK = {}}});
     try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
@@ -2531,7 +2533,7 @@ test "double list index expression" {
     try tokens.append(Token {.tokenType = TokenType {.INTLIT = 1}});
     try tokens.append(Token {.tokenType = TokenType {.RBRACK = {}}});
     try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
@@ -2568,7 +2570,7 @@ test "list index assignment" {
     try tokens.append(Token {.tokenType = TokenType {.EQ = {}}});
     try tokens.append(Token {.tokenType = TokenType {.INTLIT = 1}});
     try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
@@ -2606,7 +2608,7 @@ test "list index in parentheses" {
     try tokens.append(Token {.tokenType = TokenType {.RPAREN = {}}});
     try tokens.append(Token {.tokenType = TokenType {.RBRACK = {}}});
     try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
@@ -2642,7 +2644,7 @@ test "print list index statement" {
     try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
     defer tokens.deinit();
 
-    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const expect: ast.Stmt = ast.Stmt {
         .stmt = ast.StmtInner {.PrintStmt = &[_]*const ast.Expr {
@@ -2679,7 +2681,7 @@ test "print multi list index statement" {
     try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
     defer tokens.deinit();
 
-    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const expect: ast.Stmt = ast.Stmt {
         .stmt = ast.StmtInner {.PrintStmt = &[_]*const ast.Expr {
@@ -2727,7 +2729,7 @@ test "declare multi list with initialization" {
     try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
     defer tokens.deinit();
 
-    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const expect: ast.Stmt = ast.Stmt {
         .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {
@@ -2776,7 +2778,7 @@ test "property access" {
     try tokens.append(Token {.tokenType = TokenType {.DOT = {}}});
     try tokens.append(Token {.tokenType = TokenType {.IDENT = "size"}});
     try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
@@ -2808,7 +2810,7 @@ test "multi property access" {
     try tokens.append(Token {.tokenType = TokenType {.DOT = {}}});
     try tokens.append(Token {.tokenType = TokenType {.IDENT = "prop3"}});
     try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
@@ -2861,7 +2863,7 @@ test "list immediate expression" {
     try tokens.append(Token {.tokenType = TokenType {.INTLIT = 3}});
     try tokens.append(Token {.tokenType = TokenType {.GT = {}}});
     try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: ast.Proc = try prs.parseProcedure();
     defer result.destroyAll(std.testing.allocator);
@@ -2921,7 +2923,7 @@ test "nested list immediate expression" {
     try tokens.append(Token {.tokenType = TokenType {.GT = {}}});
     try tokens.append(Token {.tokenType = TokenType {.GT = {}}});
     try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: ast.Proc = try prs.parseProcedure();
     defer result.destroyAll(std.testing.allocator);
@@ -2988,7 +2990,7 @@ test "list immediate unmatched brackets" {
     try tokens.append(Token {.tokenType = TokenType {.INTLIT = 3}});
     try tokens.append(Token {.tokenType = TokenType {.GT = {}}});
     try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: parser.ParseError!ast.Proc = prs.parseProcedure();
 
@@ -3017,7 +3019,7 @@ test "list immediates binary expression" {
     try tokens.append(Token {.tokenType = TokenType {.INTLIT = 3}});
     try tokens.append(Token {.tokenType = TokenType {.GT = {}}});
     try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
@@ -3070,7 +3072,7 @@ test "list immediates binary expression lt" {
     try tokens.append(Token {.tokenType = TokenType {.INTLIT = 3}});
     try tokens.append(Token {.tokenType = TokenType {.GT = {}}});
     try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
@@ -3122,7 +3124,7 @@ test "list immediates binary expression gt" {
     try tokens.append(Token {.tokenType = TokenType {.INTLIT = 3}});
     try tokens.append(Token {.tokenType = TokenType {.GT = {}}});
     try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
@@ -3176,7 +3178,7 @@ test "list immediates call expression" {
     try tokens.append(Token {.tokenType = TokenType {.GT = {}}});
     try tokens.append(Token {.tokenType = TokenType {.RPAREN = {}}});
     try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
@@ -3229,7 +3231,7 @@ test "list immediates with less than" {
     try tokens.append(Token {.tokenType = TokenType {.GT = {}}});
     try tokens.append(Token {.tokenType = TokenType {.GT = {}}});
     try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
@@ -3273,7 +3275,7 @@ test "list immediates with greater than" {
     try tokens.append(Token {.tokenType = TokenType {.INTLIT = 5}});
     try tokens.append(Token {.tokenType = TokenType {.GT = {}}});
     try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
@@ -3307,7 +3309,7 @@ test "more complicated list immediates" {
     try tokens.append(Token {.tokenType = TokenType {.INTLIT = 1}});
     try tokens.append(Token {.tokenType = TokenType {.GT = {}}});
     try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
@@ -3354,7 +3356,7 @@ test "more complicated list immediates 2" {
     try tokens.append(Token {.tokenType = TokenType {.INTLIT = 1}});
     try tokens.append(Token {.tokenType = TokenType {.GT = {}}});
     try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
@@ -3399,7 +3401,7 @@ test "list immediates with assignment" {
     try tokens.append(Token {.tokenType = TokenType {.INTLIT = 5}});
     try tokens.append(Token {.tokenType = TokenType {.GT = {}}});
     try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
@@ -3431,7 +3433,7 @@ test "float expression" {
     try tokens.append(Token {.tokenType = TokenType {.PLUS = {}}});
     try tokens.append(Token {.tokenType = TokenType {.FLOATLIT = 1.2}});
     try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
@@ -3458,7 +3460,7 @@ test "as expression" {
     try tokens.append(Token {.tokenType = TokenType {.AS = {}}});
     try tokens.append(Token {.tokenType = TokenType {.INT = {}}});
     try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
@@ -3485,7 +3487,7 @@ test "as expression left-associative" {
     try tokens.append(Token {.tokenType = TokenType {.AS = {}}});
     try tokens.append(Token {.tokenType = TokenType {.BOOL = {}}});
     try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
@@ -3521,7 +3523,7 @@ test "as expression binding power" {
     try tokens.append(Token {.tokenType = TokenType {.AS = {}}});
     try tokens.append(Token {.tokenType = TokenType {.FLOAT = {}}});
     try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator);
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
