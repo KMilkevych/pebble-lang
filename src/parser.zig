@@ -141,15 +141,15 @@ pub const Parser = struct {
             .LT => {
 
                 // Parse contents
-                var acc: ArrayList(*const ast.Expr) = .init(self.allocator);
-                errdefer acc.deinit();
+                var acc: ArrayList(*const ast.Expr) = .empty;
+                errdefer acc.deinit(self.allocator);
                 errdefer for (acc.items) |expr| expr.destroyAll(self.allocator);
 
                 while (!std.meta.eql(self.peekToken(), Token {.GT = {}})) {
 
                     // Parse expression
                     const bp: u8 = (Token {.GT = {}}).getInfixPrecedence().?.right;
-                    acc.append(try self.parseExprBp(bp)) catch unreachable;
+                    acc.append(self.allocator, try self.parseExprBp(bp)) catch unreachable;
 
                     // Peek the next token
                     if (self.peekToken()) |tok| switch (tok) {
@@ -163,7 +163,7 @@ pub const Parser = struct {
 
                 // Produce list literal
                 lhs = self.allocator.create(ast.Expr) catch unreachable;
-                lhs.*  = ast.Expr {.ListExpr = acc.toOwnedSlice() catch unreachable};
+                lhs.*  = ast.Expr {.ListExpr = acc.toOwnedSlice(self.allocator) catch unreachable};
 
             },
 
@@ -204,15 +204,15 @@ pub const Parser = struct {
                     .LPAREN => {
 
                         // Parse expressions while possible
-                        var acc: ArrayList(*const ast.Expr) = .init(self.allocator);
-                        errdefer acc.deinit();
+                        var acc: ArrayList(*const ast.Expr) = .empty;
+                        errdefer acc.deinit(self.allocator);
                         errdefer for (acc.items) |expr| expr.destroyAll(self.allocator);
 
                         // Keep parsing expressions while comma until rparen
                         while (!std.meta.eql(self.peekToken(), Token {.RPAREN = {}})) {
 
                             // Parse expression
-                            acc.append(try self.parseExprBp(0)) catch unreachable;
+                            acc.append(self.allocator, try self.parseExprBp(0)) catch unreachable;
 
                             // Peek the next token
                             if (self.peekToken()) |tok| switch (tok) {
@@ -227,7 +227,7 @@ pub const Parser = struct {
                         // Produce call expression
                         break :sw ast.Expr {.CallExpr = ast.CallExpr {
                             .id = lhs,
-                            .args = acc.toOwnedSlice() catch unreachable
+                            .args = acc.toOwnedSlice(self.allocator) catch unreachable
                         }};
 
                     },
@@ -326,34 +326,34 @@ pub const Parser = struct {
             .PRINT => {
                 try self.expectToken(Token {.PRINT = {}});
 
-                var acc: ArrayList(*ast.Expr) = .init(self.allocator);
-                defer acc.deinit();
+                var acc: ArrayList(*ast.Expr) = .empty;
+                defer acc.deinit(self.allocator);
                 errdefer for (acc.items) |expr| expr.destroyAll(self.allocator);
 
-                acc.append(try self.parseExpr()) catch unreachable;
+                acc.append(self.allocator, try self.parseExpr()) catch unreachable;
                 while (std.meta.eql(self.peekToken(), Token {.COMMA = {}})) {
                     try self.expectToken(Token {.COMMA = {}});
-                    acc.append(try self.parseExpr()) catch unreachable;
+                    acc.append(self.allocator, try self.parseExpr()) catch unreachable;
                 }
 
                 try self.expectTokenOrEOF(Token {.LB = {}});
-                break :blk ast.Stmt {.PrintStmt = acc.toOwnedSlice() catch unreachable};
+                break :blk ast.Stmt {.PrintStmt = acc.toOwnedSlice(self.allocator) catch unreachable};
             },
             .DECLARE => {
                 try self.expectToken(Token {.DECLARE = {}});
 
-                var acc: ArrayList(*ast.Expr) = .init(self.allocator);
-                defer acc.deinit();
+                var acc: ArrayList(*ast.Expr) = .empty;
+                defer acc.deinit(self.allocator);
                 errdefer for (acc.items) |expr| expr.destroyAll(self.allocator);
 
-                acc.append(try self.parseExpr()) catch unreachable;
+                acc.append(self.allocator, try self.parseExpr()) catch unreachable;
                 while (std.meta.eql(self.peekToken(), Token {.COMMA = {}})) {
                     try self.expectToken(Token {.COMMA = {}});
-                    acc.append(try self.parseExpr()) catch unreachable;
+                    acc.append(self.allocator, try self.parseExpr()) catch unreachable;
                 }
 
                 try self.expectTokenOrEOF(Token {.LB = {}});
-                break :blk ast.Stmt {.DeclareStmt = acc.toOwnedSlice() catch unreachable};
+                break :blk ast.Stmt {.DeclareStmt = acc.toOwnedSlice(self.allocator) catch unreachable};
             },
             .IF => {
                 try self.expectToken(Token {.IF = {}});
@@ -448,8 +448,8 @@ pub const Parser = struct {
                 _ = try self.nextToken();
 
                 // Parse function parameters
-                var acc: ArrayList(ast.Var) = .init(self.allocator);
-                errdefer acc.deinit();
+                var acc: ArrayList(ast.Var) = .empty;
+                errdefer acc.deinit(self.allocator);
                 try self.expectToken(Token {.LPAREN = {}});
 
                 while (!std.meta.eql(self.peekToken(), Token {.RPAREN = {}})) {
@@ -458,7 +458,7 @@ pub const Parser = struct {
                     switch(self.peekToken().?) {
                         .IDENT => |ident|{
                             _ = try self.nextToken();
-                            acc.append(ident) catch unreachable;
+                            acc.append(self.allocator, ident) catch unreachable;
                         },
                         else => return expectedTokenError(Token {.IDENT = ""})
                     }
@@ -483,7 +483,7 @@ pub const Parser = struct {
                 stmt.* = ast.FunDefStmt {
                     .id = id,
                     .body = body,
-                    .params = acc.toOwnedSlice() catch unreachable
+                    .params = acc.toOwnedSlice(self.allocator) catch unreachable
                 };
                 break :blk ast.Stmt {.FunDefStmt = stmt};
 
@@ -495,20 +495,20 @@ pub const Parser = struct {
                 try self.expectToken(Token {.LB = {}});
 
                 // Create arraylist for this..
-                var acc: ArrayList(ast.Stmt) = .init(self.allocator);
-                defer acc.deinit();
+                var acc: ArrayList(ast.Stmt) = .empty;
+                defer acc.deinit(self.allocator);
                 errdefer for (acc.items) |stmt| stmt.destroyAll(self.allocator);
 
                 // Parse statements while they are there...
                 while (!std.meta.eql(self.peekToken(), Token {.RCURLY = {}}))
-                    acc.append(try self.parseStmt()) catch unreachable;
+                    acc.append(self.allocator, try self.parseStmt()) catch unreachable;
 
                 // Expect an ending
                 try self.expectToken(Token {.RCURLY = {}});
                 try self.expectTokenOrEOF(Token {.LB = {}});
 
                 // Construct resulting statement
-                break :blk ast.Stmt {.BlockStmt = acc.toOwnedSlice() catch unreachable};
+                break :blk ast.Stmt {.BlockStmt = acc.toOwnedSlice(self.allocator) catch unreachable};
 
             },
 
@@ -527,8 +527,8 @@ pub const Parser = struct {
     pub fn parseProcedure(self: *Self) ParseError!ast.Proc {
 
         // Initialize buffer for statements
-        var statements: ArrayList(ast.Stmt) = .init(self.allocator);
-        errdefer statements.deinit();
+        var statements: ArrayList(ast.Stmt) = .empty;
+        errdefer statements.deinit(self.allocator);
         errdefer for (statements.items) |stmt| stmt.destroyAll(self.allocator);
 
         while (self.peekToken() != null) {
@@ -539,14 +539,14 @@ pub const Parser = struct {
                     const stmt: ast.Stmt = try self.parseStmt();
 
                     // Append statement to list
-                    statements.append(stmt) catch unreachable;
+                    statements.append(self.allocator, stmt) catch unreachable;
                 }
             }
         }
 
         // Extract and return
         return ast.Proc {
-            .stmts = statements.toOwnedSlice() catch unreachable
+            .stmts = statements.toOwnedSlice(self.allocator) catch unreachable
         };
     }
 

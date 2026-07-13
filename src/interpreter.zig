@@ -3,6 +3,12 @@ const venv = @import("env.zig");
 
 const std = @import("std");
 
+var writer: *std.Io.Writer = undefined;
+
+pub fn setWriter(outwriter: *std.Io.Writer) void {
+    writer = outwriter;
+}
+
 // Error types
 const TypeError = error {
     MismatchedType,
@@ -417,8 +423,8 @@ pub fn evalCallExpr(expr: *const ast.CallExpr, env: *venv.Env) EvalError!ast.Lit
 pub fn evalListExpr(exprs: []const *const ast.Expr, env: *venv.Env) EvalError!ast.Lit {
 
     // Create accumulator for contents
-    var acc: std.ArrayList(ast.Lit) = .init(env.allocator);
-    errdefer acc.deinit();
+    var acc: std.ArrayList(ast.Lit) = .empty;
+    errdefer acc.deinit(env.allocator);
     errdefer for (acc.items) |*item| item.destroyAll(env.allocator);
 
     // Evaluate each entry while preventing callables
@@ -426,7 +432,7 @@ pub fn evalListExpr(exprs: []const *const ast.Expr, env: *venv.Env) EvalError!as
         const lit: ast.Lit = try evalExpr(expr, env);
         switch (lit) {
             .Callable => return SemanticError.InvalidUpcall,
-            else => acc.append(lit) catch unreachable
+            else => acc.append(env.allocator, lit) catch unreachable
         }
     }
 
@@ -434,7 +440,7 @@ pub fn evalListExpr(exprs: []const *const ast.Expr, env: *venv.Env) EvalError!as
     const ptr = env.allocator.create(ast.List) catch unreachable;
     ptr.* = ast.List {
         .len = acc.items.len,
-        .items = acc.toOwnedSlice() catch unreachable,
+        .items = acc.toOwnedSlice(env.allocator) catch unreachable,
     };
 
     return ast.Lit {.List = ptr};
@@ -615,10 +621,10 @@ pub fn evalStmt(statement: ast.Stmt, env: *venv.Env) EvalError!StmtReturn {
                 // Evaluate expression and print resulting literal
                 // TODO: Use parameterized writer and remove unreachable
                 var res: ast.Lit = try evalExpr(expr, env);
-                std.io.getStdOut().writer().print("{} ", .{res}) catch unreachable;
+                writer.print("{f} ", .{res}) catch unreachable;
                 res.destroyAll(env.allocator);
             }
-            std.io.getStdOut().writer().print("\n", .{}) catch unreachable;
+            writer.print("\n", .{}) catch unreachable;
             return StmtReturn {.NoReturn = {}};
         },
         .BlockStmt => |stmts| {
