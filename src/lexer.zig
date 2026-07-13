@@ -209,14 +209,14 @@ pub const Lexer = struct {
     fn lexIntOrFloat(self: *Self) !token.Token {
 
         // Create a buffer for storing digit characters
-        var buf: std.ArrayList(u8) = .init(self.allocator);
-        defer buf.deinit();
+        var buf: std.ArrayList(u8) = .empty;
+        defer buf.deinit(self.allocator);
 
         // Read full sequence of numeric digits
         // NOTE: we expect first digit to be valid
         var c = self.topdigit() catch unreachable;
         while (is_numeric_digit[c]) {
-            try buf.append(c);
+            try buf.append(self.allocator, c);
             c = self.advance() catch |err| switch (err) {
                 error.EndOfFile => break,
                 else => unreachable
@@ -230,14 +230,14 @@ pub const Lexer = struct {
             if (is_real_digit[c]) {
 
                 // Append decimal separator
-                try buf.append(c);
+                try buf.append(self.allocator, c);
 
                 // Lex remainder of float
                 if (self.advance()) |val| {
                     c = val;
 
                     while (is_numeric_digit[c]) {
-                        try buf.append(c);
+                        try buf.append(self.allocator, c);
                         c = self.advance() catch |err| switch (err) {
                             error.EndOfFile => break,
                             else => unreachable
@@ -281,14 +281,14 @@ pub const Lexer = struct {
     fn lexIdent(self: *Self) !token.Token {
 
         // Create buffer for storing operator characters
-        var buf: std.ArrayList(u8) = .init(self.allocator);
-        defer buf.deinit();
+        var buf: std.ArrayList(u8) = .empty;
+        defer buf.deinit(self.allocator);
 
         // Greedily collect identifier digits
         // NOTE: we expect first digit to be valid
         var c = self.topdigit() catch unreachable;
         while (is_ident_digit[c]) {
-            try buf.append(c);
+            try buf.append(self.allocator, c);
             c = self.advance() catch |err| switch (err) {
                 error.EndOfFile => break,
                 else => unreachable
@@ -319,8 +319,8 @@ pub const Lexer = struct {
     fn lexOperator(self: *Self) !token.Token {
 
         // Create buffer for storing operator characters
-        var buf: std.ArrayList(u8) = .init(self.allocator);
-        defer buf.deinit();
+        var buf: std.ArrayList(u8) = .empty;
+        defer buf.deinit(self.allocator);
 
         // Greedily read operator digits
         // NOTE: we expect first digit to be valid
@@ -334,7 +334,7 @@ pub const Lexer = struct {
             // NOTE: if we want to accept n-char operators, we need a valid
             // operators consisting of the first n-1, n-2, ... chars
             // OR the n-char operator should have no valid prefix
-            try buf.append(c);
+            try buf.append(self.allocator, c);
             if (!is_operator(buf.items) and current_is_legal) {
                 _ = buf.pop();
                 break;
@@ -421,7 +421,6 @@ pub const Lexer = struct {
 
     // TODO: Refactor this to not maybe not lie inside the Lexer
     fn pushLB(self: *Self, buf: *std.ArrayList(token.Token)) void {
-        _ = self;
         // Insert line break if last token is not a line break
         // and there are items before this
         if (buf.items.len == 0) return;
@@ -429,6 +428,7 @@ pub const Lexer = struct {
         switch (lastToken.tokenType) {
             .LB => return,
             else => buf.append(
+                self.allocator,
                 token.Token {
                     .tokenType = token.TokenType {.LB = {}},
                     .location = loc.LocationRange {
@@ -450,7 +450,7 @@ pub const Lexer = struct {
 
     pub fn lex(self: *Self) std.ArrayList(token.Token) {
 
-        var res: std.ArrayList(token.Token) = .init(self.allocator);
+        var res: std.ArrayList(token.Token) = .empty;
         var tok: token.Token = undefined;
 
         var isStatement: bool = false;
@@ -474,34 +474,34 @@ pub const Lexer = struct {
                 // NOTE: Including single-word statements here to get LB error on "break x"
                 .DECLARE, .PRINT, .IF, .ELSE, .WHILE, .BREAK, .CONTINUE, .RETURN, .FUN => {
                     self.pushLB(&res);
-                    res.append(tok) catch unreachable;
+                    res.append(self.allocator, tok) catch unreachable;
                     isStatement = true;
                 },
 
                 // Add a line break after block start
                 .LCURLY => {
                     self.pushLB(&res);
-                    res.append(tok) catch unreachable;
+                    res.append(self.allocator, tok) catch unreachable;
                     isStatement = false;
                 },
 
                 // Always insert line break before RCURLY
                 .RCURLY => {
                     self.pushLB(&res);
-                    res.append(tok) catch unreachable;
+                    res.append(self.allocator, tok) catch unreachable;
                     isStatement = false;
                 },
 
                 // EOF is the last token
                 .EOF => {
-                    res.append(tok) catch unreachable;
+                    res.append(self.allocator, tok) catch unreachable;
                     break;
                 },
 
                 // Otherwise, skip it
                 else => {
                     if (!isStatement) self.pushLB(&res);
-                    res.append(tok) catch unreachable;
+                    res.append(self.allocator, tok) catch unreachable;
                     isStatement = true;
                 }
             }
