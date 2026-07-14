@@ -99,15 +99,11 @@ pub const Lexer = struct {
     input: []const u8,
     allocator: std.mem.Allocator,
 
-    writer: *std.Io.Writer,
-
-
-    pub fn new(input: []const u8, allocator: std.mem.Allocator, writer: *std.Io.Writer) Self {
+    pub fn new(input: []const u8, allocator: std.mem.Allocator) Self {
         return .{
             .pos = 0,
             .input = input,
             .allocator = allocator,
-            .writer = writer
         };
     }
 

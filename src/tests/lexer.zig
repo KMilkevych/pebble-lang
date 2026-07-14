@@ -14,7 +14,7 @@ fn tokens_eql(tokens1: []const Token, tokens2: []const Token) bool {
 }
 
 fn printTokens(tokens: std.ArrayList(Token)) void {
-    for (tokens.items) |tok| std.debug.print("{}\n", .{tok});
+    for (tokens.items) |tok| std.debug.print("{f}\n", .{tok});
 }
 
 test "tokens_eql" {
@@ -71,8 +71,8 @@ test "intlits" {
     const input = "12+2+891 + 21823 + 2";
     var lx = lexer.Lexer.new(input, std.testing.allocator);
 
-    const tokens: std.ArrayList(Token) = lx.lex();
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit(std.testing.allocator);
 
     const expected: []const Token = &[_]Token{
         Token {.INTLIT = 12},
@@ -96,8 +96,8 @@ test "whitespace" {
     const input = "++ + \t+\t\t+ \t\r\t+ \r+\r\t+  \t \t \t +";
     var lx = lexer.Lexer.new(input, std.testing.allocator);
 
-    const tokens: std.ArrayList(Token) = lx.lex();
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit(std.testing.allocator);
 
     const expected: []const Token = &[_]Token{
         Token {.PLUS = {}},
@@ -121,8 +121,8 @@ test "operators" {
     const input = "(1+3)*\t( 8912 || 123 )&&  4/5==12";
     var lx = lexer.Lexer.new(input, std.testing.allocator);
 
-    const tokens: std.ArrayList(Token) = lx.lex();
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit(std.testing.allocator);
 
     const expected: []const Token = &[_]Token{
         Token {.LPAREN = {}},
@@ -153,8 +153,8 @@ test "booleans" {
     const input = "!(true&&false)||!true==false";
     var lx = lexer.Lexer.new(input, std.testing.allocator);
 
-    const tokens: std.ArrayList(Token) = lx.lex();
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit(std.testing.allocator);
 
     const expected: []const Token = &[_]Token{
         Token {.NOT = {}},
@@ -179,8 +179,8 @@ test "illegal" {
     const input = "12'32 ^23@3";
     var lx = lexer.Lexer.new(input, std.testing.allocator);
 
-    const tokens: std.ArrayList(Token) = lx.lex();
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit(std.testing.allocator);
 
     const expected: []const Token = &[_]Token{
         Token {.INTLIT = 12},
@@ -201,8 +201,8 @@ test "bool literals" {
     const input = "true && false||true*false";
     var lx = lexer.Lexer.new(input, std.testing.allocator);
 
-    const tokens: std.ArrayList(Token) = lx.lex();
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit(std.testing.allocator);
 
     const expected: []const Token = &[_]Token{
         Token {.BOOLLIT = true},
@@ -223,8 +223,8 @@ test "keyword" {
     const input = "declare && declare4declare";
     var lx = lexer.Lexer.new(input, std.testing.allocator);
 
-    const tokens: std.ArrayList(Token) = lx.lex();
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit(std.testing.allocator);
 
     const expected: []const Token = &[_]Token{
         Token {.DECLARE = {}},
@@ -241,8 +241,8 @@ test "keyword 2" {
     const input = "print x declare y = 3";
     var lx = lexer.Lexer.new(input, std.testing.allocator);
 
-    const tokens: std.ArrayList(Token) = lx.lex();
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit(std.testing.allocator);
 
     const expected: []const Token = &[_]Token{
         Token {.PRINT = {}},
@@ -263,8 +263,8 @@ test "identifiers" {
     const input = "declare (bob == alice)||eve*b0b";
     var lx = lexer.Lexer.new(input, std.testing.allocator);
 
-    const tokens: std.ArrayList(Token) = lx.lex();
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit(std.testing.allocator);
 
     const expected: []const Token = &[_]Token{
         Token {.DECLARE = {}},
@@ -289,8 +289,8 @@ test "assignment" {
     const input = "declare eeve=bob&&alice";
     var lx = lexer.Lexer.new(input, std.testing.allocator);
 
-    const tokens: std.ArrayList(Token) = lx.lex();
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit(std.testing.allocator);
 
     const expected: []const Token = &[_]Token{
         Token {.DECLARE = {}},
@@ -311,8 +311,8 @@ test "brackets" {
     const input = "()[(]{[}";
     var lx = lexer.Lexer.new(input, std.testing.allocator);
 
-    const tokens: std.ArrayList(Token) = lx.lex();
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit(std.testing.allocator);
 
     // NOTE: Expecting a LB to be inserted before RCURLY and LCURLY
     // This is because { and } are special statement-related tokens
@@ -338,8 +338,8 @@ test "smart line breaks" {
     const input = "declare x=x+1\n\n\ndeclare";
     var lx = lexer.Lexer.new(input, std.testing.allocator);
 
-    const tokens: std.ArrayList(Token) = lx.lex();
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit(std.testing.allocator);
 
     const expected: []const Token = &[_]Token{
         Token {.DECLARE = {}},
@@ -361,8 +361,8 @@ test "no line break before first statement" {
     const input = "\nprint x";
     var lx = lexer.Lexer.new(input, std.testing.allocator);
 
-    const tokens: std.ArrayList(Token) = lx.lex();
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit(std.testing.allocator);
 
     const expected: []const Token = &[_]Token{
         Token {.PRINT = {}},
@@ -378,8 +378,8 @@ test "no line break before first statement 2" {
     const input = "\n\n \n\n \nprint x";
     var lx = lexer.Lexer.new(input, std.testing.allocator);
 
-    const tokens: std.ArrayList(Token) = lx.lex();
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit(std.testing.allocator);
 
     const expected: []const Token = &[_]Token{
         Token {.PRINT = {}},
@@ -395,8 +395,8 @@ test "line break mixup" {
     const input = "\n\n \n\n \nprint x\n \n\n\r   \nprint x";
     var lx = lexer.Lexer.new(input, std.testing.allocator);
 
-    const tokens: std.ArrayList(Token) = lx.lex();
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit(std.testing.allocator);
 
     const expected: []const Token = &[_]Token{
         Token {.PRINT = {}},
@@ -414,8 +414,8 @@ test "single line statement" {
     const input = "print x";
     var lx = lexer.Lexer.new(input, std.testing.allocator);
 
-    const tokens: std.ArrayList(Token) = lx.lex();
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit(std.testing.allocator);
 
     const expected: []const Token = &[_]Token{
         Token {.PRINT = {}},
@@ -431,8 +431,8 @@ test "single line statement 2" {
     const input = "\nprint x\n";
     var lx = lexer.Lexer.new(input, std.testing.allocator);
 
-    const tokens: std.ArrayList(Token) = lx.lex();
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit(std.testing.allocator);
 
     const expected: []const Token = &[_]Token{
         Token {.PRINT = {}},
@@ -448,8 +448,8 @@ test "single line statement 3" {
     const input = "\n\n \nprint x\n \n";
     var lx = lexer.Lexer.new(input, std.testing.allocator);
 
-    const tokens: std.ArrayList(Token) = lx.lex();
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit(std.testing.allocator);
 
     const expected: []const Token = &[_]Token{
         Token {.PRINT = {}},
@@ -466,8 +466,8 @@ test "single line two statements" {
     const input = "print x print y";
     var lx = lexer.Lexer.new(input, std.testing.allocator);
 
-    const tokens: std.ArrayList(Token) = lx.lex();
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit(std.testing.allocator);
 
     const expected: []const Token = &[_]Token{
         Token {.PRINT = {}},
@@ -485,8 +485,8 @@ test "single line two statements 2" {
     const input = "print x \n \n print y";
     var lx = lexer.Lexer.new(input, std.testing.allocator);
 
-    const tokens: std.ArrayList(Token) = lx.lex();
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit(std.testing.allocator);
 
     const expected: []const Token = &[_]Token{
         Token {.PRINT = {}},
@@ -504,8 +504,8 @@ test "single line two statements 3" {
     const input = "\n print x \n \n print y";
     var lx = lexer.Lexer.new(input, std.testing.allocator);
 
-    const tokens: std.ArrayList(Token) = lx.lex();
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit(std.testing.allocator);
 
     const expected: []const Token = &[_]Token{
         Token {.PRINT = {}},
@@ -523,8 +523,8 @@ test "single line with block statement" {
     const input = "\n print x \n \n {print y}";
     var lx = lexer.Lexer.new(input, std.testing.allocator);
 
-    const tokens: std.ArrayList(Token) = lx.lex();
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit(std.testing.allocator);
 
     const expected: []const Token = &[_]Token{
         Token {.PRINT = {}},
@@ -550,8 +550,8 @@ test "multiline input" {
 
     var lx = lexer.Lexer.new(input, std.testing.allocator);
 
-    const tokens: std.ArrayList(Token) = lx.lex();
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit(std.testing.allocator);
 
     const expected: []const Token = &[_]Token{
         Token {.PRINT = {}},
@@ -574,8 +574,8 @@ test "multiline input 2" {
 
     var lx = lexer.Lexer.new(input, std.testing.allocator);
 
-    const tokens: std.ArrayList(Token) = lx.lex();
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit(std.testing.allocator);
 
     const expected: []const Token = &[_]Token{
         Token {.PRINT = {}},
@@ -602,8 +602,8 @@ test "multiline input with blocks" {
 
     var lx = lexer.Lexer.new(input, std.testing.allocator);
 
-    const tokens: std.ArrayList(Token) = lx.lex();
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit(std.testing.allocator);
 
     const expected: []const Token = &[_]Token{
         Token {.PRINT = {}},
@@ -633,8 +633,8 @@ test "multiline input with inline block" {
 
     var lx = lexer.Lexer.new(input, std.testing.allocator);
 
-    const tokens: std.ArrayList(Token) = lx.lex();
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit(std.testing.allocator);
 
     const expected: []const Token = &[_]Token{
         Token {.PRINT = {}},
@@ -665,8 +665,8 @@ test "multiline input with inline block two statements" {
 
     var lx = lexer.Lexer.new(input, std.testing.allocator);
 
-    const tokens: std.ArrayList(Token) = lx.lex();
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit(std.testing.allocator);
 
     const expected: []const Token = &[_]Token{
         Token {.PRINT = {}},
@@ -701,8 +701,8 @@ test "multiline input with inline block two statements 2" {
 
     var lx = lexer.Lexer.new(input, std.testing.allocator);
 
-    const tokens: std.ArrayList(Token) = lx.lex();
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit(std.testing.allocator);
 
     const expected: []const Token = &[_]Token{
         Token {.PRINT = {}},
@@ -739,8 +739,8 @@ test "multiline input with block two statements" {
 
     var lx = lexer.Lexer.new(input, std.testing.allocator);
 
-    const tokens: std.ArrayList(Token) = lx.lex();
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit(std.testing.allocator);
 
     const expected: []const Token = &[_]Token{
         Token {.PRINT = {}},
@@ -775,8 +775,8 @@ test "multiline input with empty block" {
 
     var lx = lexer.Lexer.new(input, std.testing.allocator);
 
-    const tokens: std.ArrayList(Token) = lx.lex();
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit(std.testing.allocator);
 
     const expected: []const Token = &[_]Token{
         Token {.PRINT = {}},
@@ -803,8 +803,8 @@ test "empty block" {
 
     var lx = lexer.Lexer.new(input, std.testing.allocator);
 
-    const tokens: std.ArrayList(Token) = lx.lex();
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit(std.testing.allocator);
 
     const expected: []const Token = &[_]Token{
         Token {.LCURLY = {}},
@@ -824,8 +824,8 @@ test "empty block inline" {
 
     var lx = lexer.Lexer.new(input, std.testing.allocator);
 
-    const tokens: std.ArrayList(Token) = lx.lex();
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit(std.testing.allocator);
 
     const expected: []const Token = &[_]Token{
         Token {.LCURLY = {}},
@@ -848,8 +848,8 @@ test "nested blocks" {
 
     var lx = lexer.Lexer.new(input, std.testing.allocator);
 
-    const tokens: std.ArrayList(Token) = lx.lex();
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit(std.testing.allocator);
 
     const expected: []const Token = &[_]Token{
         Token {.LCURLY = {}},
@@ -872,8 +872,8 @@ test "nested blocks inline" {
 
     var lx = lexer.Lexer.new(input, std.testing.allocator);
 
-    const tokens: std.ArrayList(Token) = lx.lex();
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit(std.testing.allocator);
 
     const expected: []const Token = &[_]Token{
         Token {.LCURLY = {}},
@@ -897,8 +897,8 @@ test "nested blocks semi-inline" {
 
     var lx = lexer.Lexer.new(input, std.testing.allocator);
 
-    const tokens: std.ArrayList(Token) = lx.lex();
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit(std.testing.allocator);
 
     const expected: []const Token = &[_]Token{
         Token {.LCURLY = {}},
@@ -922,8 +922,8 @@ test "nested blocks semi-inline 2" {
 
     var lx = lexer.Lexer.new(input, std.testing.allocator);
 
-    const tokens: std.ArrayList(Token) = lx.lex();
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit(std.testing.allocator);
 
     const expected: []const Token = &[_]Token{
         Token {.LCURLY = {}},
@@ -947,8 +947,8 @@ test "nested blocks semi-inline 3" {
 
     var lx = lexer.Lexer.new(input, std.testing.allocator);
 
-    const tokens: std.ArrayList(Token) = lx.lex();
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit(std.testing.allocator);
 
     const expected: []const Token = &[_]Token{
         Token {.LCURLY = {}},
@@ -976,8 +976,8 @@ test "advanced sequence with nested blocks" {
 
     var lx = lexer.Lexer.new(input, std.testing.allocator);
 
-    const tokens: std.ArrayList(Token) = lx.lex();
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit(std.testing.allocator);
 
     const expected: []const Token = &[_]Token{
         Token {.LCURLY = {}},
@@ -1026,8 +1026,8 @@ test "multiline if else" {
 
     var lx = lexer.Lexer.new(input, std.testing.allocator);
 
-    const tokens: std.ArrayList(Token) = lx.lex();
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit(std.testing.allocator);
 
     const expected: []const Token = &[_]Token{
         Token {.IF = {}},
@@ -1055,8 +1055,8 @@ test "inline if else" {
 
     var lx = lexer.Lexer.new(input, std.testing.allocator);
 
-    const tokens: std.ArrayList(Token) = lx.lex();
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit(std.testing.allocator);
 
     const expected: []const Token = &[_]Token{
         Token {.IF = {}},
@@ -1084,8 +1084,8 @@ test "if else without curly braces" {
 
     var lx = lexer.Lexer.new(input, std.testing.allocator);
 
-    const tokens: std.ArrayList(Token) = lx.lex();
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit(std.testing.allocator);
 
     const expected: []const Token = &[_]Token{
         Token {.IF = {}},
@@ -1111,8 +1111,8 @@ test "if else with mixed curly braces" {
 
     var lx = lexer.Lexer.new(input, std.testing.allocator);
 
-    const tokens: std.ArrayList(Token) = lx.lex();
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit(std.testing.allocator);
 
     const expected: []const Token = &[_]Token{
         Token {.IF = {}},
@@ -1145,8 +1145,8 @@ test "multiline if else with mixed curly braces" {
 
     var lx = lexer.Lexer.new(input, std.testing.allocator);
 
-    const tokens: std.ArrayList(Token) = lx.lex();
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit(std.testing.allocator);
 
     const expected: []const Token = &[_]Token{
         Token {.IF = {}},
@@ -1179,8 +1179,8 @@ test "multiline while" {
 
     var lx = lexer.Lexer.new(input, std.testing.allocator);
 
-    const tokens: std.ArrayList(Token) = lx.lex();
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit(std.testing.allocator);
 
     const expected: []const Token = &[_]Token{
         Token {.WHILE = {}},
@@ -1204,8 +1204,8 @@ test "inline while" {
 
     var lx = lexer.Lexer.new(input, std.testing.allocator);
 
-    const tokens: std.ArrayList(Token) = lx.lex();
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit(std.testing.allocator);
 
     const expected: []const Token = &[_]Token{
         Token {.WHILE = {}},
@@ -1224,8 +1224,8 @@ test "less than" {
 
     var lx = lexer.Lexer.new(input, std.testing.allocator);
 
-    const tokens: std.ArrayList(Token) = lx.lex();
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit(std.testing.allocator);
 
     const expected: []const Token = &[_]Token{
         Token {.IDENT = "x"},
@@ -1243,8 +1243,8 @@ test "greater than" {
 
     var lx = lexer.Lexer.new(input, std.testing.allocator);
 
-    const tokens: std.ArrayList(Token) = lx.lex();
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit(std.testing.allocator);
 
     const expected: []const Token = &[_]Token{
         Token {.IDENT = "x"},
@@ -1261,8 +1261,8 @@ test "less than equal" {
 
     var lx = lexer.Lexer.new(input, std.testing.allocator);
 
-    const tokens: std.ArrayList(Token) = lx.lex();
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit(std.testing.allocator);
 
     const expected: []const Token = &[_]Token{
         Token {.IDENT = "x"},
@@ -1280,8 +1280,8 @@ test "greater than equal" {
 
     var lx = lexer.Lexer.new(input, std.testing.allocator);
 
-    const tokens: std.ArrayList(Token) = lx.lex();
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit(std.testing.allocator);
 
     const expected: []const Token = &[_]Token{
         Token {.IDENT = "x"},
@@ -1301,8 +1301,8 @@ test "expression statement after other statements" {
 
     var lx = lexer.Lexer.new(input, std.testing.allocator);
 
-    const tokens: std.ArrayList(Token) = lx.lex();
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit(std.testing.allocator);
 
     const expected: []const Token = &[_]Token{
         Token {.PRINT = {}},
@@ -1322,8 +1322,8 @@ test "break" {
 
     var lx = lexer.Lexer.new(input, std.testing.allocator);
 
-    const tokens: std.ArrayList(Token) = lx.lex();
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit(std.testing.allocator);
 
     const expected: []const Token = &[_]Token{
         Token {.BREAK = {}},
@@ -1338,8 +1338,8 @@ test "continue" {
 
     var lx = lexer.Lexer.new(input, std.testing.allocator);
 
-    const tokens: std.ArrayList(Token) = lx.lex();
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit(std.testing.allocator);
 
     const expected: []const Token = &[_]Token{
         Token {.CONTINUE = {}},
@@ -1358,8 +1358,8 @@ test "block break" {
 
     var lx = lexer.Lexer.new(input, std.testing.allocator);
 
-    const tokens: std.ArrayList(Token) = lx.lex();
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit(std.testing.allocator);
 
     const expected: []const Token = &[_]Token{
         Token {.WHILE = {}},
@@ -1386,8 +1386,8 @@ test "block continue" {
 
     var lx = lexer.Lexer.new(input, std.testing.allocator);
 
-    const tokens: std.ArrayList(Token) = lx.lex();
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit(std.testing.allocator);
 
     const expected: []const Token = &[_]Token{
         Token {.WHILE = {}},
@@ -1411,8 +1411,8 @@ test "inline block break" {
 
     var lx = lexer.Lexer.new(input, std.testing.allocator);
 
-    const tokens: std.ArrayList(Token) = lx.lex();
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit(std.testing.allocator);
 
     const expected: []const Token = &[_]Token{
         Token {.WHILE = {}},
@@ -1433,8 +1433,8 @@ test "newline block break" {
 
     var lx = lexer.Lexer.new(input, std.testing.allocator);
 
-    const tokens: std.ArrayList(Token) = lx.lex();
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit(std.testing.allocator);
 
     const expected: []const Token = &[_]Token{
         Token {.WHILE = {}},
@@ -1455,8 +1455,8 @@ test "comma declaration" {
 
     var lx = lexer.Lexer.new(input, std.testing.allocator);
 
-    const tokens: std.ArrayList(Token) = lx.lex();
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit(std.testing.allocator);
 
     const expected: []const Token = &[_]Token{
         Token {.DECLARE = {}},
@@ -1487,8 +1487,8 @@ test "inline simple function definition with return" {
 
     var lx = lexer.Lexer.new(input, std.testing.allocator);
 
-    const tokens: std.ArrayList(Token) = lx.lex();
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit(std.testing.allocator);
 
     const expected: []const Token = &[_]Token{
         Token {.DECLARE = {}},
@@ -1521,8 +1521,8 @@ test "single make" {
 
     var lx = lexer.Lexer.new(input, std.testing.allocator);
 
-    const tokens: std.ArrayList(Token) = lx.lex();
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit(std.testing.allocator);
 
     const expected: []const Token = &[_]Token{
         Token {.DECLARE = {}},
@@ -1544,8 +1544,8 @@ test "multiline multi make" {
 
     var lx = lexer.Lexer.new(input, std.testing.allocator);
 
-    const tokens: std.ArrayList(Token) = lx.lex();
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit(std.testing.allocator);
 
     const expected: []const Token = &[_]Token{
         Token {.DECLARE = {}},
@@ -1574,8 +1574,8 @@ test "property access" {
 
     var lx = lexer.Lexer.new(input, std.testing.allocator);
 
-    const tokens: std.ArrayList(Token) = lx.lex();
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit(std.testing.allocator);
 
     const expected: []const Token = &[_]Token{
         Token {.IDENT = "mylist"},
@@ -1594,8 +1594,8 @@ test "multi property access" {
 
     var lx = lexer.Lexer.new(input, std.testing.allocator);
 
-    const tokens: std.ArrayList(Token) = lx.lex();
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit(std.testing.allocator);
 
     const expected: []const Token = &[_]Token{
         Token {.IDENT = "obj"},
@@ -1618,8 +1618,8 @@ test "multiline property access not allowed" {
 
     var lx = lexer.Lexer.new(input, std.testing.allocator);
 
-    const tokens: std.ArrayList(Token) = lx.lex();
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit(std.testing.allocator);
 
     const expected: []const Token = &[_]Token{
         Token {.IDENT = "obj"},
@@ -1644,8 +1644,8 @@ test "line comment" {
 
     var lx = lexer.Lexer.new(input, std.testing.allocator);
 
-    const tokens: std.ArrayList(Token) = lx.lex();
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit(std.testing.allocator);
 
     const expected: []const Token = &[_]Token{
         Token {.DECLARE = {}},
@@ -1666,8 +1666,8 @@ test "after line comment" {
 
     var lx = lexer.Lexer.new(input, std.testing.allocator);
 
-    const tokens: std.ArrayList(Token) = lx.lex();
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit(std.testing.allocator);
 
     const expected: []const Token = &[_]Token{
         Token {.DECLARE = {}},
@@ -1691,8 +1691,8 @@ test "inline comment" {
 
     var lx = lexer.Lexer.new(input, std.testing.allocator);
 
-    const tokens: std.ArrayList(Token) = lx.lex();
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit(std.testing.allocator);
 
     const expected: []const Token = &[_]Token{
         Token {.DECLARE = {}},
@@ -1711,8 +1711,8 @@ test "float literal" {
 
     var lx = lexer.Lexer.new(input, std.testing.allocator);
 
-    const tokens: std.ArrayList(Token) = lx.lex();
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit(std.testing.allocator);
 
     const expected: []const Token = &[_]Token{
         Token {.FLOATLIT = 13.4},
@@ -1727,8 +1727,8 @@ test "short form float literal" {
 
     var lx = lexer.Lexer.new(input, std.testing.allocator);
 
-    const tokens: std.ArrayList(Token) = lx.lex();
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit(std.testing.allocator);
 
     const expected: []const Token = &[_]Token{
         Token {.FLOATLIT = 13.0},
@@ -1743,8 +1743,8 @@ test "float expression" {
 
     var lx = lexer.Lexer.new(input, std.testing.allocator);
 
-    const tokens: std.ArrayList(Token) = lx.lex();
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit(std.testing.allocator);
 
     const expected: []const Token = &[_]Token{
         Token {.FLOATLIT = 13.4},
@@ -1763,8 +1763,8 @@ test "mixed float" {
 
     var lx = lexer.Lexer.new(input, std.testing.allocator);
 
-    const tokens: std.ArrayList(Token) = lx.lex();
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit(std.testing.allocator);
 
     const expected: []const Token = &[_]Token{
         Token {.FLOATLIT = 13.0},
@@ -1781,8 +1781,8 @@ test "booleans alternative" {
     const input = "!(true and false)or true==false";
     var lx = lexer.Lexer.new(input, std.testing.allocator);
 
-    const tokens: std.ArrayList(Token) = lx.lex();
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit(std.testing.allocator);
 
     const expected: []const Token = &[_]Token{
         Token {.NOT = {}},
@@ -1806,8 +1806,8 @@ test "as and type keywords" {
     const input = "true as Int as Float as Bool";
     var lx = lexer.Lexer.new(input, std.testing.allocator);
 
-    const tokens: std.ArrayList(Token) = lx.lex();
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit(std.testing.allocator);
 
     const expected: []const Token = &[_]Token{
         Token {.BOOLLIT = true},

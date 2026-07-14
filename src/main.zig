@@ -63,7 +63,7 @@ fn run(io: std.Io, allocator: std.mem.Allocator, stdout: *std.Io.Writer, loc: [:
     defer allocator.free(input);
 
     // Perform lexing parsing and interpreting...
-    var lxr: lexer.Lexer = lexer.Lexer.new(input, allocator, stdout);
+    var lxr: lexer.Lexer = lexer.Lexer.new(input, allocator);
     var tokens: std.ArrayList(token.Token) = lxr.lex();
     defer tokens.deinit(allocator);
 
@@ -107,7 +107,7 @@ fn interactive(io: std.Io, gpa: std.mem.Allocator, out: *std.Io.Writer) !void {
         const line = std.mem.trimEnd(u8, raw_line, "\r");
         const input = try alloc.dupe(u8, line);
 
-        var lxr = lexer.Lexer.new(input, alloc, out);
+        var lxr = lexer.Lexer.new(input, alloc);
         var tokens = lxr.lex();
         defer tokens.deinit(alloc);
 
