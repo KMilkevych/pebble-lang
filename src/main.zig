@@ -118,6 +118,7 @@ fn interactive(io: std.Io, gpa: std.mem.Allocator, out: *std.Io.Writer) !void {
             continue;
         };
 
+        interpreter.setWriter(out);
         const res: ?ast.Lit = blk: switch (tree) {
             .ExprStmt => |exp| interpreter.evalExpr(exp, &env) catch |err| {
                 try out.print("{}\n", .{err});
