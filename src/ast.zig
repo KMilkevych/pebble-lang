@@ -23,15 +23,11 @@ pub const Callable = struct {
 
     pub fn format(
         self: Callable,
-        comptime fmt: []const u8,
-        options: std.fmt.FormatOptions,
-        writer: anytype
+        writer: *std.Io.Writer
     ) !void {
-        _ = fmt;
-        _ = options;
         try writer.print("(", .{});
         for (self.params) |param| try writer.print("{s},", .{param});
-        try writer.print(") => {}", .{self.body});
+        try writer.print(") => {f}", .{self.body});
     }
 
 };
@@ -62,16 +58,12 @@ pub const List = struct {
 
     pub fn format(
         self: List,
-        comptime fmt: []const u8,
-        options: std.fmt.FormatOptions,
-        writer: anytype
+        writer: *std.Io.Writer
     ) !void {
-        _ = fmt;
-        _ = options;
         try writer.print("<", .{});
         if (self.items.len > 0) {
-            for (0..self.items.len-1) |i| try writer.print("{}, ", .{self.items[i]});
-            try writer.print("{}", .{self.items[self.items.len - 1]});
+            for (0..self.items.len-1) |i| try writer.print("{f}, ", .{self.items[i]});
+            try writer.print("{f}", .{self.items[self.items.len - 1]});
         }
         try writer.print(">", .{});
     }
@@ -85,12 +77,8 @@ pub const Type = enum {
 
     pub fn format(
         self: Type,
-        comptime fmt: []const u8,
-        options: std.fmt.FormatOptions,
-        writer: anytype
+        writer: *std.Io.Writer
     ) !void {
-        _ = fmt;
-        _ = options;
         switch(self) {
             .Int => try writer.print("Int", .{}),
             .Float => try writer.print("Float", .{}),
@@ -118,20 +106,16 @@ pub const Lit = union(enum) {
 
     pub fn format(
         self: Lit,
-        comptime fmt: []const u8,
-        options: std.fmt.FormatOptions,
-        writer: anytype
+        writer: *std.Io.Writer
     ) !void {
-        _ = fmt;
-        _ = options;
         switch(self) {
-            .Int => |v| try writer.print("{}", .{v}),
-            .Float => |v| try writer.print("{}", .{v}),
+            .Int => |v| try writer.print("{d}", .{v}),
+            .Float => |v| try writer.print("{d}", .{v}),
             .Bool => |v| try writer.print("{}", .{v}),
             .Void => try writer.print("{{}}", .{}),
-            .Callable => |f| try writer.print("{}", .{f}),
-            .List => |l| try writer.print("{}", .{l}),
-            .Type => |t| try writer.print("{}", .{t}),
+            .Callable => |f| try writer.print("{f}", .{f}),
+            .List => |l| try writer.print("{f}", .{l}),
+            .Type => |t| try writer.print("{f}", .{t}),
         }
     }
 };
@@ -149,13 +133,9 @@ pub const ListIndex: type = struct {
 
     pub fn format(
         self: ListIndex,
-        comptime fmt: []const u8,
-        options: std.fmt.FormatOptions,
-        writer: anytype
+        writer: *std.Io.Writer
     ) !void {
-        _ = fmt;
-        _ = options;
-        try writer.print("{}[{}]", .{self.id, self.idx});
+        try writer.print("{f}[{f}]", .{self.id, self.idx});
     }
 };
 
@@ -170,13 +150,9 @@ pub const PropertyAccess: type = struct {
 
     pub fn format(
         self: PropertyAccess,
-        comptime fmt: []const u8,
-        options: std.fmt.FormatOptions,
-        writer: anytype
+        writer: *std.Io.Writer
     ) !void {
-        _ = fmt;
-        _ = options;
-        try writer.print("{}.{}", .{self.lhs, self.prop});
+        try writer.print("{f}.{f}", .{self.lhs, self.prop});
     }
 };
 
@@ -195,16 +171,12 @@ pub const Lval = union(enum) {
 
     pub fn format(
         self: Lval,
-        comptime fmt: []const u8,
-        options: std.fmt.FormatOptions,
-        writer: anytype
+        writer: *std.Io.Writer
     ) !void {
-        _ = fmt;
-        _ = options;
         switch(self) {
             .Var => |v| try writer.print("{s}", .{v}),
-            .ListIndex => |l| try writer.print("{}", .{l}),
-            .PropertyAccess => |p| try writer.print("{}", .{p})
+            .ListIndex => |l| try writer.print("{f}", .{l}),
+            .PropertyAccess => |p| try writer.print("{f}", .{p})
         }
     }
 };
@@ -224,12 +196,8 @@ pub const BinOp = enum {
 
     pub fn format(
         self: BinOp,
-        comptime fmt: []const u8,
-        options: std.fmt.FormatOptions,
-        writer: anytype
+        writer: *std.Io.Writer
     ) !void {
-        _ = fmt;
-        _ = options;
         switch(self) {
             .Add => try writer.print("+", .{}),
             .Sub => try writer.print("-", .{}),
@@ -269,12 +237,8 @@ pub const UnOp = enum {
 
     pub fn format(
         self: UnOp,
-        comptime fmt: []const u8,
-        options: std.fmt.FormatOptions,
-        writer: anytype
+        writer: *std.Io.Writer
     ) !void {
-        _ = fmt;
-        _ = options;
         switch(self) {
             .Neg => try writer.print("-", .{}),
             .Not => try writer.print("!", .{}),
@@ -302,15 +266,11 @@ pub const BinOpExpr = struct {
 
     pub fn format(
         self: BinOpExpr,
-        comptime fmt: []const u8,
-        options: std.fmt.FormatOptions,
-        writer: anytype
+        writer: *std.Io.Writer
     ) !void {
-        _ = fmt;
-        _ = options;
 
         try writer.print(
-            "({} {} {})",
+            "({f} {f} {f})",
             .{self.op, self.lhs.*, self.rhs.*}
         );
     }
@@ -326,14 +286,10 @@ pub const UnOpExpr = struct {
 
     pub fn format(
         self: UnOpExpr,
-        comptime fmt: []const u8,
-        options: std.fmt.FormatOptions,
-        writer: anytype
+        writer: *std.Io.Writer
     ) !void {
-        _ = fmt;
-        _ = options;
         try writer.print(
-            "{}{}",
+            "{f}{f}",
             .{self.op, self.rhs.*}
         );
     }
@@ -350,14 +306,10 @@ pub const AssignExpr = struct {
 
     pub fn format(
         self: AssignExpr,
-        comptime fmt: []const u8,
-        options: std.fmt.FormatOptions,
-        writer: anytype
+        writer: *std.Io.Writer
     ) !void {
-        _ = fmt;
-        _ = options;
         try writer.print(
-            "({} = {})",
+            "({f} = {f})",
             .{self.lhs.*, self.rhs.*}
         );
     }
@@ -376,14 +328,10 @@ pub const CallExpr = struct {
 
     pub fn format(
         self: CallExpr,
-        comptime fmt: []const u8,
-        options: std.fmt.FormatOptions,
-        writer: anytype
+        writer: *std.Io.Writer
     ) !void {
-        _ = fmt;
-        _ = options;
-        try writer.print("{}(", .{self.id});
-        for (self.args) |arg| try writer.print("{},", .{arg});
+        try writer.print("{f}(", .{self.id});
+        for (self.args) |arg| try writer.print("{f},", .{arg});
         try writer.print(")", .{});
     }
 };
@@ -399,13 +347,9 @@ pub const AsExpr = struct {
 
     pub fn format(
         self: AsExpr,
-        comptime fmt: []const u8,
-        options: std.fmt.FormatOptions,
-        writer: anytype
+        writer: *std.Io.Writer
     ) !void {
-        _ = fmt;
-        _ = options;
-        try writer.print("{} as {}", .{self.lhs, self.as});
+        try writer.print("{f} as {f}", .{self.lhs, self.as});
     }
 };
 
@@ -438,23 +382,21 @@ pub const Expr = union(enum) {
 
     pub fn format(
         self: Expr,
-        comptime fmt: []const u8,
-        options: std.fmt.FormatOptions,
-        writer: anytype
+        writer: *std.Io.Writer
     ) !void {
         return switch (self) {
-            .BinOpExpr => |expr| expr.format(fmt, options, writer),
-            .UnOpExpr => |expr| expr.format(fmt, options, writer),
-            .Lit => |lit| lit.format(fmt, options, writer),
-            .Lval => |lval| lval.format(fmt, options, writer),
-            .AssignExpr => |expr| expr.format(fmt, options, writer),
-            .CallExpr => |expr| expr.format(fmt, options, writer),
+            .BinOpExpr => |expr| expr.format(writer),
+            .UnOpExpr => |expr| expr.format(writer),
+            .Lit => |lit| lit.format( writer),
+            .Lval => |lval| lval.format(writer),
+            .AssignExpr => |expr| expr.format(writer),
+            .CallExpr => |expr| expr.format(writer),
             .ListExpr => |exprs| {
                 try writer.print("<", .{});
-                for (exprs) |expr| try writer.print("{},", .{expr});
+                for (exprs) |expr| try writer.print("{f},", .{expr});
                 try writer.print(">", .{});
             },
-            .AsExpr => |expr| expr.format(fmt, options, writer),
+            .AsExpr => |expr| expr.format(writer),
         };
     }
 };
@@ -473,14 +415,10 @@ pub const IfElseStmt = struct {
 
     pub fn format(
         self: IfElseStmt,
-        comptime fmt: []const u8,
-        options: std.fmt.FormatOptions,
-        writer: anytype
+        writer: *std.Io.Writer
     ) !void {
-        _ = options;
-        _ = fmt;
-        try writer.print("IF {}\n{}", .{self.cond.*, self.ifStmt});
-        if (self.elseStmt) |stmt| try writer.print("ELSE\n{}", .{stmt});
+        try writer.print("IF {f}\n{f}", .{self.cond.*, self.ifStmt});
+        if (self.elseStmt) |stmt| try writer.print("ELSE\n{f}", .{stmt});
     }
 
 };
@@ -497,13 +435,9 @@ pub const WhileStmt = struct {
 
     pub fn format(
         self: WhileStmt,
-        comptime fmt: []const u8,
-        options: std.fmt.FormatOptions,
-        writer: anytype
+        writer: *std.Io.Writer
     ) !void {
-        _ = options;
-        _ = fmt;
-        try writer.print("WHILE {}\n{}", .{self.cond.*, self.body});
+        try writer.print("WHILE {f}\n{f}", .{self.cond.*, self.body});
     }
 
 };
@@ -521,15 +455,11 @@ pub const FunDefStmt = struct {
 
     pub fn format(
         self: FunDefStmt,
-        comptime fmt: []const u8,
-        options: std.fmt.FormatOptions,
-        writer: anytype
+        writer: *std.Io.Writer
     ) !void {
-        _ = options;
-        _ = fmt;
         try writer.print("FUNCTION {s}(", .{self.id});
         for (self.params) |param| try writer.print("{s},", .{param});
-        try writer.print(") {}", .{self.body});
+        try writer.print(") {f}", .{self.body});
     }
 
 };
@@ -573,35 +503,31 @@ pub const Stmt = union(enum) {
 
     pub fn format(
         self: Stmt,
-        comptime fmt: []const u8,
-        options: std.fmt.FormatOptions,
-        writer: anytype
+        writer: *std.Io.Writer
     ) !void {
-        _ = options;
-        _ = fmt;
         return switch (self) {
             .DeclareStmt => |exprs| {
                 try writer.print("DECLARE ", .{});
-                for (exprs) |expr| try writer.print("{}, ", .{expr});
+                for (exprs) |expr| try writer.print("{f}, ", .{expr});
                 try writer.print("\n", .{});
             },
-            .ExprStmt => |expr| try writer.print("{}\n", .{expr}),
+            .ExprStmt => |expr| try writer.print("{f}\n", .{expr}),
             .PrintStmt => |exprs| {
                 try writer.print("PRINT ", .{});
-                for (exprs) |expr| try writer.print("{}, ", .{expr});
+                for (exprs) |expr| try writer.print("{f}, ", .{expr});
                 try writer.print("\n", .{});
             },
             .BlockStmt => |stmts| {
                 try writer.print("BEGIN BLOCK\n", .{});
-                for (stmts) |stmt| try writer.print("{}\n", .{stmt});
+                for (stmts) |stmt| try writer.print("{f}\n", .{stmt});
                 try writer.print("END BLOCK\n", .{});
             },
-            .IfElseStmt => |stmt| try writer.print("{}\n", .{stmt}),
-            .WhileStmt => |stmt| try writer.print("{}\n", .{stmt}),
+            .IfElseStmt => |stmt| try writer.print("{f}\n", .{stmt}),
+            .WhileStmt => |stmt| try writer.print("{f}\n", .{stmt}),
             .BreakStmt => try writer.print("BREAK\n", .{}),
             .ContinueStmt => try writer.print("CONTINUE\n", .{}),
-            .ReturnStmt => |expr| try writer.print("RETURN {}\n", .{expr}),
-            .FunDefStmt => |stmt| try writer.print("{}", .{stmt}),
+            .ReturnStmt => |expr| try writer.print("RETURN {f}\n", .{expr}),
+            .FunDefStmt => |stmt| try writer.print("{f}", .{stmt}),
         };
     }
 };
@@ -617,12 +543,8 @@ pub const Proc = struct {
 
     pub fn format(
         self: Proc,
-        comptime fmt: []const u8,
-        options: std.fmt.FormatOptions,
-        writer: anytype
+        writer: *std.Io.Writer
     ) !void {
-        _ = options;
-        _ = fmt;
-        for (self.stmts) |stmt| try writer.print("{}", .{stmt});
+        for (self.stmts) |stmt| try writer.print("{f}", .{stmt});
     }
 };
