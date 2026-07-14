@@ -5,6 +5,8 @@ const token = @import("token.zig");
 const parser = @import("parser.zig");
 const venv = @import("env.zig");
 
+const Log = @import("logger.zig");
+
 // const Io = std.Io;
 
 const std = @import("std");
@@ -68,7 +70,7 @@ fn run(io: std.Io, allocator: std.mem.Allocator, stdout: *std.Io.Writer, loc: [:
     defer tokens.deinit(allocator);
 
     // Create parser
-    var prsr: parser.Parser = parser.Parser.new(tokens, allocator);
+    var prsr: parser.Parser = parser.Parser.new(tokens, allocator, Log.Logger.new(allocator));
 
     // Parse all statements into a procedure
     const proc: ast.Proc = try prsr.parseProcedure();
@@ -111,7 +113,7 @@ fn interactive(io: std.Io, gpa: std.mem.Allocator, out: *std.Io.Writer) !void {
         var tokens = lxr.lex();
         defer tokens.deinit(alloc);
 
-        var prsr = parser.Parser.new(tokens, alloc);
+        var prsr = parser.Parser.new(tokens, alloc, Log.Logger.new(alloc));
         const tree: ast.Stmt = prsr.parseStmt() catch |err| {
             try out.print("{}\n", .{err});
             try out.flush();

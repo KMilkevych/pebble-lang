@@ -365,13 +365,9 @@ pub const Expr: type = struct {
 
     pub fn format(
         self: Expr,
-        comptime fmt: []const u8,
-        options: std.fmt.FormatOptions,
-        writer: anytype
+        writer: *std.Io.Writer
     ) !void {
-        _ = fmt;
-        _ = options;
-        try writer.print("{}", .{self.expr});
+        try writer.print("{f}", .{self.expr});
     }
 };
 
@@ -495,13 +491,9 @@ pub const Stmt = struct {
 
     pub fn format(
         self: Stmt,
-        comptime fmt: []const u8,
-        options: std.fmt.FormatOptions,
-        writer: anytype
+        writer: *std.Io.Writer
     ) !void {
-        _ = options;
-        _ = fmt;
-        try writer.print("{}", .{self.stmt});
+        try writer.print("{f}", .{self.stmt});
     }
 };
 

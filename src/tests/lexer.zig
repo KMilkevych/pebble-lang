@@ -1905,8 +1905,8 @@ test "location one line" {
     const input = "myvar + 3";
     var lx = lexer.Lexer.new(input, "test.peb", std.testing.allocator);
 
-    const tokens: std.ArrayList(Token) = lx.lex();
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit(std.testing.allocator);
 
     const expected: []const Token = &[_]Token{
         Token {
@@ -1951,8 +1951,8 @@ test "location two lines auto line break" {
 
     var lx = lexer.Lexer.new(input, "tf", std.testing.allocator);
 
-    const tokens: std.ArrayList(Token) = lx.lex();
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit(std.testing.allocator);
 
     const expected: []const Token = &[_]Token{
         Token {
@@ -2026,8 +2026,8 @@ test "location extra line break" {
 
     var lx = lexer.Lexer.new(input, "tf", std.testing.allocator);
 
-    const tokens: std.ArrayList(Token) = lx.lex();
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit(std.testing.allocator);
 
     const expected: []const Token = &[_]Token{
         Token {
@@ -2100,8 +2100,8 @@ test "location if statement" {
 
     var lx = lexer.Lexer.new(input, "tf", std.testing.allocator);
 
-    const tokens: std.ArrayList(Token) = lx.lex();
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit(std.testing.allocator);
 
     const expected: []const Token = &[_]Token{
         Token {
@@ -2187,8 +2187,8 @@ test "location early eof" {
 
     var lx = lexer.Lexer.new(input, "tf", std.testing.allocator);
 
-    const tokens: std.ArrayList(Token) = lx.lex();
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit(std.testing.allocator);
 
     const expected: []const Token = &[_]Token{
         Token {

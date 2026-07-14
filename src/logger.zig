@@ -28,13 +28,13 @@ pub const Logger = struct {
 
     pub fn new(allocator: std.mem.Allocator) Self {
         return .{
-            .errors = ArrayList(ErrorInfo).init(allocator),
+            .errors = ArrayList(ErrorInfo).empty,
             .allocator = allocator,
         };
     }
 
     pub fn logError(self: Self, err: ErrorInfo) void {
-        self.errors.append(err);
+        self.errors.append(self.allocator, err);
     }
 
 
