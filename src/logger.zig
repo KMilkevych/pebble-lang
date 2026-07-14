@@ -15,6 +15,13 @@ pub const ErrorInfo = struct {
     err: Error,
     location: location.LocationRange,
     description: []const u8,
+
+    pub fn format(
+        self: ErrorInfo,
+        writer: *std.Io.Writer
+    ) !void {
+        try writer.print("ERROR {}: {s} | {f}\n", .{self.err, self.description, self.location});
+    }
 };
 
 
@@ -33,10 +40,13 @@ pub const Logger = struct {
         };
     }
 
-    pub fn logError(self: Self, err: ErrorInfo) void {
-        self.errors.append(self.allocator, err);
+    pub fn destroyAll(self: *Self) void {
+        self.errors.deinit(self.allocator);
     }
 
+    pub fn logError(self: *Self, err: ErrorInfo) void {
+        self.errors.append(self.allocator, err) catch unreachable;
+    }
 
 
 };

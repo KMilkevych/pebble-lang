@@ -70,10 +70,21 @@ fn run(io: std.Io, allocator: std.mem.Allocator, stdout: *std.Io.Writer, loc: [:
     defer tokens.deinit(allocator);
 
     // Create parser
-    var prsr: parser.Parser = parser.Parser.new(tokens, allocator, Log.Logger.new(allocator));
+    var logger = Log.Logger.new(allocator);
+    defer logger.destroyAll();
+    var prsr: parser.Parser = parser.Parser.new(tokens, allocator, &logger);
 
     // Parse all statements into a procedure
-    const proc: ast.Proc = try prsr.parseProcedure();
+    const proc: ast.Proc = prsr.parseProcedure() catch {
+
+        for (logger.errors.items) |errinf| {
+            try stdout.print("{f}\n", .{errinf});
+        }
+        try stdout.flush();
+
+        return;
+    };
+
     defer proc.destroyAll(allocator);
 
     // Evaluate all
@@ -113,7 +124,9 @@ fn interactive(io: std.Io, gpa: std.mem.Allocator, out: *std.Io.Writer) !void {
         var tokens = lxr.lex();
         defer tokens.deinit(alloc);
 
-        var prsr = parser.Parser.new(tokens, alloc, Log.Logger.new(alloc));
+        var logger = Log.Logger.new(alloc);
+        defer logger.destroyAll();
+        var prsr = parser.Parser.new(tokens, alloc, &logger);
         const tree: ast.Stmt = prsr.parseStmt() catch |err| {
             try out.print("{}\n", .{err});
             try out.flush();

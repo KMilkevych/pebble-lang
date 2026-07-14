@@ -7,13 +7,9 @@ pub const Location = struct {
 
     pub fn format(
         self: Location,
-        comptime fmt: []const u8,
-        options: std.fmt.FormatOptions,
-        writer: anytype
+        writer: *std.Io.Writer
     ) !void {
-        _ = fmt;
-        _ = options;
-        try writer.print("({s}: l.{} c.{})", .{self.file, self.line, self.column});
+        try writer.print("({s}: l.{d} c.{d})", .{self.file, self.line, self.column});
     }
 };
 
@@ -23,13 +19,9 @@ pub const LocationRange = struct {
 
     pub fn format(
         self: LocationRange,
-        comptime fmt: []const u8,
-        options: std.fmt.FormatOptions,
-        writer: anytype
+        writer: *std.Io.Writer
     ) !void {
-        _ = fmt;
-        _ = options;
-        try writer.print("{} - {}", .{self.from, self.to});
+        try writer.print("{f} - {f}", .{self.from, self.to});
     }
 
     pub fn none() LocationRange {
