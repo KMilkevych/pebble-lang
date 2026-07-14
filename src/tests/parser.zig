@@ -76,11 +76,11 @@ test "destroyAll" {
 }
 
 test "single literal" {
-    var tokens: std.ArrayList(Token) = .init(std.testing.allocator);
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = .empty;
+    defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 13}});
-    try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 13}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
     var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
@@ -91,13 +91,13 @@ test "single literal" {
 }
 
 test "single binary add" {
-    var tokens: std.ArrayList(Token) = .init(std.testing.allocator);
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = .empty;
+    defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 5}});
-    try tokens.append(Token {.tokenType = TokenType {.PLUS = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 13}});
-    try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 5}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.PLUS = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 13}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
     var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
@@ -115,15 +115,15 @@ test "single binary add" {
 }
 
 test "double binary left-associative" {
-    var tokens: std.ArrayList(Token) = .init(std.testing.allocator);
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = .empty;
+    defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 5}});
-    try tokens.append(Token {.tokenType = TokenType {.PLUS = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 7}});
-    try tokens.append(Token {.tokenType = TokenType {.MINUS = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 13}});
-    try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 5}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.PLUS = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 7}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.MINUS = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 13}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
     var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
@@ -150,15 +150,15 @@ test "double binary left-associative" {
 }
 
 test "precedence 1" {
-    var tokens: std.ArrayList(Token) = .init(std.testing.allocator);
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = .empty;
+    defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 5}});
-    try tokens.append(Token {.tokenType = TokenType {.PLUS = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 7}});
-    try tokens.append(Token {.tokenType = TokenType {.MUL = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 13}});
-    try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 5}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.PLUS = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 7}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.MUL = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 13}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
     var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
@@ -188,12 +188,12 @@ test "precedence 1" {
 }
 
 test "unary int" {
-    var tokens: std.ArrayList(Token) = .init(std.testing.allocator);
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = .empty;
+    defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(Token {.tokenType = TokenType {.MINUS = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 3}});
-    try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.MINUS = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 3}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
     var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
@@ -213,15 +213,15 @@ test "unary int" {
 
 
 test "unary int unary bool" {
-    var tokens: std.ArrayList(Token) = .init(std.testing.allocator);
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = .empty;
+    defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(Token {.tokenType = TokenType {.MINUS = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 3}});
-    try tokens.append(Token {.tokenType = TokenType {.MUL = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.NOT = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.BOOLLIT = true}});
-    try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.MINUS = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 3}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.MUL = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.NOT = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.BOOLLIT = true}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
     var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
@@ -253,14 +253,14 @@ test "unary int unary bool" {
 }
 
 test "int plus unary int" {
-    var tokens: std.ArrayList(Token) = .init(std.testing.allocator);
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = .empty;
+    defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 3}});
-    try tokens.append(Token {.tokenType = TokenType {.PLUS = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.MINUS = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 5}});
-    try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 3}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.PLUS = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.MINUS = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 5}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
     var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
@@ -286,14 +286,14 @@ test "int plus unary int" {
 
 
 test "unary int plus int" {
-    var tokens: std.ArrayList(Token) = .init(std.testing.allocator);
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = .empty;
+    defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(Token {.tokenType = TokenType {.MINUS = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 3}});
-    try tokens.append(Token {.tokenType = TokenType {.PLUS = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 5}});
-    try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.MINUS = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 3}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.PLUS = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 5}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
     var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
@@ -318,16 +318,16 @@ test "unary int plus int" {
 }
 
 test "unary int plus int parantheses" {
-    var tokens: std.ArrayList(Token) = .init(std.testing.allocator);
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = .empty;
+    defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(Token {.tokenType = TokenType {.MINUS = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.LPAREN = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 3}});
-    try tokens.append(Token {.tokenType = TokenType {.PLUS = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 5}});
-    try tokens.append(Token {.tokenType = TokenType {.RPAREN = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.MINUS = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LPAREN = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 3}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.PLUS = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 5}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RPAREN = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
     var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
@@ -352,17 +352,17 @@ test "unary int plus int parantheses" {
 }
 
 test "many parentheses" {
-    var tokens: std.ArrayList(Token) = .init(std.testing.allocator);
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = .empty;
+    defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(Token {.tokenType = TokenType {.LPAREN = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.LPAREN = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.LPAREN = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 11}});
-    try tokens.append(Token {.tokenType = TokenType {.RPAREN = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.RPAREN = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.RPAREN = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LPAREN = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LPAREN = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LPAREN = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 11}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RPAREN = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RPAREN = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RPAREN = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
     var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
@@ -374,17 +374,17 @@ test "many parentheses" {
 }
 
 test "precedence 2" {
-    var tokens: std.ArrayList(Token) = .init(std.testing.allocator);
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = .empty;
+    defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(Token {.tokenType = TokenType {.LPAREN = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 5}});
-    try tokens.append(Token {.tokenType = TokenType {.PLUS = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 7}});
-    try tokens.append(Token {.tokenType = TokenType {.RPAREN = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.MUL = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 13}});
-    try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LPAREN = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 5}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.PLUS = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 7}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RPAREN = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.MUL = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 13}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
     var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
@@ -411,17 +411,17 @@ test "precedence 2" {
 }
 
 test "precedence 2 div minus" {
-    var tokens: std.ArrayList(Token) = .init(std.testing.allocator);
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = .empty;
+    defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(Token {.tokenType = TokenType {.LPAREN = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 5}});
-    try tokens.append(Token {.tokenType = TokenType {.MINUS = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 7}});
-    try tokens.append(Token {.tokenType = TokenType {.RPAREN = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.DIV = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 13}});
-    try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LPAREN = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 5}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.MINUS = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 7}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RPAREN = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.DIV = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 13}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
     var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
@@ -449,19 +449,19 @@ test "precedence 2 div minus" {
 
 
 test "boolean operations" {
-    var tokens: std.ArrayList(Token) = .init(std.testing.allocator);
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = .empty;
+    defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(Token {.tokenType = TokenType {.NOT = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.LPAREN = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.BOOLLIT = false}});
-    try tokens.append(Token {.tokenType = TokenType {.OR = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.BOOLLIT = true}});
-    try tokens.append(Token {.tokenType = TokenType {.RPAREN = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.AND = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.NOT = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.BOOLLIT = false}});
-    try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.NOT = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LPAREN = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.BOOLLIT = false}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.OR = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.BOOLLIT = true}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RPAREN = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.AND = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.NOT = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.BOOLLIT = false}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
     var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
@@ -501,17 +501,17 @@ test "boolean operations" {
 
 
 test "integer comparison and boolean operations precedence" {
-    var tokens: std.ArrayList(Token) = .init(std.testing.allocator);
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = .empty;
+    defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 5}});
-    try tokens.append(Token {.tokenType = TokenType {.DEQ = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 5}});
-    try tokens.append(Token {.tokenType = TokenType {.AND = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 3}});
-    try tokens.append(Token {.tokenType = TokenType {.DEQ = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 3}});
-    try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 5}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.DEQ = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 5}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.AND = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 3}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.DEQ = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 3}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
     var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
@@ -545,11 +545,11 @@ test "integer comparison and boolean operations precedence" {
 }
 
 test "single ident" {
-    var tokens: std.ArrayList(Token) = .init(std.testing.allocator);
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = .empty;
+    defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "abekat"}});
-    try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "abekat"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
     var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
@@ -561,14 +561,14 @@ test "single ident" {
 }
 
 test "variable expression" {
-    var tokens: std.ArrayList(Token) = .init(std.testing.allocator);
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = .empty;
+    defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "abe"}});
-    try tokens.append(Token {.tokenType = TokenType {.PLUS = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.MINUS = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "kat"}});
-    try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "abe"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.PLUS = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.MINUS = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "kat"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
     var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
@@ -593,13 +593,13 @@ test "variable expression" {
 }
 
 test "assignment expression" {
-    var tokens: std.ArrayList(Token) = .init(std.testing.allocator);
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = .empty;
+    defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(Token {.tokenType = TokenType {.EQ = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 13}});
-    try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EQ = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 13}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
     var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
@@ -618,15 +618,15 @@ test "assignment expression" {
 
 
 test "right associative assignment" {
-    var tokens: std.ArrayList(Token) = .init(std.testing.allocator);
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = .empty;
+    defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(Token {.tokenType = TokenType {.EQ = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "y"}});
-    try tokens.append(Token {.tokenType = TokenType {.EQ = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 47}});
-    try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EQ = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "y"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EQ = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 47}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
     var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
@@ -651,15 +651,15 @@ test "right associative assignment" {
 
 
 test "left evaluated assignment" {
-    var tokens: std.ArrayList(Token) = .init(std.testing.allocator);
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = .empty;
+    defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(Token {.tokenType = TokenType {.PLUS = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 1}});
-    try tokens.append(Token {.tokenType = TokenType {.EQ = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 13}});
-    try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.PLUS = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 1}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EQ = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 13}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
     var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
@@ -684,15 +684,15 @@ test "left evaluated assignment" {
 }
 
 test "right associative assignment 2" {
-    var tokens: std.ArrayList(Token) = .init(std.testing.allocator);
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = .empty;
+    defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(Token {.tokenType = TokenType {.EQ = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "y"}});
-    try tokens.append(Token {.tokenType = TokenType {.PLUS = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 13}});
-    try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EQ = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "y"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.PLUS = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 13}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
     var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
@@ -717,15 +717,15 @@ test "right associative assignment 2" {
 }
 
 test "x + y = 13 == (x + y) = 13" {
-    var tokens: std.ArrayList(Token) = .init(std.testing.allocator);
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = .empty;
+    defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(Token {.tokenType = TokenType {.PLUS = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "y"}});
-    try tokens.append(Token {.tokenType = TokenType {.EQ = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 13}});
-    try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.PLUS = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "y"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EQ = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 13}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
     var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
@@ -750,14 +750,14 @@ test "x + y = 13 == (x + y) = 13" {
 }
 
 test "-x = 13 == (-x) = 13" {
-    var tokens: std.ArrayList(Token) = .init(std.testing.allocator);
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = .empty;
+    defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(Token {.tokenType = TokenType {.MINUS = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(Token {.tokenType = TokenType {.EQ = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 13}});
-    try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.MINUS = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EQ = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 13}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
     var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
@@ -781,14 +781,14 @@ test "-x = 13 == (-x) = 13" {
 }
 
 test "unmatched parentheses" {
-    var tokens: std.ArrayList(Token) = .init(std.testing.allocator);
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = .empty;
+    defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(Token {.tokenType = TokenType {.LPAREN = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(Token {.tokenType = TokenType {.EQ = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 13}});
-    try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LPAREN = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EQ = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 13}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
     var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: parser.ParseError!*ast.Expr = prs.parseExpr();
@@ -799,14 +799,14 @@ test "unmatched parentheses" {
 
 
 test "unfinished expression" {
-    var tokens: std.ArrayList(Token) = .init(std.testing.allocator);
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = .empty;
+    defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(Token {.tokenType = TokenType {.LPAREN = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(Token {.tokenType = TokenType {.PLUS = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.RPAREN = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LPAREN = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.PLUS = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RPAREN = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
     var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: parser.ParseError!*ast.Expr = prs.parseExpr();
@@ -814,10 +814,10 @@ test "unfinished expression" {
 }
 
 test "expect token or EOF" {
-    var tokens: std.ArrayList(Token) = .init(std.testing.allocator);
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = .empty;
+    defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "x"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
     var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: parser.ParseError!*ast.Expr = prs.parseExpr();
@@ -827,12 +827,12 @@ test "expect token or EOF" {
 }
 
 test "expect token or EOF 2" {
-    var tokens: std.ArrayList(Token) = .init(std.testing.allocator);
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = .empty;
+    defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(Token {.tokenType = TokenType {.LPAREN = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(Token {.tokenType = TokenType {.RPAREN = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LPAREN = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RPAREN = {}}});
     var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: parser.ParseError!*ast.Expr = prs.parseExpr();
@@ -842,13 +842,13 @@ test "expect token or EOF 2" {
 }
 
 test "print statement" {
-    var tokens: std.ArrayList(Token) = .init(std.testing.allocator);
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = .empty;
+    defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(Token {.tokenType = TokenType {.PRINT = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.PRINT = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
     var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: ast.Stmt = try prs.parseStmt();
@@ -870,13 +870,13 @@ test "print statement" {
 }
 
 test "declare statement" {
-    var tokens: std.ArrayList(Token) = .init(std.testing.allocator);
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = .empty;
+    defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(Token {.tokenType = TokenType {.DECLARE = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.DECLARE = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
     var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: ast.Stmt = try prs.parseStmt();
@@ -898,12 +898,12 @@ test "declare statement" {
 }
 
 test "expression statement" {
-    var tokens: std.ArrayList(Token) = .init(std.testing.allocator);
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = .empty;
+    defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
     var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: ast.Stmt = try prs.parseStmt();
@@ -924,16 +924,16 @@ test "expression statement" {
 
 
 test "print statement sequence" {
-    var tokens: std.ArrayList(Token) = .init(std.testing.allocator);
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = .empty;
+    defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(Token {.tokenType = TokenType {.PRINT = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.PRINT = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "y"}});
-    try tokens.append(Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.PRINT = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.PRINT = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "y"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
     var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: ast.Stmt = try prs.parseStmt();
@@ -967,15 +967,15 @@ test "print statement sequence" {
 }
 
 test "expect line break between statements" {
-    var tokens: std.ArrayList(Token) = .init(std.testing.allocator);
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = .empty;
+    defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(Token {.tokenType = TokenType {.PRINT = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(Token {.tokenType = TokenType {.PRINT = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.PRINT = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.PRINT = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
     var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: parser.ParseError!ast.Stmt = prs.parseStmt();
@@ -984,12 +984,12 @@ test "expect line break between statements" {
 
 test "empty block statement" {
 
-    var tokens: std.ArrayList(Token) = std.ArrayList(Token).init(std.testing.allocator);
-    try tokens.append(Token {.tokenType = TokenType {.LCURLY = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.RCURLY = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = std.ArrayList(Token).empty;
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LCURLY = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RCURLY = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
+    defer tokens.deinit(std.testing.allocator);
 
     var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
@@ -1002,15 +1002,15 @@ test "empty block statement" {
 
 test "block statement" {
 
-    var tokens: std.ArrayList(Token) = std.ArrayList(Token).init(std.testing.allocator);
-    try tokens.append(Token {.tokenType = TokenType {.LCURLY = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.DECLARE = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.RCURLY = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = std.ArrayList(Token).empty;
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LCURLY = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.DECLARE = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RCURLY = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
+    defer tokens.deinit(std.testing.allocator);
 
     var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
@@ -1038,22 +1038,22 @@ test "block statement" {
 
 test "nested block statement" {
 
-    var tokens: std.ArrayList(Token) = std.ArrayList(Token).init(std.testing.allocator);
-    try tokens.append(Token {.tokenType = TokenType {.LCURLY = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.DECLARE = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.LCURLY = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.DECLARE = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.RCURLY = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.RCURLY = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = std.ArrayList(Token).empty;
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LCURLY = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.DECLARE = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LCURLY = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.DECLARE = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RCURLY = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RCURLY = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
+    defer tokens.deinit(std.testing.allocator);
 
     var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
@@ -1089,19 +1089,19 @@ test "nested block statement" {
 
 test "if else statement" {
 
-    var tokens: std.ArrayList(Token) = std.ArrayList(Token).init(std.testing.allocator);
-    try tokens.append(Token {.tokenType = TokenType {.IF = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.DECLARE = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.ELSE = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.DECLARE = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "y"}});
-    try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = std.ArrayList(Token).empty;
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IF = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.DECLARE = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.ELSE = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.DECLARE = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "y"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
+    defer tokens.deinit(std.testing.allocator);
 
     var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
@@ -1133,27 +1133,27 @@ test "if else statement" {
 
 test "if else block statement" {
 
-    var tokens: std.ArrayList(Token) = std.ArrayList(Token).init(std.testing.allocator);
-    try tokens.append(Token {.tokenType = TokenType {.IF = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.LCURLY = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.DECLARE = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.RCURLY = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.ELSE = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.LCURLY = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.DECLARE = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "y"}});
-    try tokens.append(Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.RCURLY = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = std.ArrayList(Token).empty;
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IF = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LCURLY = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.DECLARE = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RCURLY = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.ELSE = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LCURLY = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.DECLARE = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "y"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RCURLY = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
+    defer tokens.deinit(std.testing.allocator);
 
     var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
@@ -1195,33 +1195,33 @@ test "if else block statement" {
 
 test "if else block statement 2" {
 
-    var tokens: std.ArrayList(Token) = std.ArrayList(Token).init(std.testing.allocator);
-    try tokens.append(Token {.tokenType = TokenType {.IF = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.LCURLY = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.DECLARE = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.DECLARE = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "y"}});
-    try tokens.append(Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.RCURLY = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.ELSE = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.LCURLY = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.DECLARE = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "y"}});
-    try tokens.append(Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.DECLARE = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.RCURLY = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = std.ArrayList(Token).empty;
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IF = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LCURLY = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.DECLARE = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.DECLARE = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "y"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RCURLY = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.ELSE = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LCURLY = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.DECLARE = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "y"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.DECLARE = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RCURLY = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
+    defer tokens.deinit(std.testing.allocator);
 
     var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
@@ -1274,48 +1274,48 @@ test "if else block statement 2" {
 }
 
 test "complicated if-else branch" {
-    var tokens: std.ArrayList(Token) = std.ArrayList(Token).init(std.testing.allocator);
+    var tokens: std.ArrayList(Token) = std.ArrayList(Token).empty;
 
-    try tokens.append(Token {.tokenType = TokenType {.DECLARE = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(Token {.tokenType = TokenType {.EQ = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 10}});
-    try tokens.append(Token {.tokenType = TokenType {.LB = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.DECLARE = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EQ = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 10}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
 
-    try tokens.append(Token {.tokenType = TokenType {.IF = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(Token {.tokenType = TokenType {.DEQ = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 10}});
-    try tokens.append(Token {.tokenType = TokenType {.LB = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IF = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.DEQ = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 10}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
 
-    try tokens.append(Token {.tokenType = TokenType {.LCURLY = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(Token {.tokenType = TokenType {.EQ = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 20}});
-    try tokens.append(Token {.tokenType = TokenType {.LB = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LCURLY = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EQ = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 20}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
 
-    try tokens.append(Token {.tokenType = TokenType {.PRINT = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.RCURLY = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.LB = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.PRINT = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RCURLY = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
 
-    try tokens.append(Token {.tokenType = TokenType {.ELSE = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.ELSE = {}}});
 
-    try tokens.append(Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.LCURLY = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.PRINT = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 1}});
-    try tokens.append(Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.RCURLY = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.LB = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LCURLY = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.PRINT = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 1}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RCURLY = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
 
-    try tokens.append(Token {.tokenType = TokenType {.PRINT = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
-    defer tokens.deinit();
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.PRINT = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
+    defer tokens.deinit(std.testing.allocator);
 
     var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
@@ -1395,30 +1395,30 @@ test "complicated if-else branch" {
 }
 
 test "simple while with condition" {
-    var tokens: std.ArrayList(Token) = std.ArrayList(Token).init(std.testing.allocator);
+    var tokens: std.ArrayList(Token) = std.ArrayList(Token).empty;
 
-    try tokens.append(Token {.tokenType = TokenType {.DECLARE = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(Token {.tokenType = TokenType {.EQ = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 10}});
-    try tokens.append(Token {.tokenType = TokenType {.LB = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.DECLARE = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EQ = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 10}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
 
-    try tokens.append(Token {.tokenType = TokenType {.WHILE = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(Token {.tokenType = TokenType {.GT = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 1}});
-    try tokens.append(Token {.tokenType = TokenType {.LB = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.WHILE = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.GT = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 1}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
 
-    try tokens.append(Token {.tokenType = TokenType {.LCURLY = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.PRINT = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(Token {.tokenType = TokenType {.LB = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LCURLY = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.PRINT = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
 
-    try tokens.append(Token {.tokenType = TokenType {.RCURLY = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RCURLY = {}}});
 
-    try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
-    defer tokens.deinit();
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
+    defer tokens.deinit(std.testing.allocator);
 
     var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
@@ -1470,36 +1470,36 @@ test "simple while with condition" {
 }
 
 test "more interesting while" {
-    var tokens: std.ArrayList(Token) = std.ArrayList(Token).init(std.testing.allocator);
+    var tokens: std.ArrayList(Token) = std.ArrayList(Token).empty;
 
-    try tokens.append(Token {.tokenType = TokenType {.DECLARE = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(Token {.tokenType = TokenType {.EQ = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 10}});
-    try tokens.append(Token {.tokenType = TokenType {.LB = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.DECLARE = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EQ = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 10}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
 
-    try tokens.append(Token {.tokenType = TokenType {.WHILE = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(Token {.tokenType = TokenType {.GT = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 1}});
-    try tokens.append(Token {.tokenType = TokenType {.LB = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.WHILE = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.GT = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 1}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
 
-    try tokens.append(Token {.tokenType = TokenType {.LCURLY = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.PRINT = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(Token {.tokenType = TokenType {.LB = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LCURLY = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.PRINT = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
 
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(Token {.tokenType = TokenType {.EQ = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(Token {.tokenType = TokenType {.MINUS = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 1}});
-    try tokens.append(Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.RCURLY = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EQ = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.MINUS = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 1}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RCURLY = {}}});
 
-    try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
-    defer tokens.deinit();
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
+    defer tokens.deinit(std.testing.allocator);
 
     var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
@@ -1569,32 +1569,32 @@ test "more interesting while" {
 
 
 test "while with break statement" {
-    var tokens: std.ArrayList(Token) = std.ArrayList(Token).init(std.testing.allocator);
+    var tokens: std.ArrayList(Token) = std.ArrayList(Token).empty;
 
-    try tokens.append(Token {.tokenType = TokenType {.DECLARE = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(Token {.tokenType = TokenType {.EQ = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 10}});
-    try tokens.append(Token {.tokenType = TokenType {.LB = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.DECLARE = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EQ = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 10}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
 
-    try tokens.append(Token {.tokenType = TokenType {.WHILE = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(Token {.tokenType = TokenType {.GT = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 1}});
-    try tokens.append(Token {.tokenType = TokenType {.LB = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.WHILE = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.GT = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 1}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
 
-    try tokens.append(Token {.tokenType = TokenType {.LCURLY = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.PRINT = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(Token {.tokenType = TokenType {.LB = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LCURLY = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.PRINT = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
 
-    try tokens.append(Token {.tokenType = TokenType {.BREAK = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.RCURLY = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.BREAK = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RCURLY = {}}});
 
-    try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
-    defer tokens.deinit();
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
+    defer tokens.deinit(std.testing.allocator);
 
     var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
@@ -1650,32 +1650,32 @@ test "while with break statement" {
 }
 
 test "while with continue statement" {
-    var tokens: std.ArrayList(Token) = std.ArrayList(Token).init(std.testing.allocator);
+    var tokens: std.ArrayList(Token) = std.ArrayList(Token).empty;
 
-    try tokens.append(Token {.tokenType = TokenType {.DECLARE = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(Token {.tokenType = TokenType {.EQ = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 10}});
-    try tokens.append(Token {.tokenType = TokenType {.LB = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.DECLARE = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EQ = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 10}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
 
-    try tokens.append(Token {.tokenType = TokenType {.WHILE = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(Token {.tokenType = TokenType {.GT = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 1}});
-    try tokens.append(Token {.tokenType = TokenType {.LB = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.WHILE = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.GT = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 1}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
 
-    try tokens.append(Token {.tokenType = TokenType {.LCURLY = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.PRINT = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(Token {.tokenType = TokenType {.LB = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LCURLY = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.PRINT = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
 
-    try tokens.append(Token {.tokenType = TokenType {.CONTINUE = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.RCURLY = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.CONTINUE = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RCURLY = {}}});
 
-    try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
-    defer tokens.deinit();
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
+    defer tokens.deinit(std.testing.allocator);
 
     var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
@@ -1729,25 +1729,25 @@ test "while with continue statement" {
 
 
 test "comma declaration" {
-    var tokens: std.ArrayList(Token) = std.ArrayList(Token).init(std.testing.allocator);
+    var tokens: std.ArrayList(Token) = std.ArrayList(Token).empty;
 
 
-    try tokens.append(Token {.tokenType = TokenType {.DECLARE = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(Token {.tokenType = TokenType {.EQ = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 1}});
-    try tokens.append(Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "y"}});
-    try tokens.append(Token {.tokenType = TokenType {.EQ = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 2}});
-    try tokens.append(Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "z"}});
-    try tokens.append(Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "w"}});
-    try tokens.append(Token {.tokenType = TokenType {.EQ = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 1}});
-    try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
-    defer tokens.deinit();
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.DECLARE = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EQ = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 1}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "y"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EQ = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 2}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "z"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "w"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EQ = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 1}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
+    defer tokens.deinit(std.testing.allocator);
 
     var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
@@ -1789,26 +1789,26 @@ test "comma declaration" {
 }
 
 test "comma declaration double comma error" {
-    var tokens: std.ArrayList(Token) = std.ArrayList(Token).init(std.testing.allocator);
+    var tokens: std.ArrayList(Token) = std.ArrayList(Token).empty;
 
 
-    try tokens.append(Token {.tokenType = TokenType {.DECLARE = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(Token {.tokenType = TokenType {.EQ = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 1}});
-    try tokens.append(Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "y"}});
-    try tokens.append(Token {.tokenType = TokenType {.EQ = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 2}});
-    try tokens.append(Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "z"}});
-    try tokens.append(Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "w"}});
-    try tokens.append(Token {.tokenType = TokenType {.EQ = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 1}});
-    try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
-    defer tokens.deinit();
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.DECLARE = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EQ = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 1}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "y"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EQ = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 2}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "z"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "w"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EQ = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 1}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
+    defer tokens.deinit(std.testing.allocator);
 
     var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
     const res: parser.ParseError!ast.Proc = prs.parseProcedure();
@@ -1817,17 +1817,17 @@ test "comma declaration double comma error" {
 }
 
 test "comma print" {
-    var tokens: std.ArrayList(Token) = std.ArrayList(Token).init(std.testing.allocator);
+    var tokens: std.ArrayList(Token) = std.ArrayList(Token).empty;
 
 
-    try tokens.append(Token {.tokenType = TokenType {.PRINT = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(Token {.tokenType = TokenType {.PLUS = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 1}});
-    try tokens.append(Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "y"}});
-    try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
-    defer tokens.deinit();
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.PRINT = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.PLUS = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 1}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "y"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
+    defer tokens.deinit(std.testing.allocator);
 
     var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
@@ -1856,17 +1856,17 @@ test "comma print" {
 }
 
 test "comma print multiple comma error" {
-    var tokens: std.ArrayList(Token) = std.ArrayList(Token).init(std.testing.allocator);
+    var tokens: std.ArrayList(Token) = std.ArrayList(Token).empty;
 
-    try tokens.append(Token {.tokenType = TokenType {.PRINT = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "y"}});
-    try tokens.append(Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "z"}});
-    try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
-    defer tokens.deinit();
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.PRINT = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "y"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "z"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
+    defer tokens.deinit(std.testing.allocator);
 
     var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
@@ -1876,13 +1876,13 @@ test "comma print multiple comma error" {
 }
 
 test "call expression no args" {
-    var tokens: std.ArrayList(Token) = .init(std.testing.allocator);
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = .empty;
+    defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "myfun"}});
-    try tokens.append(Token {.tokenType = TokenType {.LPAREN = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.RPAREN = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "myfun"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LPAREN = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RPAREN = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
     var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
@@ -1902,14 +1902,14 @@ test "call expression no args" {
 }
 
 test "call expression one arg" {
-    var tokens: std.ArrayList(Token) = .init(std.testing.allocator);
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = .empty;
+    defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "myfun"}});
-    try tokens.append(Token {.tokenType = TokenType {.LPAREN = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "y"}});
-    try tokens.append(Token {.tokenType = TokenType {.RPAREN = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "myfun"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LPAREN = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "y"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RPAREN = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
     var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
@@ -1930,16 +1930,16 @@ test "call expression one arg" {
 }
 
 test "call expression two args" {
-    var tokens: std.ArrayList(Token) = .init(std.testing.allocator);
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = .empty;
+    defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "myfun"}});
-    try tokens.append(Token {.tokenType = TokenType {.LPAREN = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "y"}});
-    try tokens.append(Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "somevar"}});
-    try tokens.append(Token {.tokenType = TokenType {.RPAREN = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "myfun"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LPAREN = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "y"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "somevar"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RPAREN = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
     var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
@@ -1961,20 +1961,20 @@ test "call expression two args" {
 }
 
 test "call expression complex expressions as args" {
-    var tokens: std.ArrayList(Token) = .init(std.testing.allocator);
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = .empty;
+    defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "myfun"}});
-    try tokens.append(Token {.tokenType = TokenType {.LPAREN = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "otherfun"}});
-    try tokens.append(Token {.tokenType = TokenType {.LPAREN = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.RPAREN = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "y"}});
-    try tokens.append(Token {.tokenType = TokenType {.PLUS = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 3}});
-    try tokens.append(Token {.tokenType = TokenType {.RPAREN = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "myfun"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LPAREN = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "otherfun"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LPAREN = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RPAREN = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "y"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.PLUS = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 3}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RPAREN = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
     var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
@@ -2009,17 +2009,17 @@ test "call expression complex expressions as args" {
 }
 
 test "expression as function funcall" {
-    var tokens: std.ArrayList(Token) = .init(std.testing.allocator);
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = .empty;
+    defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(Token {.tokenType = TokenType {.LPAREN = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(Token {.tokenType = TokenType {.MUL = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 3}});
-    try tokens.append(Token {.tokenType = TokenType {.RPAREN = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.LPAREN = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.RPAREN = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LPAREN = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.MUL = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 3}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RPAREN = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LPAREN = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RPAREN = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
     var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
@@ -2045,15 +2045,15 @@ test "expression as function funcall" {
 }
 
 test "funcall funcall" {
-    var tokens: std.ArrayList(Token) = .init(std.testing.allocator);
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = .empty;
+    defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "myfun"}});
-    try tokens.append(Token {.tokenType = TokenType {.LPAREN = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.RPAREN = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.LPAREN = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.RPAREN = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "myfun"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LPAREN = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RPAREN = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LPAREN = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RPAREN = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
     var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
@@ -2078,17 +2078,17 @@ test "funcall funcall" {
 }
 
 test "funcall funcall funcall" {
-    var tokens: std.ArrayList(Token) = .init(std.testing.allocator);
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = .empty;
+    defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "myfun"}});
-    try tokens.append(Token {.tokenType = TokenType {.LPAREN = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.RPAREN = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.LPAREN = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.RPAREN = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.LPAREN = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.RPAREN = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "myfun"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LPAREN = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RPAREN = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LPAREN = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RPAREN = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LPAREN = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RPAREN = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
     var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
@@ -2120,13 +2120,13 @@ test "funcall funcall funcall" {
 
 test "empty return statement" {
 
-    var tokens: std.ArrayList(Token) = std.ArrayList(Token).init(std.testing.allocator);
-    try tokens.append(Token {.tokenType = TokenType {.RETURN = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.DECLARE = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = std.ArrayList(Token).empty;
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RETURN = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.DECLARE = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
+    defer tokens.deinit(std.testing.allocator);
 
     var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
@@ -2147,16 +2147,16 @@ test "empty return statement" {
 
 test "return statement with expression" {
 
-    var tokens: std.ArrayList(Token) = std.ArrayList(Token).init(std.testing.allocator);
-    try tokens.append(Token {.tokenType = TokenType {.RETURN = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(Token {.tokenType = TokenType {.PLUS = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.DECLARE = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = std.ArrayList(Token).empty;
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RETURN = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.PLUS = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.DECLARE = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
+    defer tokens.deinit(std.testing.allocator);
 
     var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
@@ -2182,10 +2182,10 @@ test "return statement with expression" {
 
 test "empty return statement at the end" {
 
-    var tokens: std.ArrayList(Token) = std.ArrayList(Token).init(std.testing.allocator);
-    try tokens.append(Token {.tokenType = TokenType {.RETURN = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = std.ArrayList(Token).empty;
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RETURN = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
+    defer tokens.deinit(std.testing.allocator);
 
     var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
@@ -2206,13 +2206,13 @@ test "empty return statement at the end" {
 
 test "return statement with expression at the end" {
 
-    var tokens: std.ArrayList(Token) = std.ArrayList(Token).init(std.testing.allocator);
-    try tokens.append(Token {.tokenType = TokenType {.RETURN = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(Token {.tokenType = TokenType {.PLUS = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = std.ArrayList(Token).empty;
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RETURN = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.PLUS = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
+    defer tokens.deinit(std.testing.allocator);
 
     var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
@@ -2237,21 +2237,21 @@ test "return statement with expression at the end" {
 
 test "simple inline function definition" {
 
-    var tokens: std.ArrayList(Token) = std.ArrayList(Token).init(std.testing.allocator);
-    try tokens.append(Token {.tokenType = TokenType {.FUN = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "last"}});
-    try tokens.append(Token {.tokenType = TokenType {.LPAREN = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "y"}});
-    try tokens.append(Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "z"}});
-    try tokens.append(Token {.tokenType = TokenType {.RPAREN = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.RETURN = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "z"}});
-    try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = std.ArrayList(Token).empty;
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.FUN = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "last"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LPAREN = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "y"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "z"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RPAREN = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RETURN = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "z"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
+    defer tokens.deinit(std.testing.allocator);
 
     var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
@@ -2280,20 +2280,20 @@ test "simple inline function definition" {
 
 // test "function definition with trailing comma" {
 
-//     var tokens: std.ArrayList(Token) = std.ArrayList(Token).init(std.testing.allocator);
-//     try tokens.append(Token {.tokenType = TokenType {.FUN = {}}});
-//     try tokens.append(Token {.tokenType = TokenType {.IDENT = "last"}});
-//     try tokens.append(Token {.tokenType = TokenType {.LPAREN = {}}});
-//     try tokens.append(Token {.tokenType = TokenType {.IDENT = "x"}});
-//     try tokens.append(Token {.tokenType = TokenType {.COMMA = {}}});
-//     try tokens.append(Token {.tokenType = TokenType {.IDENT = "y"}});
-//     try tokens.append(Token {.tokenType = TokenType {.COMMA = {}}});
-//     try tokens.append(Token {.tokenType = TokenType {.RPAREN = {}}});
-//     try tokens.append(Token {.tokenType = TokenType {.LB = {}}});
-//     try tokens.append(Token {.tokenType = TokenType {.RETURN = {}}});
-//     try tokens.append(Token {.tokenType = TokenType {.IDENT = "z"}});
-//     try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
-//     defer tokens.deinit();
+//     var tokens: std.ArrayList(Token) = std.ArrayList(Token).empty;
+//     try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.FUN = {}}});
+//     try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "last"}});
+//     try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LPAREN = {}}});
+//     try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
+//     try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
+//     try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "y"}});
+//     try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
+//     try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RPAREN = {}}});
+//     try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
+//     try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RETURN = {}}});
+//     try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "z"}});
+//     try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
+//     defer tokens.deinit(std.testing.allocator);
 
 //     var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 //     const res: parser.ParseError!ast.Stmt = prs.parseStmt();
@@ -2304,19 +2304,19 @@ test "simple inline function definition" {
 
 test "function definition no name" {
 
-    var tokens: std.ArrayList(Token) = std.ArrayList(Token).init(std.testing.allocator);
-    try tokens.append(Token {.tokenType = TokenType {.FUN = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.LPAREN = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "y"}});
-    try tokens.append(Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.RPAREN = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.RETURN = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "z"}});
-    try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = std.ArrayList(Token).empty;
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.FUN = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LPAREN = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "y"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RPAREN = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RETURN = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "z"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
+    defer tokens.deinit(std.testing.allocator);
 
     var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
     const res: parser.ParseError!ast.Stmt = prs.parseStmt();
@@ -2327,17 +2327,17 @@ test "function definition no name" {
 
 test "function definition no body" {
 
-    var tokens: std.ArrayList(Token) = std.ArrayList(Token).init(std.testing.allocator);
-    try tokens.append(Token {.tokenType = TokenType {.FUN = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "afun"}});
-    try tokens.append(Token {.tokenType = TokenType {.LPAREN = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "y"}});
-    try tokens.append(Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.RPAREN = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = std.ArrayList(Token).empty;
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.FUN = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "afun"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LPAREN = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "y"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RPAREN = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
+    defer tokens.deinit(std.testing.allocator);
 
     var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
     const res: parser.ParseError!ast.Stmt = prs.parseStmt();
@@ -2347,18 +2347,18 @@ test "function definition no body" {
 
 test "function definition no body 2" {
 
-    var tokens: std.ArrayList(Token) = std.ArrayList(Token).init(std.testing.allocator);
-    try tokens.append(Token {.tokenType = TokenType {.FUN = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "afun"}});
-    try tokens.append(Token {.tokenType = TokenType {.LPAREN = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "y"}});
-    try tokens.append(Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.RPAREN = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = std.ArrayList(Token).empty;
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.FUN = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "afun"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LPAREN = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "y"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RPAREN = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
+    defer tokens.deinit(std.testing.allocator);
 
     var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
     const res: parser.ParseError!ast.Stmt = prs.parseStmt();
@@ -2368,14 +2368,14 @@ test "function definition no body 2" {
 
 test "make statement" {
 
-    var tokens: std.ArrayList(Token) = std.ArrayList(Token).init(std.testing.allocator);
-    try tokens.append(Token {.tokenType = TokenType {.DECLARE = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "list"}});
-    try tokens.append(Token {.tokenType = TokenType {.LBRACK = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 1}});
-    try tokens.append(Token {.tokenType = TokenType {.RBRACK = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = std.ArrayList(Token).empty;
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.DECLARE = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "list"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LBRACK = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 1}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RBRACK = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
+    defer tokens.deinit(std.testing.allocator);
 
     var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
@@ -2400,19 +2400,19 @@ test "make statement" {
 
 test "multi make statement" {
 
-    var tokens: std.ArrayList(Token) = std.ArrayList(Token).init(std.testing.allocator);
-    try tokens.append(Token {.tokenType = TokenType {.DECLARE = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "list"}});
-    try tokens.append(Token {.tokenType = TokenType {.LBRACK = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 1}});
-    try tokens.append(Token {.tokenType = TokenType {.RBRACK = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "otherlist"}});
-    try tokens.append(Token {.tokenType = TokenType {.LBRACK = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 7}});
-    try tokens.append(Token {.tokenType = TokenType {.RBRACK = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = std.ArrayList(Token).empty;
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.DECLARE = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "list"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LBRACK = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 1}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RBRACK = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "otherlist"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LBRACK = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 7}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RBRACK = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
+    defer tokens.deinit(std.testing.allocator);
 
     var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
@@ -2444,14 +2444,14 @@ test "multi make statement" {
 
 test "list index expression" {
 
-    var tokens: std.ArrayList(Token) = .init(std.testing.allocator);
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = .empty;
+    defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "lst"}});
-    try tokens.append(Token {.tokenType = TokenType {.LBRACK = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 3}});
-    try tokens.append(Token {.tokenType = TokenType {.RBRACK = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "lst"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LBRACK = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 3}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RBRACK = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
     var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
@@ -2473,20 +2473,20 @@ test "list index expression" {
 
 test "complex list index expression" {
 
-    var tokens: std.ArrayList(Token) = .init(std.testing.allocator);
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = .empty;
+    defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "lst"}});
-    try tokens.append(Token {.tokenType = TokenType {.LBRACK = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 3}});
-    try tokens.append(Token {.tokenType = TokenType {.MUL = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.LPAREN = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 1}});
-    try tokens.append(Token {.tokenType = TokenType {.PLUS = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 4}});
-    try tokens.append(Token {.tokenType = TokenType {.RPAREN = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.RBRACK = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "lst"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LBRACK = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 3}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.MUL = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LPAREN = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 1}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.PLUS = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 4}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RPAREN = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RBRACK = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
     var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
@@ -2522,17 +2522,17 @@ test "complex list index expression" {
 
 test "double list index expression" {
 
-    var tokens: std.ArrayList(Token) = .init(std.testing.allocator);
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = .empty;
+    defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "lst"}});
-    try tokens.append(Token {.tokenType = TokenType {.LBRACK = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 3}});
-    try tokens.append(Token {.tokenType = TokenType {.RBRACK = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.LBRACK = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 1}});
-    try tokens.append(Token {.tokenType = TokenType {.RBRACK = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "lst"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LBRACK = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 3}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RBRACK = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LBRACK = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 1}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RBRACK = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
     var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
@@ -2560,16 +2560,16 @@ test "double list index expression" {
 
 test "list index assignment" {
 
-    var tokens: std.ArrayList(Token) = .init(std.testing.allocator);
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = .empty;
+    defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "lst"}});
-    try tokens.append(Token {.tokenType = TokenType {.LBRACK = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 3}});
-    try tokens.append(Token {.tokenType = TokenType {.RBRACK = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.EQ = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 1}});
-    try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "lst"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LBRACK = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 3}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RBRACK = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EQ = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 1}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
     var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
@@ -2595,19 +2595,19 @@ test "list index assignment" {
 
 test "list index in parentheses" {
 
-    var tokens: std.ArrayList(Token) = .init(std.testing.allocator);
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = .empty;
+    defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "lst"}});
-    try tokens.append(Token {.tokenType = TokenType {.LBRACK = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.LPAREN = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "lst"}});
-    try tokens.append(Token {.tokenType = TokenType {.LBRACK = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 1}});
-    try tokens.append(Token {.tokenType = TokenType {.RBRACK = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.RPAREN = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.RBRACK = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "lst"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LBRACK = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LPAREN = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "lst"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LBRACK = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 1}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RBRACK = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RPAREN = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RBRACK = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
     var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
@@ -2635,14 +2635,14 @@ test "list index in parentheses" {
 
 test "print list index statement" {
 
-    var tokens: std.ArrayList(Token) = std.ArrayList(Token).init(std.testing.allocator);
-    try tokens.append(Token {.tokenType = TokenType {.PRINT = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "list"}});
-    try tokens.append(Token {.tokenType = TokenType {.LBRACK = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 1}});
-    try tokens.append(Token {.tokenType = TokenType {.RBRACK = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = std.ArrayList(Token).empty;
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.PRINT = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "list"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LBRACK = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 1}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RBRACK = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
+    defer tokens.deinit(std.testing.allocator);
 
     var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
@@ -2667,19 +2667,19 @@ test "print list index statement" {
 
 test "print multi list index statement" {
 
-    var tokens: std.ArrayList(Token) = std.ArrayList(Token).init(std.testing.allocator);
-    try tokens.append(Token {.tokenType = TokenType {.PRINT = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "lst"}});
-    try tokens.append(Token {.tokenType = TokenType {.LBRACK = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 1}});
-    try tokens.append(Token {.tokenType = TokenType {.RBRACK = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "lst"}});
-    try tokens.append(Token {.tokenType = TokenType {.LBRACK = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 7}});
-    try tokens.append(Token {.tokenType = TokenType {.RBRACK = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = std.ArrayList(Token).empty;
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.PRINT = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "lst"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LBRACK = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 1}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RBRACK = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "lst"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LBRACK = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 7}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RBRACK = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
+    defer tokens.deinit(std.testing.allocator);
 
     var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
@@ -2711,23 +2711,23 @@ test "print multi list index statement" {
 
 test "declare multi list with initialization" {
 
-    var tokens: std.ArrayList(Token) = std.ArrayList(Token).init(std.testing.allocator);
-    try tokens.append(Token {.tokenType = TokenType {.DECLARE = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "lst"}});
-    try tokens.append(Token {.tokenType = TokenType {.LBRACK = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 1}});
-    try tokens.append(Token {.tokenType = TokenType {.RBRACK = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.EQ = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = -1}});
-    try tokens.append(Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "list"}});
-    try tokens.append(Token {.tokenType = TokenType {.LBRACK = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 5}});
-    try tokens.append(Token {.tokenType = TokenType {.RBRACK = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.EQ = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "lst"}});
-    try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = std.ArrayList(Token).empty;
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.DECLARE = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "lst"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LBRACK = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 1}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RBRACK = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EQ = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = -1}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "list"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LBRACK = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 5}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RBRACK = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EQ = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "lst"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
+    defer tokens.deinit(std.testing.allocator);
 
     var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
@@ -2771,13 +2771,13 @@ test "declare multi list with initialization" {
 
 test "property access" {
 
-    var tokens: std.ArrayList(Token) = .init(std.testing.allocator);
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = .empty;
+    defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "lst"}});
-    try tokens.append(Token {.tokenType = TokenType {.DOT = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "size"}});
-    try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "lst"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.DOT = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "size"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
     var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
@@ -2799,17 +2799,17 @@ test "property access" {
 
 test "multi property access" {
 
-    var tokens: std.ArrayList(Token) = .init(std.testing.allocator);
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = .empty;
+    defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "obj"}});
-    try tokens.append(Token {.tokenType = TokenType {.DOT = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "prop1"}});
-    try tokens.append(Token {.tokenType = TokenType {.DOT = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "prop2"}});
-    try tokens.append(Token {.tokenType = TokenType {.DOT = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "prop3"}});
-    try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "obj"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.DOT = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "prop1"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.DOT = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "prop2"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.DOT = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "prop3"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
     var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
@@ -2847,22 +2847,22 @@ test "multi property access" {
 
 test "list immediate expression" {
 
-    var tokens: std.ArrayList(Token) = .init(std.testing.allocator);
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = .empty;
+    defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(Token {.tokenType = TokenType {.DECLARE = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(Token {.tokenType = TokenType {.EQ = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.LT = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 1}});
-    try tokens.append(Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 2}});
-    try tokens.append(Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 3}});
-    try tokens.append(Token {.tokenType = TokenType {.GT = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.DECLARE = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EQ = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LT = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 1}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 2}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 3}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.GT = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
     var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: ast.Proc = try prs.parseProcedure();
@@ -2903,26 +2903,26 @@ test "list immediate expression" {
 
 test "nested list immediate expression" {
 
-    var tokens: std.ArrayList(Token) = .init(std.testing.allocator);
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = .empty;
+    defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(Token {.tokenType = TokenType {.DECLARE = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(Token {.tokenType = TokenType {.EQ = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.LT = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.LT = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.LT = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 1}});
-    try tokens.append(Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 2}});
-    try tokens.append(Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 3}});
-    try tokens.append(Token {.tokenType = TokenType {.GT = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.GT = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.GT = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.DECLARE = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EQ = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LT = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LT = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LT = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 1}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 2}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 3}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.GT = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.GT = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.GT = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
     var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: ast.Proc = try prs.parseProcedure();
@@ -2973,23 +2973,23 @@ test "nested list immediate expression" {
 
 test "list immediate unmatched brackets" {
 
-    var tokens: std.ArrayList(Token) = .init(std.testing.allocator);
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = .empty;
+    defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(Token {.tokenType = TokenType {.DECLARE = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(Token {.tokenType = TokenType {.EQ = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.LT = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.LT = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 1}});
-    try tokens.append(Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 2}});
-    try tokens.append(Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 3}});
-    try tokens.append(Token {.tokenType = TokenType {.GT = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.DECLARE = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EQ = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LT = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LT = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 1}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 2}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 3}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.GT = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
     var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: parser.ParseError!ast.Proc = prs.parseProcedure();
@@ -3000,25 +3000,25 @@ test "list immediate unmatched brackets" {
 
 test "list immediates binary expression" {
 
-    var tokens: std.ArrayList(Token) = .init(std.testing.allocator);
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = .empty;
+    defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(Token {.tokenType = TokenType {.LT = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 1}});
-    try tokens.append(Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 2}});
-    try tokens.append(Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 3}});
-    try tokens.append(Token {.tokenType = TokenType {.GT = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.DEQ = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.LT = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 1}});
-    try tokens.append(Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 2}});
-    try tokens.append(Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 3}});
-    try tokens.append(Token {.tokenType = TokenType {.GT = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LT = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 1}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 2}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 3}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.GT = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.DEQ = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LT = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 1}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 2}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 3}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.GT = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
     var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
@@ -3052,26 +3052,26 @@ test "list immediates binary expression" {
 
 test "list immediates binary expression lt" {
 
-    var tokens: std.ArrayList(Token) = .init(std.testing.allocator);
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = .empty;
+    defer tokens.deinit(std.testing.allocator);
 
     // <1, 2, 3> < <1, 2, 3>
-    try tokens.append(Token {.tokenType = TokenType {.LT = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 1}});
-    try tokens.append(Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 2}});
-    try tokens.append(Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 3}});
-    try tokens.append(Token {.tokenType = TokenType {.GT = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.LT = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.LT = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 1}});
-    try tokens.append(Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 2}});
-    try tokens.append(Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 3}});
-    try tokens.append(Token {.tokenType = TokenType {.GT = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LT = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 1}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 2}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 3}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.GT = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LT = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LT = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 1}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 2}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 3}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.GT = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
     var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
@@ -3104,26 +3104,26 @@ test "list immediates binary expression lt" {
 
 test "list immediates binary expression gt" {
 
-    var tokens: std.ArrayList(Token) = .init(std.testing.allocator);
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = .empty;
+    defer tokens.deinit(std.testing.allocator);
 
     // <1,2,3> > <1,2,3>
-    try tokens.append(Token {.tokenType = TokenType {.LT = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 1}});
-    try tokens.append(Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 2}});
-    try tokens.append(Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 3}});
-    try tokens.append(Token {.tokenType = TokenType {.GT = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.GT = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.LT = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 1}});
-    try tokens.append(Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 2}});
-    try tokens.append(Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 3}});
-    try tokens.append(Token {.tokenType = TokenType {.GT = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LT = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 1}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 2}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 3}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.GT = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.GT = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LT = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 1}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 2}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 3}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.GT = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
     var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
@@ -3156,28 +3156,28 @@ test "list immediates binary expression gt" {
 
 test "list immediates call expression" {
 
-    var tokens: std.ArrayList(Token) = .init(std.testing.allocator);
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = .empty;
+    defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(Token {.tokenType = TokenType {.IDENT = "f"}});
-    try tokens.append(Token {.tokenType = TokenType {.LPAREN = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.LT = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 1}});
-    try tokens.append(Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 2}});
-    try tokens.append(Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 3}});
-    try tokens.append(Token {.tokenType = TokenType {.GT = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.LT = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 1}});
-    try tokens.append(Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 2}});
-    try tokens.append(Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 3}});
-    try tokens.append(Token {.tokenType = TokenType {.GT = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.RPAREN = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "f"}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LPAREN = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LT = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 1}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 2}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 3}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.GT = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LT = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 1}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 2}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 3}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.GT = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RPAREN = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
     var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
@@ -3215,22 +3215,22 @@ test "list immediates call expression" {
 
 test "list immediates with less than" {
 
-    var tokens: std.ArrayList(Token) = .init(std.testing.allocator);
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = .empty;
+    defer tokens.deinit(std.testing.allocator);
 
     // <1,2, 3 < < 4 > >
-    try tokens.append(Token {.tokenType = TokenType {.LT = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 1}});
-    try tokens.append(Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 2}});
-    try tokens.append(Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 3}});
-    try tokens.append(Token {.tokenType = TokenType {.LT = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.LT = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 4}});
-    try tokens.append(Token {.tokenType = TokenType {.GT = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.GT = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LT = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 1}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 2}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 3}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LT = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LT = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 4}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.GT = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.GT = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
     var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
@@ -3261,20 +3261,20 @@ test "list immediates with less than" {
 
 test "list immediates with greater than" {
 
-    var tokens: std.ArrayList(Token) = .init(std.testing.allocator);
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = .empty;
+    defer tokens.deinit(std.testing.allocator);
 
     // <1,2, 3 > 5 >
-    try tokens.append(Token {.tokenType = TokenType {.LT = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 1}});
-    try tokens.append(Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 2}});
-    try tokens.append(Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 3}});
-    try tokens.append(Token {.tokenType = TokenType {.GT = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 5}});
-    try tokens.append(Token {.tokenType = TokenType {.GT = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LT = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 1}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 2}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 3}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.GT = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 5}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.GT = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
     var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
@@ -3293,22 +3293,22 @@ test "list immediates with greater than" {
 
 test "more complicated list immediates" {
 
-    var tokens: std.ArrayList(Token) = .init(std.testing.allocator);
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = .empty;
+    defer tokens.deinit(std.testing.allocator);
 
     // <1, 2, 3 > < <1>
-    try tokens.append(Token {.tokenType = TokenType {.LT = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 1}});
-    try tokens.append(Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 2}});
-    try tokens.append(Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 3}});
-    try tokens.append(Token {.tokenType = TokenType {.GT = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.LT = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.LT = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 1}});
-    try tokens.append(Token {.tokenType = TokenType {.GT = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LT = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 1}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 2}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 3}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.GT = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LT = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LT = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 1}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.GT = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
     var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
@@ -3340,22 +3340,22 @@ test "more complicated list immediates" {
 
 test "more complicated list immediates 2" {
 
-    var tokens: std.ArrayList(Token) = .init(std.testing.allocator);
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = .empty;
+    defer tokens.deinit(std.testing.allocator);
 
     // <1, 2, 3 > > <1>
-    try tokens.append(Token {.tokenType = TokenType {.LT = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 1}});
-    try tokens.append(Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 2}});
-    try tokens.append(Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 3}});
-    try tokens.append(Token {.tokenType = TokenType {.GT = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.GT = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.LT = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 1}});
-    try tokens.append(Token {.tokenType = TokenType {.GT = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LT = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 1}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 2}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 3}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.GT = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.GT = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LT = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 1}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.GT = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
     var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
@@ -3387,20 +3387,20 @@ test "more complicated list immediates 2" {
 
 test "list immediates with assignment" {
 
-    var tokens: std.ArrayList(Token) = .init(std.testing.allocator);
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = .empty;
+    defer tokens.deinit(std.testing.allocator);
 
     // <1,2, 3 = 5 >
-    try tokens.append(Token {.tokenType = TokenType {.LT = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 1}});
-    try tokens.append(Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 2}});
-    try tokens.append(Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 3}});
-    try tokens.append(Token {.tokenType = TokenType {.EQ = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 5}});
-    try tokens.append(Token {.tokenType = TokenType {.GT = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LT = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 1}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 2}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 3}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EQ = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 5}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.GT = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
     var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
@@ -3425,14 +3425,14 @@ test "list immediates with assignment" {
 
 test "float expression" {
 
-    var tokens: std.ArrayList(Token) = .init(std.testing.allocator);
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = .empty;
+    defer tokens.deinit(std.testing.allocator);
 
     // <1,2, 3 = 5 >
-    try tokens.append(Token {.tokenType = TokenType {.FLOATLIT = 3.14}});
-    try tokens.append(Token {.tokenType = TokenType {.PLUS = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.FLOATLIT = 1.2}});
-    try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.FLOATLIT = 3.14}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.PLUS = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.FLOATLIT = 1.2}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
     var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
@@ -3452,14 +3452,14 @@ test "float expression" {
 
 test "as expression" {
 
-    var tokens: std.ArrayList(Token) = .init(std.testing.allocator);
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = .empty;
+    defer tokens.deinit(std.testing.allocator);
 
     // 3.14 as Int
-    try tokens.append(Token {.tokenType = TokenType {.FLOATLIT = 3.14}});
-    try tokens.append(Token {.tokenType = TokenType {.AS = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INT = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.FLOATLIT = 3.14}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.AS = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INT = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
     var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
@@ -3477,16 +3477,16 @@ test "as expression" {
 
 test "as expression left-associative" {
 
-    var tokens: std.ArrayList(Token) = .init(std.testing.allocator);
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = .empty;
+    defer tokens.deinit(std.testing.allocator);
 
     // 3.14 as Int
-    try tokens.append(Token {.tokenType = TokenType {.FLOATLIT = 3.14}});
-    try tokens.append(Token {.tokenType = TokenType {.AS = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INT = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.AS = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.BOOL = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.FLOATLIT = 3.14}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.AS = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INT = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.AS = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.BOOL = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
     var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();
@@ -3511,18 +3511,18 @@ test "as expression left-associative" {
 
 test "as expression binding power" {
 
-    var tokens: std.ArrayList(Token) = .init(std.testing.allocator);
-    defer tokens.deinit();
+    var tokens: std.ArrayList(Token) = .empty;
+    defer tokens.deinit(std.testing.allocator);
 
     // 3.14 > 5 as Int
     // 1) 3.14 > (5 as Int)
     // 2) (3.14 > 5) as Int
-    try tokens.append(Token {.tokenType = TokenType {.FLOATLIT = 3.14}});
-    try tokens.append(Token {.tokenType = TokenType {.GT = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.INTLIT = 5}});
-    try tokens.append(Token {.tokenType = TokenType {.AS = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.FLOAT = {}}});
-    try tokens.append(Token {.tokenType = TokenType {.EOF = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.FLOATLIT = 3.14}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.GT = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 5}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.AS = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.FLOAT = {}}});
+    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
     var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
 
     const result: *ast.Expr = try prs.parseExpr();

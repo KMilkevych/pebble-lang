@@ -13,7 +13,7 @@ test "intlit" {
 
     var lxr: lexer.Lexer = lexer.Lexer.new(input, "", std.testing.allocator);
     const tokens: std.ArrayList(token.Token) = lxr.lex();
-    defer tokens.deinit();
+    defer tokens.deinit(std.testing.allocator);
 
     var prsr: parser.Parser = parser.Parser.new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
     const expr: *ast.Expr = try prsr.parseExpr();
@@ -31,7 +31,7 @@ test "complicated intlit expression" {
 
     var lxr: lexer.Lexer = lexer.Lexer.new(input, "", std.testing.allocator);
     const tokens: std.ArrayList(token.Token) = lxr.lex();
-    defer tokens.deinit();
+    defer tokens.deinit(std.testing.allocator);
 
     var prsr: parser.Parser = parser.Parser.new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
     const expr: *ast.Expr = try prsr.parseExpr();
@@ -50,7 +50,7 @@ test "complicated boolean expression" {
 
     var lxr: lexer.Lexer = lexer.Lexer.new(input, "", std.testing.allocator);
     const tokens: std.ArrayList(token.Token) = lxr.lex();
-    defer tokens.deinit();
+    defer tokens.deinit(std.testing.allocator);
 
     var prsr: parser.Parser = parser.Parser.new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
     const expr: *ast.Expr = try prsr.parseExpr();
@@ -68,14 +68,14 @@ test "variable eval with premade environment" {
 
     var lxr: lexer.Lexer = lexer.Lexer.new(input, "", std.testing.allocator);
     const tokens: std.ArrayList(token.Token) = lxr.lex();
-    defer tokens.deinit();
+    defer tokens.deinit(std.testing.allocator);
 
     var prsr: parser.Parser = parser.Parser.new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
     const expr: *ast.Expr = try prsr.parseExpr();
     defer expr.destroyAll(std.testing.allocator);
 
     var env = venv.Env.new(std.testing.allocator);
-    defer env.deinit();
+    defer env.deinit(std.testing.allocator);
     env.insert("some_variable", venv.ObjectVal {.Var = ast.Lit {.Int = 2193}});
 
     const res: ast.Lit = try interpreter.evalExpr(expr, &env);
@@ -89,7 +89,7 @@ test "assignment expression" {
 
     var lxr: lexer.Lexer = lexer.Lexer.new(input, "", std.testing.allocator);
     const tokens: std.ArrayList(token.Token) = lxr.lex();
-    defer tokens.deinit();
+    defer tokens.deinit(std.testing.allocator);
 
     var prsr: parser.Parser = parser.Parser.new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
     const expr: *ast.Expr = try prsr.parseExpr();
@@ -97,7 +97,7 @@ test "assignment expression" {
 
     var env = venv.Env.new(std.testing.allocator);
     env.insert("variable", venv.ObjectVal {.Undefined = {}});
-    defer env.deinit();
+    defer env.deinit(std.testing.allocator);
 
     const res: ast.Lit = try interpreter.evalExpr(expr, &env);
 
@@ -110,7 +110,7 @@ test "double assignment" {
 
     var lxr: lexer.Lexer = lexer.Lexer.new(input, "", std.testing.allocator);
     const tokens: std.ArrayList(token.Token) = lxr.lex();
-    defer tokens.deinit();
+    defer tokens.deinit(std.testing.allocator);
 
     var prsr: parser.Parser = parser.Parser.new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
     const expr: *ast.Expr = try prsr.parseExpr();
@@ -119,7 +119,7 @@ test "double assignment" {
     var env = venv.Env.new(std.testing.allocator);
     env.insert("x", venv.ObjectVal {.Undefined = {}});
     env.insert("y", venv.ObjectVal {.Undefined = {}});
-    defer env.deinit();
+    defer env.deinit(std.testing.allocator);
 
     const res: ast.Lit = try interpreter.evalExpr(expr, &env);
 
@@ -132,14 +132,14 @@ test "declare statement undefined" {
 
     var lxr: lexer.Lexer = lexer.Lexer.new(input, "", std.testing.allocator);
     const tokens: std.ArrayList(token.Token) = lxr.lex();
-    defer tokens.deinit();
+    defer tokens.deinit(std.testing.allocator);
 
     var prsr: parser.Parser = parser.Parser.new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
     const stmt: ast.Stmt = try prsr.parseStmt();
     defer stmt.destroyAll(std.testing.allocator);
 
     var env = venv.Env.new(std.testing.allocator);
-    defer env.deinit();
+    defer env.deinit(std.testing.allocator);
 
     _ = try interpreter.evalStmt(stmt, &env);
 
@@ -160,14 +160,14 @@ test "break statement" {
 
     var lxr: lexer.Lexer = lexer.Lexer.new(input, "", std.testing.allocator);
     const tokens: std.ArrayList(token.Token) = lxr.lex();
-    defer tokens.deinit();
+    defer tokens.deinit(std.testing.allocator);
 
     var prsr: parser.Parser = parser.Parser.new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
     const proc: ast.Proc = try prsr.parseProcedure();
     defer proc.destroyAll(std.testing.allocator);
 
     var env = venv.Env.new(std.testing.allocator);
-    defer env.deinit();
+    defer env.deinit(std.testing.allocator);
 
     _ = try interpreter.evalProc(proc, &env);
 
@@ -190,14 +190,14 @@ test "continue statement" {
 
     var lxr: lexer.Lexer = lexer.Lexer.new(input, "", std.testing.allocator);
     const tokens: std.ArrayList(token.Token) = lxr.lex();
-    defer tokens.deinit();
+    defer tokens.deinit(std.testing.allocator);
 
     var prsr: parser.Parser = parser.Parser.new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
     const proc: ast.Proc = try prsr.parseProcedure();
     defer proc.destroyAll(std.testing.allocator);
 
     var env = venv.Env.new(std.testing.allocator);
-    defer env.deinit();
+    defer env.deinit(std.testing.allocator);
 
     _ = try interpreter.evalProc(proc, &env);
 
@@ -219,14 +219,14 @@ test "closure 1 test" {
 
     var lxr: lexer.Lexer = lexer.Lexer.new(input, "", std.testing.allocator);
     const tokens: std.ArrayList(token.Token) = lxr.lex();
-    defer tokens.deinit();
+    defer tokens.deinit(std.testing.allocator);
 
     var prsr: parser.Parser = parser.Parser.new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
     const proc: ast.Proc = try prsr.parseProcedure();
     defer proc.destroyAll(std.testing.allocator);
 
     var env = venv.Env.new(std.testing.allocator);
-    defer env.deinit();
+    defer env.deinit(std.testing.allocator);
 
     _ = try interpreter.evalProc(proc, &env);
 
@@ -245,14 +245,14 @@ test "first-class values test" {
 
     var lxr: lexer.Lexer = lexer.Lexer.new(input, "", std.testing.allocator);
     const tokens: std.ArrayList(token.Token) = lxr.lex();
-    defer tokens.deinit();
+    defer tokens.deinit(std.testing.allocator);
 
     var prsr: parser.Parser = parser.Parser.new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
     const proc: ast.Proc = try prsr.parseProcedure();
     defer proc.destroyAll(std.testing.allocator);
 
     var env = venv.Env.new(std.testing.allocator);
-    defer env.deinit();
+    defer env.deinit(std.testing.allocator);
 
     _ = try interpreter.evalProc(proc, &env);
 
@@ -272,14 +272,14 @@ test "prohibit upcalling" {
 
     var lxr: lexer.Lexer = lexer.Lexer.new(input, "", std.testing.allocator);
     const tokens: std.ArrayList(token.Token) = lxr.lex();
-    defer tokens.deinit();
+    defer tokens.deinit(std.testing.allocator);
 
     var prsr: parser.Parser = parser.Parser.new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
     const proc: ast.Proc = try prsr.parseProcedure();
     defer proc.destroyAll(std.testing.allocator);
 
     var env = venv.Env.new(std.testing.allocator);
-    defer env.deinit();
+    defer env.deinit(std.testing.allocator);
 
     const r: interpreter.EvalError!void = interpreter.evalProc(proc, &env);
 
