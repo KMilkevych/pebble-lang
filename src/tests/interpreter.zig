@@ -1,7 +1,8 @@
 const ast = @import("../ast.zig");
-const interpreter = @import("../interpreter.zig");
+const interprtr = @import("../interpreter.zig");
 const venv = @import("../env.zig");
 const loc = @import("../location.zig");
+const log = @import("../logger.zig");
 const nolocation = loc.LocationRange.none;
 
 const std = @import("std");
@@ -9,6 +10,12 @@ const std = @import("std");
 const expect = std.testing.expect;
 
 test "simple not" {
+
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
 
 
     const t: ast.Expr = ast.Expr {
@@ -92,6 +99,12 @@ test "simple neg" {
 
     var env = venv.Env.new(std.testing.allocator);
 
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
+
     try std.testing.expectEqual(
         ast.Lit {.Int = -3},
         try interpreter.evalExpr(&l3, &env)
@@ -120,6 +133,12 @@ test "variable lookup" {
         },
         .location = nolocation()
     };
+
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
 
     try std.testing.expectEqual(
         ast.Lit {.Int = 32},
@@ -150,6 +169,12 @@ test "variable assignment" {
         .location = nolocation()
     };
 
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
+
     try std.testing.expectEqual(
         ast.Lit {.Int = 13},
         try interpreter.evalExpr(&exp, &env)
@@ -176,6 +201,12 @@ test "let x (= undefined)" {
         },
         .location = nolocation()
     };
+
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
 
     // Evaluate statement
     _ = try interpreter.evalStmt(stmt, &env);
@@ -217,6 +248,12 @@ test "let x = 49" {
         },
         .location = nolocation()
     };
+
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
 
     // Evaluate statement
     _ = try interpreter.evalStmt(stmt, &env);
@@ -261,9 +298,15 @@ test "invalid chain declaration" {
             .location = nolocation()
         };
 
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
+
     // Evaluate statement to error for z
-    const err: interpreter.EvalError!interpreter.StmtReturn = interpreter.evalStmt(stmt, &env);
-    try std.testing.expectEqual(interpreter.EvalError.UndefinedVariable, err);
+    const err: interprtr.EvalError!interprtr.StmtReturn = interpreter.evalStmt(stmt, &env);
+    try std.testing.expectEqual(interprtr.EvalError.UndefinedVariable, err);
 }
 
 
@@ -285,9 +328,15 @@ test "redeclaration error" {
         .location = nolocation()
     };
 
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
+
     // Evaluate statement to error for z
-    const err: interpreter.EvalError!interpreter.StmtReturn = interpreter.evalStmt(stmt, &env);
-    try std.testing.expectEqual(interpreter.EvalError.IdentifierAlreadyDeclared, err);
+    const err: interprtr.EvalError!interprtr.StmtReturn = interpreter.evalStmt(stmt, &env);
+    try std.testing.expectEqual(interprtr.EvalError.IdentifierAlreadyDeclared, err);
 }
 
 test "redeclaration error 2" {
@@ -305,9 +354,15 @@ test "redeclaration error 2" {
         .location = nolocation()
     };
 
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
+
     // Evaluate statement to error for z
-    const err: interpreter.EvalError!interpreter.StmtReturn = interpreter.evalStmt(stmt, &env);
-    try std.testing.expectEqual(interpreter.EvalError.IdentifierAlreadyDeclared, err);
+    const err: interprtr.EvalError!interprtr.StmtReturn = interpreter.evalStmt(stmt, &env);
+    try std.testing.expectEqual(interprtr.EvalError.IdentifierAlreadyDeclared, err);
 }
 
 test "smart scoped assignment" {
@@ -361,6 +416,12 @@ test "smart scoped assignment" {
             }},
             .location = nolocation()},
     }};
+
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
 
     // Evaluate statement to error for z
     try interpreter.evalProc(proc, &env);
@@ -423,6 +484,12 @@ test "smart scoped declaration" {
         },
     }};
 
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
+
     // Evaluate statement to error for z
     try interpreter.evalProc(proc, &env);
     try std.testing.expectEqualDeep(
@@ -437,6 +504,12 @@ test "comparison expressions" {
     // Prepare environment
     var env = venv.Env.new(std.testing.allocator);
     defer env.deinit();
+
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
 
     // Test less-than expressions
     const exp1: ast.Expr = ast.Expr {
@@ -638,6 +711,12 @@ test "break works" {
         },
     }};
 
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
+
     // Evaluate statement to error for z
     try interpreter.evalProc(proc, &env);
     try std.testing.expectEqualDeep(
@@ -727,6 +806,12 @@ test "break in block works" {
             }},
             .location = nolocation()},
     }};
+
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
 
     // Evaluate statement to error for z
     try interpreter.evalProc(proc, &env);
@@ -819,6 +904,12 @@ test "continue works" {
             .location = nolocation()
         },
     }};
+
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
 
     // Evaluate statement to error for z
     try interpreter.evalProc(proc, &env);
@@ -921,6 +1012,12 @@ test "continue in block works" {
         },
     }};
 
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
+
     // Evaluate statement to error for z
     try interpreter.evalProc(proc, &env);
     try std.testing.expectEqualDeep(
@@ -946,11 +1043,17 @@ test "break outside error" {
         }
     }};
 
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
+
     // Evaluate statement to error for z
-    const res: interpreter.EvalError!void = interpreter.evalProc(proc, &env);
+    const res: interprtr.EvalError!void = interpreter.evalProc(proc, &env);
     try std.testing.expectEqualDeep(
         res,
-        interpreter.EvalError.UnexpectedBreak
+        interprtr.EvalError.UnexpectedBreak
     );
 }
 
@@ -964,11 +1067,17 @@ test "break outside error 2" {
         ast.Stmt {.stmt = ast.StmtInner {.BreakStmt = {}},.location = nolocation()}
     }};
 
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
+
     // Evaluate statement to error for z
-    const res: interpreter.EvalError!void = interpreter.evalProc(proc, &env);
+    const res: interprtr.EvalError!void = interpreter.evalProc(proc, &env);
     try std.testing.expectEqualDeep(
         res,
-        interpreter.EvalError.UnexpectedBreak
+        interprtr.EvalError.UnexpectedBreak
     );
 }
 
@@ -988,11 +1097,17 @@ test "continue outside error" {
         }
     }};
 
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
+
     // Evaluate statement to error for z
-    const res: interpreter.EvalError!void = interpreter.evalProc(proc, &env);
+    const res: interprtr.EvalError!void = interpreter.evalProc(proc, &env);
     try std.testing.expectEqualDeep(
         res,
-        interpreter.EvalError.UnexpectedContinue
+        interprtr.EvalError.UnexpectedContinue
     );
 }
 
@@ -1007,11 +1122,17 @@ test "continue outside error 2" {
         ast.Stmt {.stmt = ast.StmtInner {.ContinueStmt = {}},.location = nolocation()}
     }};
 
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
+
     // Evaluate statement to error for z
-    const res: interpreter.EvalError!void = interpreter.evalProc(proc, &env);
+    const res: interprtr.EvalError!void = interpreter.evalProc(proc, &env);
     try std.testing.expectEqualDeep(
         res,
-        interpreter.EvalError.UnexpectedContinue
+        interprtr.EvalError.UnexpectedContinue
     );
 }
 
@@ -1053,6 +1174,12 @@ test "comma declaration" {
             }},
             .location = nolocation()},
     }};
+
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
 
     // Evaluate procedure
     _ = try interpreter.evalProc(proc, &env);
@@ -1099,11 +1226,17 @@ test "undefined variable in comma declaration" {
         },
     }};
 
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
+
     // Evaluate statement to error for z
-    const res: interpreter.EvalError!void = interpreter.evalProc(proc, &env);
+    const res: interprtr.EvalError!void = interpreter.evalProc(proc, &env);
     try std.testing.expectEqualDeep(
         res,
-        interpreter.EvalError.UndefinedVariable
+        interprtr.EvalError.UndefinedVariable
     );
 }
 
@@ -1136,6 +1269,12 @@ test "simple funcall" {
         }},
         .location = nolocation()
     };
+
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
 
     // Evaluate statement
     const r: ast.Lit = try interpreter.evalExpr(&expr, &env);
@@ -1180,6 +1319,12 @@ test "simple funcall one param" {
         }},
         .location = nolocation()
     };
+
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
 
     // Evaluate statement
     const r: ast.Lit = try interpreter.evalExpr(&expr, &env);
@@ -1234,6 +1379,12 @@ test "simple funcall three params" {
         .location = nolocation()
     };
 
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
+
     // Evaluate statement
     const r: ast.Lit = try interpreter.evalExpr(&expr, &env);
 
@@ -1268,6 +1419,12 @@ test "simple funcall no return" {
         }},
         .location = nolocation()
     };
+
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
 
     // Evaluate statement
     const r: ast.Lit = try interpreter.evalExpr(&expr, &env);
@@ -1315,6 +1472,12 @@ test "function closure works" {
         }},
         .location = nolocation()
     };
+
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
 
     // Evaluate statement
     const r: ast.Lit = try interpreter.evalExpr(&expr, &env);
@@ -1364,6 +1527,12 @@ test "function closure works 2" {
         .location = nolocation()
     };
 
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
+
     // Evaluate statement
     const r: ast.Lit = try interpreter.evalExpr(&expr, &env);
 
@@ -1412,6 +1581,12 @@ test "function argument shadow closure scope" {
         }},
         .location = nolocation()
     };
+
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
 
     // Evaluate statement
     const r: ast.Lit = try interpreter.evalExpr(&expr, &env);
@@ -1474,6 +1649,12 @@ test "re-declaring outer variable in function local scope" {
         .location = nolocation()
     };
 
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
+
     // Evaluate statement
     const r: ast.Lit = try interpreter.evalExpr(&expr, &env);
 
@@ -1513,11 +1694,17 @@ test "wrong argument count 1" {
         .location = nolocation()
     };
 
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
+
     // Evaluate statement
-    const r: interpreter.EvalError!ast.Lit = interpreter.evalExpr(&expr, &env);
+    const r: interprtr.EvalError!ast.Lit = interpreter.evalExpr(&expr, &env);
 
     // Assert that function computes correctly
-    try std.testing.expectEqualDeep(interpreter.EvalError.WrongArgCount, r);
+    try std.testing.expectEqualDeep(interprtr.EvalError.WrongArgCount, r);
 }
 
 test "wrong argument count 2" {
@@ -1552,11 +1739,17 @@ test "wrong argument count 2" {
         .location = nolocation()
     };
 
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
+
     // Evaluate statement
-    const r: interpreter.EvalError!ast.Lit = interpreter.evalExpr(&expr, &env);
+    const r: interprtr.EvalError!ast.Lit = interpreter.evalExpr(&expr, &env);
 
     // Assert that function computes correctly
-    try std.testing.expectEqualDeep(interpreter.EvalError.WrongArgCount, r);
+    try std.testing.expectEqualDeep(interprtr.EvalError.WrongArgCount, r);
 }
 
 test "recursion 1" {
@@ -1632,6 +1825,13 @@ test "recursion 1" {
             },
         }},
         .location = nolocation()};
+
+
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
 
     // Evaluate statement
     const r: ast.Lit = try interpreter.evalExpr(&expr, &env);
@@ -1715,6 +1915,12 @@ test "recursion 2" {
         }},
         .location = nolocation()
     };
+
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
 
     // Evaluate statement
     const r: ast.Lit = try interpreter.evalExpr(&expr, &env);
@@ -1893,6 +2099,12 @@ test "mutual recursion" {
         .location = nolocation()
     };
 
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
+
     // Assert that function computes correctly
     try std.testing.expectEqualDeep(ast.Lit {.Bool = true}, try interpreter.evalExpr(&expr1, &env));
     try std.testing.expectEqualDeep(ast.Lit {.Bool = false}, try interpreter.evalExpr(&expr2, &env));
@@ -1936,6 +2148,12 @@ test "function definition" {
         }},
         .location = nolocation()
     };
+
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
 
     // Evaluate statement
     _ = try interpreter.evalStmt(stmt, &env);
@@ -2032,6 +2250,12 @@ test "closure test" {
         },
     }};
 
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
+
     // Make sure that y is set with updated x
     _ = try interpreter.evalProc(proc, &env);
     try std.testing.expectEqualDeep(
@@ -2073,6 +2297,12 @@ test "make statement test" {
         .len = 4,
         .items = items
     };
+
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
 
     // Make sure that y is set with updated x
     _ = try interpreter.evalProc(proc, &env);
@@ -2133,6 +2363,12 @@ test "multi make statement test" {
         .len = 7,
         .items = items2
     };
+
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
 
     // Make sure that y is set with updated x
     _ = try interpreter.evalProc(proc, &env);
@@ -2201,6 +2437,12 @@ test "list mutation" {
         .items = items,
         .len = 3
     };
+
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
 
     // Make sure that y is set with updated x
     _ = try interpreter.evalProc(proc, &env);
@@ -2279,6 +2521,12 @@ test "list referencing" {
         .refs = 2
     };
 
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
+
     // Make sure that y is set with updated x
     _ = try interpreter.evalProc(proc, &env);
     try std.testing.expectEqualDeep(
@@ -2355,6 +2603,12 @@ test "list referencing 2" {
         .refs = 2
     };
 
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
+
     // Make sure that y is set with updated x
     _ = try interpreter.evalProc(proc, &env);
     try std.testing.expectEqualDeep(
@@ -2398,6 +2652,12 @@ test "list overwrite" {
         }
 
     }};
+
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
 
     // Make sure that y is set with updated x
     _ = try interpreter.evalProc(proc, &env);
@@ -2484,6 +2744,12 @@ test "list function mutation" {
         .refs = 1
     };
 
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
+
     // Make sure that y is set with updated x
     _ = try interpreter.evalProc(proc, &env);
     try std.testing.expectEqualDeep(
@@ -2564,6 +2830,12 @@ test "list function return" {
         .len = 10,
         .refs = 1
     };
+
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
 
     // Make sure that y is set with updated x
     _ = try interpreter.evalProc(proc, &env);
@@ -2668,6 +2940,12 @@ test "nested list function return" {
         .refs = 1
     };
 
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
+
     // Make sure that y is set with updated x
     _ = try interpreter.evalProc(proc, &env);
     try std.testing.expectEqualDeep(
@@ -2744,6 +3022,12 @@ test "multi list declaration with initialization" {
         .refs = 1
     };
 
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
+
     // Make sure that y is set with updated x
     _ = try interpreter.evalProc(proc, &env);
     try std.testing.expectEqualDeep(
@@ -2784,6 +3068,12 @@ test "list size" {
         .location = nolocation()
     };
 
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
+
     // Evaluate statement
     const r: ast.Lit = try interpreter.evalExpr(&expr, &env);
 
@@ -2819,11 +3109,17 @@ test "list invalid property" {
         .location = nolocation()
     };
 
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
+
     // Evaluate statement
-    const r: interpreter.EvalError!ast.Lit = interpreter.evalExpr(&expr, &env);
+    const r: interprtr.EvalError!ast.Lit = interpreter.evalExpr(&expr, &env);
 
     // Assert that function computes correctly
-    try std.testing.expectEqualDeep(r, interpreter.EvalError.InvalidProperty);
+    try std.testing.expectEqualDeep(r, interprtr.EvalError.InvalidProperty);
 }
 
 test "property not on list" {
@@ -2847,11 +3143,17 @@ test "property not on list" {
         .location = nolocation()
     };
 
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
+
     // Evaluate statement
-    const r: interpreter.EvalError!ast.Lit = interpreter.evalExpr(&expr, &env);
+    const r: interprtr.EvalError!ast.Lit = interpreter.evalExpr(&expr, &env);
 
     // Assert that function computes correctly
-    try std.testing.expectEqualDeep(r, interpreter.EvalError.InvalidProperty);
+    try std.testing.expectEqualDeep(r, interprtr.EvalError.InvalidProperty);
 }
 
 test "list overwrite with list" {
@@ -2929,6 +3231,12 @@ test "list overwrite with list" {
         .refs = 2
     };
 
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
+
     // Make sure that y is set with updated x
     _ = try interpreter.evalProc(proc, &env);
 
@@ -2997,6 +3305,12 @@ test "list function return unused" {
         },
 
     }};
+
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
 
 
     // Make sure that y is set with updated x
@@ -3078,6 +3392,12 @@ test "nested list function return unused" {
         },
 
     }};
+
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
 
     // Make sure that y is set with updated x
     _ = try interpreter.evalProc(proc, &env);
@@ -3198,6 +3518,12 @@ test "nested list function return assignexpr" {
         .refs = 1
     };
 
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
+
     // Make sure that y is set with updated x
     _ = try interpreter.evalProc(proc, &env);
     try std.testing.expectEqualDeep(
@@ -3207,10 +3533,6 @@ test "nested list function return assignexpr" {
 }
 
 test "list function return print statement" {
-
-    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
-    defer out.deinit();
-    interpreter.setWriter(&out.writer);
 
     // Prepare environment
     var env = venv.Env.new(std.testing.allocator);
@@ -3262,6 +3584,12 @@ test "list function return print statement" {
         },
 
     }};
+
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
 
     // Make sure that y is set with updated x
     _ = try interpreter.evalProc(proc, &env);
@@ -3321,6 +3649,12 @@ test "immediate list function return" {
 
     }};
 
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
+
     // Evaluate procedure
     _ = try interpreter.evalProc(proc, &env);
     try std.testing.expectEqualDeep(
@@ -3370,6 +3704,12 @@ test "declare list immediate" {
         .len = 1,
         .refs = 1
     };
+
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
 
     _ = try interpreter.evalProc(proc, &env);
 
@@ -3433,6 +3773,12 @@ test "declare list of list immediates" {
     };
 
     defer ptr.destroyAll(std.testing.allocator);
+
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
 
     _ = try interpreter.evalProc(proc, &env);
 
@@ -3499,6 +3845,12 @@ test "list immediate to funcall" {
         },
 
     }};
+
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
 
     _ = try interpreter.evalProc(proc, &env);
 
@@ -3567,6 +3919,12 @@ test "return list immediate" {
 
     defer ptr.destroyAll(std.testing.allocator);
 
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
+
     _ = try interpreter.evalProc(proc, &env);
 
     try std.testing.expectEqualDeep(
@@ -3627,6 +3985,12 @@ test "list immediate assign expression" {
     defer std.testing.allocator.free(items);
     defer std.testing.allocator.destroy(ptr);
 
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
+
     _ = try interpreter.evalProc(proc, &env);
 
     try std.testing.expectEqualDeep(
@@ -3676,6 +4040,12 @@ test "list immediate indexing" {
         }}},
         .location = nolocation()
     };
+
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
 
     try std.testing.expectEqual(
         try interpreter.evalExpr(&exp1, &env),
@@ -3762,6 +4132,12 @@ test "nested list immediate" {
 
     defer ptr.destroyAll(std.testing.allocator);
 
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
+
     _ = try interpreter.evalProc(proc, &env);
 
     try std.testing.expectEqualDeep(
@@ -3791,6 +4167,12 @@ test "list immediate expression statement" {
         }
 
     }};
+
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
 
     _ = try interpreter.evalProc(proc, &env);
 }
@@ -3836,11 +4218,17 @@ test "callable in list immediate" {
 
     }};
 
-    const r: interpreter.EvalError!void = interpreter.evalProc(proc, &env);
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
+
+    const r: interprtr.EvalError!void = interpreter.evalProc(proc, &env);
 
     try std.testing.expectEqualDeep(
         r,
-        interpreter.EvalError.InvalidUpcall
+        interprtr.EvalError.InvalidUpcall
     );
 }
 
@@ -3848,6 +4236,12 @@ test "type conversion int - bool" {
     // Prepare environment
     var env = venv.Env.new(std.testing.allocator);
     defer env.deinit();
+
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
 
     // Test different cases
     const e1: ast.Expr = ast.Expr {
@@ -3933,6 +4327,12 @@ test "type conversion float - bool" {
     // Prepare environment
     var env = venv.Env.new(std.testing.allocator);
     defer env.deinit();
+
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
 
     // Test different cases
     const e1: ast.Expr = ast.Expr {
@@ -4030,6 +4430,12 @@ test "type conversion int - float" {
     // Prepare environment
     var env = venv.Env.new(std.testing.allocator);
     defer env.deinit();
+
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
 
     // Test different cases
     const e1: ast.Expr = ast.Expr {

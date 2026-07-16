@@ -88,8 +88,8 @@ fn run(io: std.Io, allocator: std.mem.Allocator, stdout: *std.Io.Writer, loc: [:
     defer proc.destroyAll(allocator);
 
     // Evaluate all
-    interpreter.setWriter(stdout);
-    try interpreter.evalProc(proc, &env);
+    var interprtr = interpreter.Interpreter.new(stdout, &logger);
+    try interprtr.evalProc(proc, &env);
 }
 
 fn interactive(io: std.Io, gpa: std.mem.Allocator, out: *std.Io.Writer) !void {
@@ -133,14 +133,14 @@ fn interactive(io: std.Io, gpa: std.mem.Allocator, out: *std.Io.Writer) !void {
             continue;
         };
 
-        interpreter.setWriter(out);
+        var interprtr = interpreter.Interpreter.new(out, &logger);
         const res: ?ast.Lit = blk: switch (tree.stmt) {
-            .ExprStmt => |exp| interpreter.evalExpr(exp, &env) catch |err| {
+            .ExprStmt => |exp| interprtr.evalExpr(exp, &env) catch |err| {
                 try out.print("{}\n", .{err});
                 break :blk null;
             },
             else => {
-                _ = interpreter.evalStmt(tree, &env) catch |err| {
+                _ = interprtr.evalStmt(tree, &env) catch |err| {
                     try out.print("{}\n", .{err});
                     break :blk null;
                 };

@@ -2,7 +2,7 @@ const ast = @import("../ast.zig");
 const lexer = @import("../lexer.zig");
 const parser = @import("../parser.zig");
 const token = @import("../token.zig");
-const interpreter = @import("../interpreter.zig");
+const interprtr = @import("../interpreter.zig");
 const venv = @import("../env.zig");
 const Log = @import("../logger.zig");
 
@@ -19,6 +19,10 @@ test "intlit" {
     var prsr: parser.Parser = parser.Parser.new(tokens, std.testing.allocator, &logger);
     const expr: *ast.Expr = try prsr.parseExpr();
     defer expr.destroyAll(std.testing.allocator);
+
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
 
     var env = venv.Env.new(std.testing.allocator);
     const res: ast.Lit = try interpreter.evalExpr(expr, &env);
@@ -38,6 +42,10 @@ test "complicated intlit expression" {
     var prsr: parser.Parser = parser.Parser.new(tokens, std.testing.allocator, &logger);
     const expr: *ast.Expr = try prsr.parseExpr();
     defer expr.destroyAll(std.testing.allocator);
+
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
 
     var env = venv.Env.new(std.testing.allocator);
     const res: ast.Lit = try interpreter.evalExpr(expr, &env);
@@ -59,6 +67,10 @@ test "complicated boolean expression" {
     const expr: *ast.Expr = try prsr.parseExpr();
     defer expr.destroyAll(std.testing.allocator);
 
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
+
     var env = venv.Env.new(std.testing.allocator);
     const res: ast.Lit = try interpreter.evalExpr(expr, &env);
 
@@ -77,6 +89,10 @@ test "variable eval with premade environment" {
     var prsr: parser.Parser = parser.Parser.new(tokens, std.testing.allocator, &logger);
     const expr: *ast.Expr = try prsr.parseExpr();
     defer expr.destroyAll(std.testing.allocator);
+
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
 
     var env = venv.Env.new(std.testing.allocator);
     defer env.deinit();
@@ -100,6 +116,10 @@ test "assignment expression" {
     const expr: *ast.Expr = try prsr.parseExpr();
     defer expr.destroyAll(std.testing.allocator);
 
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
+
     var env = venv.Env.new(std.testing.allocator);
     env.insert("variable", venv.ObjectVal {.Undefined = {}});
     defer env.deinit();
@@ -121,6 +141,10 @@ test "double assignment" {
     var prsr: parser.Parser = parser.Parser.new(tokens, std.testing.allocator, &logger);
     const expr: *ast.Expr = try prsr.parseExpr();
     defer expr.destroyAll(std.testing.allocator);
+
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
 
     var env = venv.Env.new(std.testing.allocator);
     env.insert("x", venv.ObjectVal {.Undefined = {}});
@@ -144,6 +168,10 @@ test "declare statement undefined" {
     var prsr: parser.Parser = parser.Parser.new(tokens, std.testing.allocator, &logger);
     const stmt: ast.Stmt = try prsr.parseStmt();
     defer stmt.destroyAll(std.testing.allocator);
+
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
 
     var env = venv.Env.new(std.testing.allocator);
     defer env.deinit();
@@ -173,6 +201,10 @@ test "break statement" {
     var prsr: parser.Parser = parser.Parser.new(tokens, std.testing.allocator, &logger);
     const proc: ast.Proc = try prsr.parseProcedure();
     defer proc.destroyAll(std.testing.allocator);
+
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
 
     var env = venv.Env.new(std.testing.allocator);
     defer env.deinit();
@@ -205,6 +237,10 @@ test "continue statement" {
     const proc: ast.Proc = try prsr.parseProcedure();
     defer proc.destroyAll(std.testing.allocator);
 
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
+
     var env = venv.Env.new(std.testing.allocator);
     defer env.deinit();
 
@@ -235,6 +271,10 @@ test "closure 1 test" {
     const proc: ast.Proc = try prsr.parseProcedure();
     defer proc.destroyAll(std.testing.allocator);
 
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
+
     var env = venv.Env.new(std.testing.allocator);
     defer env.deinit();
 
@@ -261,6 +301,10 @@ test "first-class values test" {
     var prsr: parser.Parser = parser.Parser.new(tokens, std.testing.allocator, &logger);
     const proc: ast.Proc = try prsr.parseProcedure();
     defer proc.destroyAll(std.testing.allocator);
+
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
 
     var env = venv.Env.new(std.testing.allocator);
     defer env.deinit();
@@ -290,11 +334,15 @@ test "prohibit upcalling" {
     const proc: ast.Proc = try prsr.parseProcedure();
     defer proc.destroyAll(std.testing.allocator);
 
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
+
     var env = venv.Env.new(std.testing.allocator);
     defer env.deinit();
 
-    const r: interpreter.EvalError!void = interpreter.evalProc(proc, &env);
+    const r: interprtr.EvalError!void = interpreter.evalProc(proc, &env);
 
     // Assert that x has been added into environment as undefined
-    try std.testing.expectEqualDeep(interpreter.EvalError.InvalidUpcall, r);
+    try std.testing.expectEqualDeep(interprtr.EvalError.InvalidUpcall, r);
 }
