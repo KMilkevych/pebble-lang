@@ -6,19 +6,19 @@ const log = @import("logger.zig");
 const std = @import("std");
 
 // Error types
-const TypeError = error{
+pub const TypeError = error{
     MismatchedType,
     NotIdentifier,
 };
-const ArithmeticError = error{DivisionByZero};
-const ValueError = error{
+pub const ArithmeticError = error{DivisionByZero};
+pub const ValueError = error{
     UndefinedVariable,
     UnexpectedVoidValue,
     IndexOutOfBounds,
     InvalidSize,
     InvalidProperty,
 };
-const SemanticError = error{
+pub const SemanticError = error{
     IdentifierAlreadyDeclared,
     UnexpectedBreak,
     UnexpectedContinue,
@@ -27,7 +27,6 @@ const SemanticError = error{
     WrongArgCount,
     InvalidUpcall,
     NotList,
-    ListReference,
     ReadOnlyProperty,
 };
 

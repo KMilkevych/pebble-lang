@@ -22,8 +22,12 @@ pub const ErrorInfo = struct {
     ) !void {
 
         const pe = parser.ParseError;
-        const ee = interpreter.EvalError;
-        _ = ee;
+        // const ee = interpreter.EvalError;
+        const te = interpreter.TypeError;
+        const ae = interpreter.ArithmeticError;
+        const ve = interpreter.ValueError;
+        const se = interpreter.SemanticError;
+
         const error_message: []const u8 = switch (self.err) {
             pe.ErrorOrIllegalToken => "ERROR or ILLEGAL token",
             pe.ExpectedAngleClose => "Expected '>'",
@@ -38,8 +42,23 @@ pub const ErrorInfo = struct {
             pe.ExpectedTokenOrEOF => "Expected token or EOF",
             pe.ExpectedWhile => "Expected 'while'",
 
-            else => unreachable
-
+            te.MismatchedType => "Mismatched type",
+            te.NotIdentifier => "Not identifier",
+            ae.DivisionByZero => "Division by zero",
+            ve.UndefinedVariable => "Undefined variable",
+            ve.UnexpectedVoidValue => "Unexpected void value",
+            ve.IndexOutOfBounds => "Index out of bounds",
+            ve.InvalidSize => "Invalid size",
+            ve.InvalidProperty => "Invalid property",
+            se.IdentifierAlreadyDeclared => "Identifier already declared",
+            se.UnexpectedBreak => "Unexpected 'break'",
+            se.UnexpectedContinue => "Unexpected 'continue'",
+            se.UnexpectedReturn => "Unexpected 'return'",
+            se.NotCallable => "Object not callable",
+            se.WrongArgCount => "Wrong argument count",
+            se.InvalidUpcall => "Invalid function up-call",
+            se.NotList => "Not indexable",
+            se.ReadOnlyProperty => "Property is read-only"
         };
 
         // TODO: Implement bufPrint or allocPrint to properly pad location

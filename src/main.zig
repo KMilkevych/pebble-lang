@@ -89,7 +89,16 @@ fn run(io: std.Io, allocator: std.mem.Allocator, stdout: *std.Io.Writer, loc: [:
 
     // Evaluate all
     var interprtr = interpreter.Interpreter.new(stdout, &logger);
-    try interprtr.evalProc(proc, &env);
+    interprtr.evalProc(proc, &env) catch {
+
+        for (logger.errors.items) |errinf| {
+            try stdout.print("{f}\n", .{errinf});
+        }
+        try stdout.flush();
+
+        return;
+
+    };
 }
 
 fn interactive(io: std.Io, gpa: std.mem.Allocator, out: *std.Io.Writer) !void {
