@@ -816,7 +816,7 @@ pub const Parser = struct {
                     self.logger.logError(log.ErrorInfo {
                         .description = "",
                         .err = ParseError.ExpectedStatement,
-                        .location = self.peekLocation()
+                        .location = tok.location
                     });
                     return err;
                 };

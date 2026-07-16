@@ -17,60 +17,28 @@ test "destroyAll" {
     // Make sure that destroyAll does not leak memory or crash
 
     const llrhs: *ast.Expr = try std.testing.allocator.create(ast.Expr);
-    llrhs.* = ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 2}},.location = nolocation()};
+    llrhs.* = ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 2 } }, .location = nolocation() };
 
     const llhs: *ast.Expr = try std.testing.allocator.create(ast.Expr);
-    llhs.* = ast.Expr {
-        .expr = ast.ExprInner {.UnOpExpr = ast.UnOpExpr {
-            .op = ast.UnOp.Neg,
-            .rhs = llrhs
-        }},
-        .location = nolocation()
-    };
+    llhs.* = ast.Expr{ .expr = ast.ExprInner{ .UnOpExpr = ast.UnOpExpr{ .op = ast.UnOp.Neg, .rhs = llrhs } }, .location = nolocation() };
 
     const lrrhs: *ast.Expr = try std.testing.allocator.create(ast.Expr);
-    lrrhs.* = ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 3}},.location = nolocation()};
+    lrrhs.* = ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 3 } }, .location = nolocation() };
 
     const lrhs: *ast.Expr = try std.testing.allocator.create(ast.Expr);
-    lrhs.* = ast.Expr {
-        .expr = ast.ExprInner {.UnOpExpr = ast.UnOpExpr {
-            .op = ast.UnOp.Neg,
-            .rhs = lrrhs
-        }},
-        .location = nolocation()
-    };
+    lrhs.* = ast.Expr{ .expr = ast.ExprInner{ .UnOpExpr = ast.UnOpExpr{ .op = ast.UnOp.Neg, .rhs = lrrhs } }, .location = nolocation() };
 
     const lhs: *ast.Expr = try std.testing.allocator.create(ast.Expr);
-    lhs.* = ast.Expr {
-        .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
-            .lhs = llhs,
-            .op = ast.BinOp.Mul,
-            .rhs = lrhs
-        }},
-        .location = nolocation()
-    };
+    lhs.* = ast.Expr{ .expr = ast.ExprInner{ .BinOpExpr = ast.BinOpExpr{ .lhs = llhs, .op = ast.BinOp.Mul, .rhs = lrhs } }, .location = nolocation() };
 
     const rrhs: *ast.Expr = try std.testing.allocator.create(ast.Expr);
-    rrhs.* = ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Bool = false}},.location = nolocation()};
+    rrhs.* = ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Bool = false } }, .location = nolocation() };
 
     const rhs: *ast.Expr = try std.testing.allocator.create(ast.Expr);
-    rhs.* = ast.Expr {
-        .expr = ast.ExprInner {.UnOpExpr = ast.UnOpExpr {
-            .op = ast.UnOp.Neg,
-            .rhs = rrhs
-        }},
-        .location = nolocation()
-    };
+    rhs.* = ast.Expr{ .expr = ast.ExprInner{ .UnOpExpr = ast.UnOpExpr{ .op = ast.UnOp.Neg, .rhs = rrhs } }, .location = nolocation() };
 
     const ptr: *ast.Expr = try std.testing.allocator.create(ast.Expr);
-    ptr.* = ast.Expr {
-        .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
-            .lhs = lhs,
-            .op = ast.BinOp.Add,
-            .rhs = rhs
-        }},
-        .location = nolocation()
-    };
+    ptr.* = ast.Expr{ .expr = ast.ExprInner{ .BinOpExpr = ast.BinOpExpr{ .lhs = lhs, .op = ast.BinOp.Add, .rhs = rhs } }, .location = nolocation() };
 
     ptr.destroyAll(std.testing.allocator);
 }
@@ -79,14 +47,16 @@ test "single literal" {
     var tokens: std.ArrayList(Token) = .empty;
     defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 13}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 13 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EOF = {} } });
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, &logger);
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
 
-    const expect: ast.Expr = ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit { .Int = 13 }},.location = nolocation()};
+    const expect: ast.Expr = ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 13 } }, .location = nolocation() };
     try std.testing.expectEqualDeep(expect, result.*);
 }
 
@@ -94,23 +64,18 @@ test "single binary add" {
     var tokens: std.ArrayList(Token) = .empty;
     defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 5}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.PLUS = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 13}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 5 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .PLUS = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 13 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EOF = {} } });
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, &logger);
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
 
-    const expect: ast.Expr = ast.Expr {
-        .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
-            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 5}},.location = nolocation()},
-            .op = ast.BinOp.Add,
-            .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 13}},.location = nolocation()}
-        }},
-        .location = nolocation()
-    };
+    const expect: ast.Expr = ast.Expr{ .expr = ast.ExprInner{ .BinOpExpr = ast.BinOpExpr{ .lhs = &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 5 } }, .location = nolocation() }, .op = ast.BinOp.Add, .rhs = &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 13 } }, .location = nolocation() } } }, .location = nolocation() };
     try std.testing.expectEqualDeep(expect, result.*);
 }
 
@@ -118,33 +83,20 @@ test "double binary left-associative" {
     var tokens: std.ArrayList(Token) = .empty;
     defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 5}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.PLUS = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 7}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.MINUS = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 13}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 5 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .PLUS = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 7 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .MINUS = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 13 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EOF = {} } });
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, &logger);
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
 
-
-    const expect: ast.Expr = ast.Expr {
-        .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
-            .lhs = &ast.Expr {
-                .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
-                    .lhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 5}},.location = nolocation()},
-                    .op = ast.BinOp.Add,
-                    .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 7}},.location = nolocation()}
-                }},
-                .location = nolocation()
-            },
-            .op = ast.BinOp.Sub,
-            .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 13}},.location = nolocation()}
-        }},
-        .location = nolocation()
-    };
+    const expect: ast.Expr = ast.Expr{ .expr = ast.ExprInner{ .BinOpExpr = ast.BinOpExpr{ .lhs = &ast.Expr{ .expr = ast.ExprInner{ .BinOpExpr = ast.BinOpExpr{ .lhs = &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 5 } }, .location = nolocation() }, .op = ast.BinOp.Add, .rhs = &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 7 } }, .location = nolocation() } } }, .location = nolocation() }, .op = ast.BinOp.Sub, .rhs = &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 13 } }, .location = nolocation() } } }, .location = nolocation() };
 
     try std.testing.expectEqualDeep(expect, result.*);
 }
@@ -153,36 +105,24 @@ test "precedence 1" {
     var tokens: std.ArrayList(Token) = .empty;
     defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 5}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.PLUS = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 7}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.MUL = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 13}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 5 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .PLUS = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 7 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .MUL = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 13 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EOF = {} } });
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, &logger);
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
 
-
-    const expect: ast.Expr = ast.Expr {
-        .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
-            .lhs = &ast.Expr {
-                .expr = ast.ExprInner {.Lit = ast.Lit {.Int = 5}},
-                .location = nolocation()
-            },
-            .op = ast.BinOp.Add,
-            .rhs = &ast.Expr {
-                .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
-                    .lhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 7}},.location = nolocation()},
-                    .op = ast.BinOp.Mul,
-                    .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 13}},.location = nolocation()}
-                }},
-                .location = nolocation()
-            },
-        }},
-        .location = nolocation()
-    };
+    const expect: ast.Expr = ast.Expr{ .expr = ast.ExprInner{ .BinOpExpr = ast.BinOpExpr{
+        .lhs = &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 5 } }, .location = nolocation() },
+        .op = ast.BinOp.Add,
+        .rhs = &ast.Expr{ .expr = ast.ExprInner{ .BinOpExpr = ast.BinOpExpr{ .lhs = &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 7 } }, .location = nolocation() }, .op = ast.BinOp.Mul, .rhs = &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 13 } }, .location = nolocation() } } }, .location = nolocation() },
+    } }, .location = nolocation() };
 
     try std.testing.expectEqualDeep(expect, result.*);
 }
@@ -191,63 +131,39 @@ test "unary int" {
     var tokens: std.ArrayList(Token) = .empty;
     defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.MINUS = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 3}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .MINUS = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 3 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EOF = {} } });
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, &logger);
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
 
-
-    const expect: ast.Expr = ast.Expr {
-        .expr = ast.ExprInner {.UnOpExpr = ast.UnOpExpr {
-            .op = .Neg,
-            .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 3}},.location = nolocation()}
-        }},
-        .location = nolocation()
-    };
+    const expect: ast.Expr = ast.Expr{ .expr = ast.ExprInner{ .UnOpExpr = ast.UnOpExpr{ .op = .Neg, .rhs = &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 3 } }, .location = nolocation() } } }, .location = nolocation() };
 
     try std.testing.expectEqualDeep(expect, result.*);
 }
-
 
 test "unary int unary bool" {
     var tokens: std.ArrayList(Token) = .empty;
     defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.MINUS = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 3}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.MUL = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.NOT = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.BOOLLIT = true}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .MINUS = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 3 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .MUL = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .NOT = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .BOOLLIT = true } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EOF = {} } });
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, &logger);
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
 
-
-    const expect: ast.Expr = ast.Expr {
-        .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
-            .lhs = &ast.Expr {
-                .expr = ast.ExprInner {.UnOpExpr = ast.UnOpExpr {
-                    .op = .Neg,
-                    .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 3}},.location = nolocation()}
-                }},
-                .location = nolocation()
-            },
-            .op = .Mul,
-            .rhs = &ast.Expr {
-                .expr = ast.ExprInner {.UnOpExpr = ast.UnOpExpr {
-                    .op = .Not,
-                    .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Bool = true}},.location = nolocation()}
-                }},
-                .location = nolocation()
-            }
-        }},
-        .location = nolocation()
-    };
+    const expect: ast.Expr = ast.Expr{ .expr = ast.ExprInner{ .BinOpExpr = ast.BinOpExpr{ .lhs = &ast.Expr{ .expr = ast.ExprInner{ .UnOpExpr = ast.UnOpExpr{ .op = .Neg, .rhs = &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 3 } }, .location = nolocation() } } }, .location = nolocation() }, .op = .Mul, .rhs = &ast.Expr{ .expr = ast.ExprInner{ .UnOpExpr = ast.UnOpExpr{ .op = .Not, .rhs = &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Bool = true } }, .location = nolocation() } } }, .location = nolocation() } } }, .location = nolocation() };
 
     try std.testing.expectEqualDeep(expect, result.*);
 }
@@ -256,63 +172,40 @@ test "int plus unary int" {
     var tokens: std.ArrayList(Token) = .empty;
     defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 3}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.PLUS = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.MINUS = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 5}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 3 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .PLUS = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .MINUS = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 5 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EOF = {} } });
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, &logger);
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
 
-    const expect: ast.Expr = ast.Expr {
-        .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
-            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 3}},.location = nolocation()},
-            .op = .Add,
-            .rhs = &ast.Expr {
-                .expr = ast.ExprInner {.UnOpExpr = ast.UnOpExpr {
-                    .op = .Neg,
-                    .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 5}},.location = nolocation()}
-                }},
-                .location = nolocation()
-            }
-        }},
-        .location = nolocation()
-    };
+    const expect: ast.Expr = ast.Expr{ .expr = ast.ExprInner{ .BinOpExpr = ast.BinOpExpr{ .lhs = &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 3 } }, .location = nolocation() }, .op = .Add, .rhs = &ast.Expr{ .expr = ast.ExprInner{ .UnOpExpr = ast.UnOpExpr{ .op = .Neg, .rhs = &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 5 } }, .location = nolocation() } } }, .location = nolocation() } } }, .location = nolocation() };
 
     try std.testing.expectEqualDeep(expect, result.*);
 }
-
 
 test "unary int plus int" {
     var tokens: std.ArrayList(Token) = .empty;
     defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.MINUS = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 3}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.PLUS = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 5}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .MINUS = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 3 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .PLUS = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 5 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EOF = {} } });
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, &logger);
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
 
-    const expect: ast.Expr = ast.Expr {
-        .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
-            .lhs = &ast.Expr {
-                .expr = ast.ExprInner {.UnOpExpr = ast.UnOpExpr {
-                    .op = .Neg,
-                    .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 3}},.location = nolocation()}
-                }},
-                .location = nolocation()
-            },
-            .op = .Add,
-            .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 5}},.location = nolocation()}
-        }},
-        .location = nolocation()
-    };
+    const expect: ast.Expr = ast.Expr{ .expr = ast.ExprInner{ .BinOpExpr = ast.BinOpExpr{ .lhs = &ast.Expr{ .expr = ast.ExprInner{ .UnOpExpr = ast.UnOpExpr{ .op = .Neg, .rhs = &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 3 } }, .location = nolocation() } } }, .location = nolocation() }, .op = .Add, .rhs = &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 5 } }, .location = nolocation() } } }, .location = nolocation() };
 
     try std.testing.expectEqualDeep(expect, result.*);
 }
@@ -321,32 +214,25 @@ test "unary int plus int parantheses" {
     var tokens: std.ArrayList(Token) = .empty;
     defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.MINUS = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LPAREN = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 3}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.PLUS = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 5}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RPAREN = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .MINUS = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LPAREN = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 3 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .PLUS = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 5 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .RPAREN = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EOF = {} } });
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, &logger);
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
 
-    const expect: ast.Expr = ast.Expr {
-        .expr = ast.ExprInner {.UnOpExpr = ast.UnOpExpr {
-            .op = .Neg,
-            .rhs = &ast.Expr {
-                .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
-                    .lhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 3}},.location = nolocation()},
-                    .op = .Add,
-                    .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 5}},.location = nolocation()},
-                }},
-                .location = nolocation()
-            }
-        }},
-        .location = nolocation()
-    };
+    const expect: ast.Expr = ast.Expr{ .expr = ast.ExprInner{ .UnOpExpr = ast.UnOpExpr{ .op = .Neg, .rhs = &ast.Expr{ .expr = ast.ExprInner{ .BinOpExpr = ast.BinOpExpr{
+        .lhs = &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 3 } }, .location = nolocation() },
+        .op = .Add,
+        .rhs = &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 5 } }, .location = nolocation() },
+    } }, .location = nolocation() } } }, .location = nolocation() };
 
     try std.testing.expectEqualDeep(expect, result.*);
 }
@@ -355,20 +241,22 @@ test "many parentheses" {
     var tokens: std.ArrayList(Token) = .empty;
     defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LPAREN = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LPAREN = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LPAREN = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 11}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RPAREN = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RPAREN = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RPAREN = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LPAREN = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LPAREN = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LPAREN = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 11 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .RPAREN = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .RPAREN = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .RPAREN = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EOF = {} } });
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, &logger);
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
 
-    const expect: ast.Expr = ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 11}},.location = nolocation()};
+    const expect: ast.Expr = ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 11 } }, .location = nolocation() };
 
     try std.testing.expectEqualDeep(expect, result.*);
 }
@@ -377,35 +265,26 @@ test "precedence 2" {
     var tokens: std.ArrayList(Token) = .empty;
     defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LPAREN = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 5}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.PLUS = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 7}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RPAREN = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.MUL = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 13}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LPAREN = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 5 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .PLUS = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 7 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .RPAREN = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .MUL = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 13 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EOF = {} } });
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, &logger);
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
 
-
-    const expect: ast.Expr = ast.Expr {
-        .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
-            .lhs = &ast.Expr {
-                .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
-                    .lhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 5}},.location = nolocation()},
-                    .op = ast.BinOp.Add,
-                    .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 7}},.location = nolocation()}
-                }},
-                .location = nolocation()
-            },
-            .op = ast.BinOp.Mul,
-            .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 13}},.location = nolocation()},
-        }},
-        .location = nolocation()
-    };
+    const expect: ast.Expr = ast.Expr{ .expr = ast.ExprInner{ .BinOpExpr = ast.BinOpExpr{
+        .lhs = &ast.Expr{ .expr = ast.ExprInner{ .BinOpExpr = ast.BinOpExpr{ .lhs = &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 5 } }, .location = nolocation() }, .op = ast.BinOp.Add, .rhs = &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 7 } }, .location = nolocation() } } }, .location = nolocation() },
+        .op = ast.BinOp.Mul,
+        .rhs = &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 13 } }, .location = nolocation() },
+    } }, .location = nolocation() };
 
     try std.testing.expectEqualDeep(expect, result.*);
 }
@@ -414,132 +293,84 @@ test "precedence 2 div minus" {
     var tokens: std.ArrayList(Token) = .empty;
     defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LPAREN = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 5}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.MINUS = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 7}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RPAREN = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.DIV = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 13}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LPAREN = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 5 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .MINUS = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 7 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .RPAREN = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .DIV = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 13 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EOF = {} } });
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, &logger);
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
 
-
-    const expect: ast.Expr = ast.Expr {
-        .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
-            .lhs = &ast.Expr {
-                .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
-                    .lhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 5}},.location = nolocation()},
-                    .op = ast.BinOp.Sub,
-                    .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 7}},.location = nolocation()}
-                }},
-                .location = nolocation()
-            },
-            .op = ast.BinOp.Div,
-            .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 13}},.location = nolocation()},
-        }},
-        .location = nolocation()
-    };
+    const expect: ast.Expr = ast.Expr{ .expr = ast.ExprInner{ .BinOpExpr = ast.BinOpExpr{
+        .lhs = &ast.Expr{ .expr = ast.ExprInner{ .BinOpExpr = ast.BinOpExpr{ .lhs = &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 5 } }, .location = nolocation() }, .op = ast.BinOp.Sub, .rhs = &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 7 } }, .location = nolocation() } } }, .location = nolocation() },
+        .op = ast.BinOp.Div,
+        .rhs = &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 13 } }, .location = nolocation() },
+    } }, .location = nolocation() };
 
     try std.testing.expectEqualDeep(expect, result.*);
 }
-
 
 test "boolean operations" {
     var tokens: std.ArrayList(Token) = .empty;
     defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.NOT = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LPAREN = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.BOOLLIT = false}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.OR = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.BOOLLIT = true}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RPAREN = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.AND = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.NOT = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.BOOLLIT = false}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .NOT = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LPAREN = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .BOOLLIT = false } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .OR = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .BOOLLIT = true } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .RPAREN = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .AND = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .NOT = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .BOOLLIT = false } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EOF = {} } });
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, &logger);
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
 
-
-    const expect: ast.Expr = ast.Expr {
-        .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
-            .lhs = &ast.Expr {
-                .expr = ast.ExprInner {.UnOpExpr = ast.UnOpExpr {
-                    .op = .Not,
-                    .rhs = &ast.Expr {
-                        .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
-                            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Bool = false}},.location = nolocation()},
-                            .op = ast.BinOp.Or,
-                            .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Bool = true}},.location = nolocation()}
-                        }},
-                        .location = nolocation()
-                    }
-                }},
-                .location = nolocation()
-            },
-            .op = ast.BinOp.And,
-            .rhs = &ast.Expr {
-                .expr = ast.ExprInner {.UnOpExpr = ast.UnOpExpr {
-                    .op = .Not,
-                    .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Bool = false}},.location = nolocation()}
-                }},
-                .location = nolocation()
-            },
-        }},
-        .location = nolocation()
-    };
+    const expect: ast.Expr = ast.Expr{ .expr = ast.ExprInner{ .BinOpExpr = ast.BinOpExpr{
+        .lhs = &ast.Expr{ .expr = ast.ExprInner{ .UnOpExpr = ast.UnOpExpr{ .op = .Not, .rhs = &ast.Expr{ .expr = ast.ExprInner{ .BinOpExpr = ast.BinOpExpr{ .lhs = &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Bool = false } }, .location = nolocation() }, .op = ast.BinOp.Or, .rhs = &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Bool = true } }, .location = nolocation() } } }, .location = nolocation() } } }, .location = nolocation() },
+        .op = ast.BinOp.And,
+        .rhs = &ast.Expr{ .expr = ast.ExprInner{ .UnOpExpr = ast.UnOpExpr{ .op = .Not, .rhs = &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Bool = false } }, .location = nolocation() } } }, .location = nolocation() },
+    } }, .location = nolocation() };
 
     try std.testing.expectEqualDeep(expect, result.*);
 }
-
 
 test "integer comparison and boolean operations precedence" {
     var tokens: std.ArrayList(Token) = .empty;
     defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 5}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.DEQ = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 5}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.AND = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 3}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.DEQ = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 3}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 5 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .DEQ = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 5 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .AND = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 3 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .DEQ = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 3 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EOF = {} } });
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, &logger);
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
 
-
-    const expect: ast.Expr = ast.Expr {
-        .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
-            .lhs = &ast.Expr {
-                .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
-                    .lhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 5}},.location = nolocation()},
-                    .op = .Eq,
-                    .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 5}},.location = nolocation()}
-                }},
-                .location = nolocation()
-            },
-            .op = ast.BinOp.And,
-            .rhs = &ast.Expr {
-                .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
-                    .lhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 3}},.location = nolocation()},
-                    .op = .Eq,
-                    .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 3}},.location = nolocation()}
-                }},
-                .location = nolocation()
-            },
-        }},
-        .location = nolocation()
-    };
+    const expect: ast.Expr = ast.Expr{ .expr = ast.ExprInner{ .BinOpExpr = ast.BinOpExpr{
+        .lhs = &ast.Expr{ .expr = ast.ExprInner{ .BinOpExpr = ast.BinOpExpr{ .lhs = &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 5 } }, .location = nolocation() }, .op = .Eq, .rhs = &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 5 } }, .location = nolocation() } } }, .location = nolocation() },
+        .op = ast.BinOp.And,
+        .rhs = &ast.Expr{ .expr = ast.ExprInner{ .BinOpExpr = ast.BinOpExpr{ .lhs = &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 3 } }, .location = nolocation() }, .op = .Eq, .rhs = &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 3 } }, .location = nolocation() } } }, .location = nolocation() },
+    } }, .location = nolocation() };
 
     try std.testing.expectEqualDeep(expect, result.*);
 }
@@ -548,14 +379,16 @@ test "single ident" {
     var tokens: std.ArrayList(Token) = .empty;
     defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "abekat"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "abekat" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EOF = {} } });
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, &logger);
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
 
-    const expect: ast.Expr = ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "abekat"}},.location = nolocation()};
+    const expect: ast.Expr = ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "abekat" } }, .location = nolocation() };
 
     try std.testing.expectEqualDeep(expect, result.*);
 }
@@ -564,30 +397,19 @@ test "variable expression" {
     var tokens: std.ArrayList(Token) = .empty;
     defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "abe"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.PLUS = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.MINUS = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "kat"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "abe" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .PLUS = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .MINUS = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "kat" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EOF = {} } });
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, &logger);
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
 
-    const expect: ast.Expr = ast.Expr {
-        .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
-            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "abe"}},.location = nolocation()},
-            .op = .Add,
-            .rhs = &ast.Expr {
-                .expr = ast.ExprInner {.UnOpExpr = ast.UnOpExpr {
-                    .op = .Neg,
-                    .rhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "kat"}},.location = nolocation()}
-                }},
-                .location = nolocation()
-            }
-        }},
-        .location = nolocation()
-    };
+    const expect: ast.Expr = ast.Expr{ .expr = ast.ExprInner{ .BinOpExpr = ast.BinOpExpr{ .lhs = &ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "abe" } }, .location = nolocation() }, .op = .Add, .rhs = &ast.Expr{ .expr = ast.ExprInner{ .UnOpExpr = ast.UnOpExpr{ .op = .Neg, .rhs = &ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "kat" } }, .location = nolocation() } } }, .location = nolocation() } } }, .location = nolocation() };
 
     try std.testing.expectEqualDeep(expect, result.*);
 }
@@ -596,89 +418,65 @@ test "assignment expression" {
     var tokens: std.ArrayList(Token) = .empty;
     defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EQ = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 13}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "x" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EQ = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 13 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EOF = {} } });
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, &logger);
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
 
-    const expect: ast.Expr = ast.Expr {
-        .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
-            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
-            .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 13}},.location = nolocation()}
-        }},
-        .location = nolocation()
-    };
+    const expect: ast.Expr = ast.Expr{ .expr = ast.ExprInner{ .AssignExpr = ast.AssignExpr{ .lhs = &ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "x" } }, .location = nolocation() }, .rhs = &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 13 } }, .location = nolocation() } } }, .location = nolocation() };
 
     try std.testing.expectEqualDeep(expect, result.*);
 }
-
 
 test "right associative assignment" {
     var tokens: std.ArrayList(Token) = .empty;
     defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EQ = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "y"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EQ = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 47}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "x" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EQ = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "y" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EQ = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 47 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EOF = {} } });
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, &logger);
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
 
-    const expect: ast.Expr = ast.Expr {
-        .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
-            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
-            .rhs = &ast.Expr {
-                .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
-                    .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "y"}},.location = nolocation()},
-                    .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 47}},.location = nolocation()}
-                }},
-                .location = nolocation()
-            },
-        }},
-        .location = nolocation()
-    };
+    const expect: ast.Expr = ast.Expr{ .expr = ast.ExprInner{ .AssignExpr = ast.AssignExpr{
+        .lhs = &ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "x" } }, .location = nolocation() },
+        .rhs = &ast.Expr{ .expr = ast.ExprInner{ .AssignExpr = ast.AssignExpr{ .lhs = &ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "y" } }, .location = nolocation() }, .rhs = &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 47 } }, .location = nolocation() } } }, .location = nolocation() },
+    } }, .location = nolocation() };
 
     try std.testing.expectEqualDeep(expect, result.*);
 }
-
 
 test "left evaluated assignment" {
     var tokens: std.ArrayList(Token) = .empty;
     defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.PLUS = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 1}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EQ = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 13}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "x" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .PLUS = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 1 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EQ = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 13 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EOF = {} } });
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, &logger);
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
 
-    const expect: ast.Expr = ast.Expr {
-        .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
-            .lhs = &ast.Expr {
-                .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
-                    .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
-                    .op = .Add,
-                    .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},.location = nolocation()}
-                }},
-                .location = nolocation()
-            },
-            .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 13}},.location = nolocation()}
-        }},
-        .location = nolocation()
-    };
+    const expect: ast.Expr = ast.Expr{ .expr = ast.ExprInner{ .AssignExpr = ast.AssignExpr{ .lhs = &ast.Expr{ .expr = ast.ExprInner{ .BinOpExpr = ast.BinOpExpr{ .lhs = &ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "x" } }, .location = nolocation() }, .op = .Add, .rhs = &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 1 } }, .location = nolocation() } } }, .location = nolocation() }, .rhs = &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 13 } }, .location = nolocation() } } }, .location = nolocation() };
 
     try std.testing.expectEqualDeep(expect, result.*);
 }
@@ -687,31 +485,23 @@ test "right associative assignment 2" {
     var tokens: std.ArrayList(Token) = .empty;
     defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EQ = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "y"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.PLUS = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 13}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "x" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EQ = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "y" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .PLUS = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 13 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EOF = {} } });
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, &logger);
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
 
-    const expect: ast.Expr = ast.Expr {
-        .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
-            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
-            .rhs = &ast.Expr {
-                .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
-                    .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "y"}},.location = nolocation()},
-                    .op = .Add,
-                    .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 13}},.location = nolocation()}
-                }},
-                .location = nolocation()
-            },
-        }},
-        .location = nolocation()
-    };
+    const expect: ast.Expr = ast.Expr{ .expr = ast.ExprInner{ .AssignExpr = ast.AssignExpr{
+        .lhs = &ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "x" } }, .location = nolocation() },
+        .rhs = &ast.Expr{ .expr = ast.ExprInner{ .BinOpExpr = ast.BinOpExpr{ .lhs = &ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "y" } }, .location = nolocation() }, .op = .Add, .rhs = &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 13 } }, .location = nolocation() } } }, .location = nolocation() },
+    } }, .location = nolocation() };
 
     try std.testing.expectEqualDeep(expect, result.*);
 }
@@ -720,31 +510,24 @@ test "x + y = 13 == (x + y) = 13" {
     var tokens: std.ArrayList(Token) = .empty;
     defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.PLUS = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "y"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EQ = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 13}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "x" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .PLUS = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "y" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EQ = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 13 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EOF = {} } });
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, &logger);
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
 
-    const expect: ast.Expr = ast.Expr {
-        .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
-            .lhs = &ast.Expr {
-                .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
-                    .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
-                    .op = .Add,
-                    .rhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "y"}},.location = nolocation()},
-                }},
-                .location = nolocation()
-            },
-            .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 13}},.location = nolocation()}
-        }},
-        .location = nolocation()
-    };
+    const expect: ast.Expr = ast.Expr{ .expr = ast.ExprInner{ .AssignExpr = ast.AssignExpr{ .lhs = &ast.Expr{ .expr = ast.ExprInner{ .BinOpExpr = ast.BinOpExpr{
+        .lhs = &ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "x" } }, .location = nolocation() },
+        .op = .Add,
+        .rhs = &ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "y" } }, .location = nolocation() },
+    } }, .location = nolocation() }, .rhs = &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 13 } }, .location = nolocation() } } }, .location = nolocation() };
 
     try std.testing.expectEqualDeep(expect, result.*);
 }
@@ -753,29 +536,22 @@ test "-x = 13 == (-x) = 13" {
     var tokens: std.ArrayList(Token) = .empty;
     defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.MINUS = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EQ = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 13}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .MINUS = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "x" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EQ = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 13 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EOF = {} } });
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, &logger);
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
 
-    const expect: ast.Expr = ast.Expr {
-        .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
-            .lhs = &ast.Expr {
-                .expr = ast.ExprInner {.UnOpExpr = ast.UnOpExpr {
-                    .op = .Neg,
-                    .rhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
-                }},
-                .location = nolocation()
-            },
-            .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 13}},.location = nolocation()}
-        }},
-        .location = nolocation()
-    };
+    const expect: ast.Expr = ast.Expr{ .expr = ast.ExprInner{ .AssignExpr = ast.AssignExpr{ .lhs = &ast.Expr{ .expr = ast.ExprInner{ .UnOpExpr = ast.UnOpExpr{
+        .op = .Neg,
+        .rhs = &ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "x" } }, .location = nolocation() },
+    } }, .location = nolocation() }, .rhs = &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 13 } }, .location = nolocation() } } }, .location = nolocation() };
 
     try std.testing.expectEqualDeep(expect, result.*);
 }
@@ -784,12 +560,14 @@ test "unmatched parentheses" {
     var tokens: std.ArrayList(Token) = .empty;
     defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LPAREN = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EQ = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 13}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LPAREN = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "x" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EQ = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 13 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EOF = {} } });
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, &logger);
 
     const result: parser.ParseError!*ast.Expr = prs.parseExpr();
 
@@ -797,17 +575,18 @@ test "unmatched parentheses" {
     try std.testing.expectEqualDeep(expect, result);
 }
 
-
 test "unfinished expression" {
     var tokens: std.ArrayList(Token) = .empty;
     defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LPAREN = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.PLUS = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RPAREN = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LPAREN = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "x" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .PLUS = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .RPAREN = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EOF = {} } });
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, &logger);
 
     const result: parser.ParseError!*ast.Expr = prs.parseExpr();
     try std.testing.expectEqualDeep(parser.ParseError.ExpectedExpression, result);
@@ -817,8 +596,10 @@ test "expect token or EOF" {
     var tokens: std.ArrayList(Token) = .empty;
     defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "x" } });
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, &logger);
 
     const result: parser.ParseError!*ast.Expr = prs.parseExpr();
 
@@ -830,10 +611,12 @@ test "expect token or EOF 2" {
     var tokens: std.ArrayList(Token) = .empty;
     defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LPAREN = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RPAREN = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LPAREN = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "x" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .RPAREN = {} } });
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, &logger);
 
     const result: parser.ParseError!*ast.Expr = prs.parseExpr();
 
@@ -845,26 +628,18 @@ test "print statement" {
     var tokens: std.ArrayList(Token) = .empty;
     defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.PRINT = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .PRINT = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "x" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LB = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EOF = {} } });
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, &logger);
 
     const result: ast.Stmt = try prs.parseStmt();
     defer result.destroyAll(std.testing.allocator);
 
-    const expect: ast.Stmt = ast.Stmt {
-        .stmt = ast.StmtInner {.PrintStmt = &[_]*const ast.Expr {
-            &ast.Expr {
-                .expr = ast.ExprInner {
-                    .Lval = ast.Lval {.Var = "x"}
-                },
-                .location = nolocation()
-            }
-        }},
-        .location = nolocation()
-    };
+    const expect: ast.Stmt = ast.Stmt{ .stmt = ast.StmtInner{ .PrintStmt = &[_]*const ast.Expr{&ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "x" } }, .location = nolocation() }} }, .location = nolocation() };
 
     try std.testing.expectEqualDeep(expect, result);
 }
@@ -873,26 +648,18 @@ test "declare statement" {
     var tokens: std.ArrayList(Token) = .empty;
     defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.DECLARE = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .DECLARE = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "x" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LB = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EOF = {} } });
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, &logger);
 
     const result: ast.Stmt = try prs.parseStmt();
     defer result.destroyAll(std.testing.allocator);
 
-    const expect: ast.Stmt = ast.Stmt {
-        .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {
-            &ast.Expr {
-                .expr = ast.ExprInner {
-                    .Lval = ast.Lval {.Var = "x"}
-                },
-                .location = nolocation()
-            }
-        }},
-        .location = nolocation()
-    };
+    const expect: ast.Stmt = ast.Stmt{ .stmt = ast.StmtInner{ .DeclareStmt = &[_]*const ast.Expr{&ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "x" } }, .location = nolocation() }} }, .location = nolocation() };
 
     try std.testing.expectEqualDeep(expect, result);
 }
@@ -901,68 +668,47 @@ test "expression statement" {
     var tokens: std.ArrayList(Token) = .empty;
     defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "x" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LB = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EOF = {} } });
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, &logger);
 
     const result: ast.Stmt = try prs.parseStmt();
     defer result.destroyAll(std.testing.allocator);
 
-    const expect: ast.Stmt = ast.Stmt {
-        .stmt = ast.StmtInner {.ExprStmt = &ast.Expr {
-            .expr = ast.ExprInner {
-                .Lval = ast.Lval {.Var = "x"}
-            },
-            .location = nolocation()
-        }},
-        .location = nolocation()
-    };
+    const expect: ast.Stmt = ast.Stmt{ .stmt = ast.StmtInner{ .ExprStmt = &ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "x" } }, .location = nolocation() } }, .location = nolocation() };
 
     try std.testing.expectEqualDeep(expect, result);
 }
-
 
 test "print statement sequence" {
     var tokens: std.ArrayList(Token) = .empty;
     defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.PRINT = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.PRINT = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "y"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .PRINT = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "x" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LB = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .PRINT = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "y" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LB = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EOF = {} } });
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, &logger);
 
     const result: ast.Stmt = try prs.parseStmt();
     defer result.destroyAll(std.testing.allocator);
 
-    const expect: ast.Stmt = ast.Stmt {
-        .stmt = ast.StmtInner {.PrintStmt = &[_]*const ast.Expr {&ast.Expr {
-            .expr = ast.ExprInner {
-                .Lval = ast.Lval {.Var = "x"}
-            },
-            .location = nolocation()
-        }}},
-        .location = nolocation()
-    };
+    const expect: ast.Stmt = ast.Stmt{ .stmt = ast.StmtInner{ .PrintStmt = &[_]*const ast.Expr{&ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "x" } }, .location = nolocation() }} }, .location = nolocation() };
 
     try std.testing.expectEqualDeep(expect, result);
 
     const result2: ast.Stmt = try prs.parseStmt();
     defer result2.destroyAll(std.testing.allocator);
 
-    const expect2: ast.Stmt = ast.Stmt {
-        .stmt = ast.StmtInner {.PrintStmt = &[_]*const ast.Expr {&ast.Expr {
-            .expr = ast.ExprInner {
-                .Lval = ast.Lval {.Var = "y"}
-            },
-            .location = nolocation()
-        }}},
-        .location = nolocation()
-    };
+    const expect2: ast.Stmt = ast.Stmt{ .stmt = ast.StmtInner{ .PrintStmt = &[_]*const ast.Expr{&ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "y" } }, .location = nolocation() }} }, .location = nolocation() };
     try std.testing.expectEqualDeep(expect2, result2);
 }
 
@@ -970,423 +716,264 @@ test "expect line break between statements" {
     var tokens: std.ArrayList(Token) = .empty;
     defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.PRINT = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.PRINT = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .PRINT = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "x" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .PRINT = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "x" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LB = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EOF = {} } });
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, &logger);
 
     const result: parser.ParseError!ast.Stmt = prs.parseStmt();
     try std.testing.expectEqualDeep(parser.ParseError.ExpectedLineBreak, result);
 }
 
 test "empty block statement" {
-
     var tokens: std.ArrayList(Token) = std.ArrayList(Token).empty;
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LCURLY = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RCURLY = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LCURLY = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LB = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .RCURLY = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EOF = {} } });
     defer tokens.deinit(std.testing.allocator);
 
-    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, &logger);
 
-    const expect: ast.Stmt = ast.Stmt {.stmt = ast.StmtInner {.BlockStmt = &[_]ast.Stmt {}},.location = nolocation()};
+    const expect: ast.Stmt = ast.Stmt{ .stmt = ast.StmtInner{ .BlockStmt = &[_]ast.Stmt{} }, .location = nolocation() };
     defer expect.destroyAll(std.testing.allocator);
 
     try std.testing.expectEqualDeep(expect, try prs.parseStmt());
-
 }
 
 test "block statement" {
-
     var tokens: std.ArrayList(Token) = std.ArrayList(Token).empty;
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LCURLY = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.DECLARE = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RCURLY = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LCURLY = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LB = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .DECLARE = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "x" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LB = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .RCURLY = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EOF = {} } });
     defer tokens.deinit(std.testing.allocator);
 
-    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, &logger);
 
-    const expect: ast.Stmt = ast.Stmt {
-        .stmt = ast.StmtInner {.BlockStmt = &[_]ast.Stmt {
-            ast.Stmt {
-                .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {
-                    &ast.Expr {
-                        .expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},
-                        .location = nolocation()
-                    }
-                }},
-                .location = nolocation()
-            }
-        }},
-        .location = nolocation()
-    };
+    const expect: ast.Stmt = ast.Stmt{ .stmt = ast.StmtInner{ .BlockStmt = &[_]ast.Stmt{ast.Stmt{ .stmt = ast.StmtInner{ .DeclareStmt = &[_]*const ast.Expr{&ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "x" } }, .location = nolocation() }} }, .location = nolocation() }} }, .location = nolocation() };
 
     const actual: ast.Stmt = try prs.parseStmt();
     defer actual.destroyAll(std.testing.allocator);
 
     try std.testing.expectEqualDeep(expect, actual);
-
 }
 
 test "nested block statement" {
-
     var tokens: std.ArrayList(Token) = std.ArrayList(Token).empty;
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LCURLY = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.DECLARE = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LCURLY = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.DECLARE = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RCURLY = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RCURLY = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LCURLY = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LB = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .DECLARE = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "x" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LB = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LCURLY = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LB = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .DECLARE = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "x" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LB = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .RCURLY = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LB = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .RCURLY = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EOF = {} } });
     defer tokens.deinit(std.testing.allocator);
 
-    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, &logger);
 
-    const expect: ast.Stmt = ast.Stmt {
-        .stmt = ast.StmtInner {.BlockStmt = &[_]ast.Stmt {
-            ast.Stmt {
-                .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {
-                    &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()}
-                }},
-                .location = nolocation()
-            },
-            ast.Stmt {
-                .stmt = ast.StmtInner {.BlockStmt = &[_]ast.Stmt {
-                    ast.Stmt {
-                        .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {
-                            &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()}
-                        }},
-                        .location = nolocation()
-                    },
-                }},
-                .location = nolocation()
-            }
-        }},
-        .location = nolocation()
-    };
+    const expect: ast.Stmt = ast.Stmt{ .stmt = ast.StmtInner{ .BlockStmt = &[_]ast.Stmt{ ast.Stmt{ .stmt = ast.StmtInner{ .DeclareStmt = &[_]*const ast.Expr{&ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "x" } }, .location = nolocation() }} }, .location = nolocation() }, ast.Stmt{ .stmt = ast.StmtInner{ .BlockStmt = &[_]ast.Stmt{
+        ast.Stmt{ .stmt = ast.StmtInner{ .DeclareStmt = &[_]*const ast.Expr{&ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "x" } }, .location = nolocation() }} }, .location = nolocation() },
+    } }, .location = nolocation() } } }, .location = nolocation() };
 
     const actual: ast.Stmt = try prs.parseStmt();
     defer actual.destroyAll(std.testing.allocator);
 
     try std.testing.expectEqualDeep(expect, actual);
-
 }
 
 test "if else statement" {
-
     var tokens: std.ArrayList(Token) = std.ArrayList(Token).empty;
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IF = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.DECLARE = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.ELSE = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.DECLARE = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "y"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IF = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "x" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LB = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .DECLARE = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "x" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LB = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .ELSE = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LB = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .DECLARE = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "y" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EOF = {} } });
     defer tokens.deinit(std.testing.allocator);
 
-    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, &logger);
 
-    const expect: ast.Stmt = ast.Stmt {
-        .stmt = ast.StmtInner {.IfElseStmt = &ast.IfElseStmt {
-            .cond = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
-            .ifStmt = ast.Stmt {
-                .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {
-                    &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()}
-                }},
-                .location = nolocation()
-            },
-            .elseStmt = ast.Stmt {
-                .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {
-                    &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "y"}},.location = nolocation()}
-                }},
-                .location = nolocation()
-            },
-        }},
-        .location = nolocation()
-    };
+    const expect: ast.Stmt = ast.Stmt{ .stmt = ast.StmtInner{ .IfElseStmt = &ast.IfElseStmt{
+        .cond = &ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "x" } }, .location = nolocation() },
+        .ifStmt = ast.Stmt{ .stmt = ast.StmtInner{ .DeclareStmt = &[_]*const ast.Expr{&ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "x" } }, .location = nolocation() }} }, .location = nolocation() },
+        .elseStmt = ast.Stmt{ .stmt = ast.StmtInner{ .DeclareStmt = &[_]*const ast.Expr{&ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "y" } }, .location = nolocation() }} }, .location = nolocation() },
+    } }, .location = nolocation() };
 
     const actual: ast.Stmt = try prs.parseStmt();
     defer actual.destroyAll(std.testing.allocator);
 
     try std.testing.expectEqualDeep(expect, actual);
-
 }
 
 test "if else block statement" {
-
     var tokens: std.ArrayList(Token) = std.ArrayList(Token).empty;
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IF = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LCURLY = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.DECLARE = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RCURLY = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.ELSE = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LCURLY = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.DECLARE = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "y"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RCURLY = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IF = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "x" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LB = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LCURLY = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LB = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .DECLARE = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "x" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LB = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .RCURLY = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LB = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .ELSE = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LB = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LCURLY = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LB = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .DECLARE = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "y" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LB = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .RCURLY = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EOF = {} } });
     defer tokens.deinit(std.testing.allocator);
 
-    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, &logger);
 
-    const expect: ast.Stmt = ast.Stmt {
-        .stmt = ast.StmtInner {.IfElseStmt = &ast.IfElseStmt {
-            .cond = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
-            .ifStmt = ast.Stmt {
-                .stmt = ast.StmtInner {.BlockStmt = &[_]ast.Stmt {
-                    ast.Stmt {
-                        .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {
-                            &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()}
-                        }},
-                        .location = nolocation()
-                    }
-                }},
-                .location = nolocation()
-            },
-            .elseStmt = ast.Stmt {
-                .stmt = ast.StmtInner {.BlockStmt = &[_]ast.Stmt {
-                    ast.Stmt {
-                        .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {
-                            &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "y"}},.location = nolocation()}
-                        }},
-                        .location = nolocation()
-                    }
-                }},
-                .location = nolocation()
-            },
-        }},
-        .location = nolocation()
-    };
+    const expect: ast.Stmt = ast.Stmt{ .stmt = ast.StmtInner{ .IfElseStmt = &ast.IfElseStmt{
+        .cond = &ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "x" } }, .location = nolocation() },
+        .ifStmt = ast.Stmt{ .stmt = ast.StmtInner{ .BlockStmt = &[_]ast.Stmt{ast.Stmt{ .stmt = ast.StmtInner{ .DeclareStmt = &[_]*const ast.Expr{&ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "x" } }, .location = nolocation() }} }, .location = nolocation() }} }, .location = nolocation() },
+        .elseStmt = ast.Stmt{ .stmt = ast.StmtInner{ .BlockStmt = &[_]ast.Stmt{ast.Stmt{ .stmt = ast.StmtInner{ .DeclareStmt = &[_]*const ast.Expr{&ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "y" } }, .location = nolocation() }} }, .location = nolocation() }} }, .location = nolocation() },
+    } }, .location = nolocation() };
 
     const actual: ast.Stmt = try prs.parseStmt();
     defer actual.destroyAll(std.testing.allocator);
 
     try std.testing.expectEqualDeep(expect, actual);
-
 }
 
 test "if else block statement 2" {
-
     var tokens: std.ArrayList(Token) = std.ArrayList(Token).empty;
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IF = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LCURLY = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.DECLARE = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.DECLARE = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "y"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RCURLY = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.ELSE = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LCURLY = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.DECLARE = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "y"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.DECLARE = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RCURLY = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IF = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "x" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LB = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LCURLY = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LB = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .DECLARE = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "x" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LB = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .DECLARE = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "y" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LB = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .RCURLY = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LB = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .ELSE = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LB = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LCURLY = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LB = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .DECLARE = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "y" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LB = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .DECLARE = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "x" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LB = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .RCURLY = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EOF = {} } });
     defer tokens.deinit(std.testing.allocator);
 
-    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, &logger);
 
-    const expect: ast.Stmt = ast.Stmt {
-        .stmt = ast.StmtInner {.IfElseStmt = &ast.IfElseStmt {
-            .cond = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
-            .ifStmt = ast.Stmt {
-                .stmt = ast.StmtInner {.BlockStmt = &[_]ast.Stmt {
-                    ast.Stmt {
-                        .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {
-                            &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()}
-                        }},
-                        .location = nolocation()
-                    },
-                    ast.Stmt {
-                        .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {
-                            &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "y"}},.location = nolocation()}
-                        }},
-                        .location = nolocation()
-                    }
-                }},
-                .location = nolocation()
-            },
-            .elseStmt = ast.Stmt {
-                .stmt = ast.StmtInner {.BlockStmt = &[_]ast.Stmt {
-                    ast.Stmt {
-                        .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {
-                            &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "y"}},.location = nolocation()}
-                        }},
-                        .location = nolocation()
-                    },
-                    ast.Stmt {
-                        .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {
-                            &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()}
-                        }},
-                        .location = nolocation()
-                    }
-                }},
-                .location = nolocation()
-            },
-        }},
-        .location = nolocation()
-    };
+    const expect: ast.Stmt = ast.Stmt{ .stmt = ast.StmtInner{ .IfElseStmt = &ast.IfElseStmt{
+        .cond = &ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "x" } }, .location = nolocation() },
+        .ifStmt = ast.Stmt{ .stmt = ast.StmtInner{ .BlockStmt = &[_]ast.Stmt{ ast.Stmt{ .stmt = ast.StmtInner{ .DeclareStmt = &[_]*const ast.Expr{&ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "x" } }, .location = nolocation() }} }, .location = nolocation() }, ast.Stmt{ .stmt = ast.StmtInner{ .DeclareStmt = &[_]*const ast.Expr{&ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "y" } }, .location = nolocation() }} }, .location = nolocation() } } }, .location = nolocation() },
+        .elseStmt = ast.Stmt{ .stmt = ast.StmtInner{ .BlockStmt = &[_]ast.Stmt{ ast.Stmt{ .stmt = ast.StmtInner{ .DeclareStmt = &[_]*const ast.Expr{&ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "y" } }, .location = nolocation() }} }, .location = nolocation() }, ast.Stmt{ .stmt = ast.StmtInner{ .DeclareStmt = &[_]*const ast.Expr{&ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "x" } }, .location = nolocation() }} }, .location = nolocation() } } }, .location = nolocation() },
+    } }, .location = nolocation() };
 
     const actual: ast.Stmt = try prs.parseStmt();
     defer actual.destroyAll(std.testing.allocator);
 
     try std.testing.expectEqualDeep(expect, actual);
-
 }
 
 test "complicated if-else branch" {
     var tokens: std.ArrayList(Token) = std.ArrayList(Token).empty;
 
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.DECLARE = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EQ = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 10}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .DECLARE = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "x" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EQ = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 10 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LB = {} } });
 
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IF = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.DEQ = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 10}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IF = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "x" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .DEQ = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 10 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LB = {} } });
 
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LCURLY = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EQ = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 20}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LCURLY = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LB = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "x" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EQ = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 20 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LB = {} } });
 
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.PRINT = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RCURLY = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .PRINT = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "x" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LB = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .RCURLY = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LB = {} } });
 
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.ELSE = {}}});
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .ELSE = {} } });
 
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LCURLY = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.PRINT = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 1}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RCURLY = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LB = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LCURLY = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LB = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .PRINT = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 1 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LB = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .RCURLY = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LB = {} } });
 
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.PRINT = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .PRINT = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "x" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EOF = {} } });
     defer tokens.deinit(std.testing.allocator);
 
-    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, &logger);
 
-    const expect: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
-
-        ast.Stmt {
-            .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {
-                &ast.Expr {
-                    .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
-                        .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
-                        .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 10}},.location = nolocation()}
-                    }},
-                    .location = nolocation()
-                }
-            }},
-            .location = nolocation()
-        },
-
-        ast.Stmt {
-            .stmt = ast.StmtInner {.IfElseStmt = &ast.IfElseStmt {
-                .cond = &ast.Expr {
-                    .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
-                        .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
-                        .op = ast.BinOp.Eq,
-                        .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 10}},.location = nolocation()},
-                    }},
-                    .location = nolocation()
-                },
-                .ifStmt = ast.Stmt {
-                    .stmt = ast.StmtInner {.BlockStmt = &[_]ast.Stmt {
-                        ast.Stmt {
-                            .stmt = ast.StmtInner {.ExprStmt = &ast.Expr {
-                                .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
-                                    .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
-                                    .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 20}},.location = nolocation()},
-                                }},
-                                .location = nolocation()
-                            }},
-                            .location = nolocation()
-                        },
-                        ast.Stmt {
-                            .stmt = ast.StmtInner {.PrintStmt = &[_]*const ast.Expr {
-                                &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()}
-                            }},
-                            .location = nolocation()
-                        }
-                    }},
-                    .location = nolocation()
-                },
-                .elseStmt = ast.Stmt {
-                    .stmt = ast.StmtInner {.BlockStmt = &[_]ast.Stmt {
-                        ast.Stmt {
-                            .stmt = ast.StmtInner {.PrintStmt = &[_]*const ast.Expr {
-                                &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},.location = nolocation()}
-                            }},
-                            .location = nolocation()
-                        }
-                    }},
-                    .location = nolocation()
-                }
-            }},
-            .location = nolocation()
-        },
-
-        ast.Stmt {
-            .stmt = ast.StmtInner {.PrintStmt = &[_]*const ast.Expr {
-                &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()}
-            }},
-            .location = nolocation()
-        }
-    }};
+    const expect: ast.Proc = ast.Proc{ .stmts = &[_]ast.Stmt{ ast.Stmt{ .stmt = ast.StmtInner{ .DeclareStmt = &[_]*const ast.Expr{&ast.Expr{ .expr = ast.ExprInner{ .AssignExpr = ast.AssignExpr{ .lhs = &ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "x" } }, .location = nolocation() }, .rhs = &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 10 } }, .location = nolocation() } } }, .location = nolocation() }} }, .location = nolocation() }, ast.Stmt{ .stmt = ast.StmtInner{ .IfElseStmt = &ast.IfElseStmt{ .cond = &ast.Expr{ .expr = ast.ExprInner{ .BinOpExpr = ast.BinOpExpr{
+        .lhs = &ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "x" } }, .location = nolocation() },
+        .op = ast.BinOp.Eq,
+        .rhs = &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 10 } }, .location = nolocation() },
+    } }, .location = nolocation() }, .ifStmt = ast.Stmt{ .stmt = ast.StmtInner{ .BlockStmt = &[_]ast.Stmt{ ast.Stmt{ .stmt = ast.StmtInner{ .ExprStmt = &ast.Expr{ .expr = ast.ExprInner{ .AssignExpr = ast.AssignExpr{
+        .lhs = &ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "x" } }, .location = nolocation() },
+        .rhs = &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 20 } }, .location = nolocation() },
+    } }, .location = nolocation() } }, .location = nolocation() }, ast.Stmt{ .stmt = ast.StmtInner{ .PrintStmt = &[_]*const ast.Expr{&ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "x" } }, .location = nolocation() }} }, .location = nolocation() } } }, .location = nolocation() }, .elseStmt = ast.Stmt{ .stmt = ast.StmtInner{ .BlockStmt = &[_]ast.Stmt{ast.Stmt{ .stmt = ast.StmtInner{ .PrintStmt = &[_]*const ast.Expr{&ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 1 } }, .location = nolocation() }} }, .location = nolocation() }} }, .location = nolocation() } } }, .location = nolocation() }, ast.Stmt{ .stmt = ast.StmtInner{ .PrintStmt = &[_]*const ast.Expr{&ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "x" } }, .location = nolocation() }} }, .location = nolocation() } } };
 
     const actual: ast.Proc = try prs.parseProcedure();
     defer actual.destroyAll(std.testing.allocator);
@@ -1397,71 +984,45 @@ test "complicated if-else branch" {
 test "simple while with condition" {
     var tokens: std.ArrayList(Token) = std.ArrayList(Token).empty;
 
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.DECLARE = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EQ = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 10}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .DECLARE = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "x" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EQ = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 10 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LB = {} } });
 
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.WHILE = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.GT = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 1}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .WHILE = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "x" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .GT = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 1 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LB = {} } });
 
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LCURLY = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.PRINT = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LCURLY = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LB = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .PRINT = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "x" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LB = {} } });
 
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RCURLY = {}}});
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .RCURLY = {} } });
 
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EOF = {} } });
     defer tokens.deinit(std.testing.allocator);
 
-    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, &logger);
 
-    const expect: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
+    const expect: ast.Proc = ast.Proc{ .stmts = &[_]ast.Stmt{
+        ast.Stmt{ .stmt = ast.StmtInner{ .DeclareStmt = &[_]*const ast.Expr{&ast.Expr{ .expr = ast.ExprInner{ .AssignExpr = ast.AssignExpr{ .lhs = &ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "x" } }, .location = nolocation() }, .rhs = &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 10 } }, .location = nolocation() } } }, .location = nolocation() }} }, .location = nolocation() },
 
-        ast.Stmt {
-            .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {
-                &ast.Expr {
-                    .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
-                        .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
-                        .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 10}},.location = nolocation()}
-                    }},
-                    .location = nolocation()
-                }
-            }},
-            .location = nolocation()
-        },
-
-        ast.Stmt {
-            .stmt = ast.StmtInner {.WhileStmt = &ast.WhileStmt {
-                .cond = &ast.Expr {
-                    .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
-                        .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
-                        .op = ast.BinOp.Gt,
-                        .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},.location = nolocation()},
-                    }},
-                    .location = nolocation()
-                },
-                .body = ast.Stmt {
-                    .stmt = ast.StmtInner {.BlockStmt = &[_]ast.Stmt {
-                        ast.Stmt {
-                            .stmt = ast.StmtInner {.PrintStmt = &[_]*const ast.Expr {
-                                &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()}
-                            }},
-                            .location = nolocation()
-                        }
-                    }},
-                    .location = nolocation()
-                },
-            }},
-            .location = nolocation()
-        },
-    }};
+        ast.Stmt{ .stmt = ast.StmtInner{ .WhileStmt = &ast.WhileStmt{
+            .cond = &ast.Expr{ .expr = ast.ExprInner{ .BinOpExpr = ast.BinOpExpr{
+                .lhs = &ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "x" } }, .location = nolocation() },
+                .op = ast.BinOp.Gt,
+                .rhs = &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 1 } }, .location = nolocation() },
+            } }, .location = nolocation() },
+            .body = ast.Stmt{ .stmt = ast.StmtInner{ .BlockStmt = &[_]ast.Stmt{ast.Stmt{ .stmt = ast.StmtInner{ .PrintStmt = &[_]*const ast.Expr{&ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "x" } }, .location = nolocation() }} }, .location = nolocation() }} }, .location = nolocation() },
+        } }, .location = nolocation() },
+    } };
 
     const actual: ast.Proc = try prs.parseProcedure();
     defer actual.destroyAll(std.testing.allocator);
@@ -1472,94 +1033,55 @@ test "simple while with condition" {
 test "more interesting while" {
     var tokens: std.ArrayList(Token) = std.ArrayList(Token).empty;
 
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.DECLARE = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EQ = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 10}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .DECLARE = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "x" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EQ = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 10 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LB = {} } });
 
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.WHILE = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.GT = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 1}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .WHILE = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "x" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .GT = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 1 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LB = {} } });
 
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LCURLY = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.PRINT = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LCURLY = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LB = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .PRINT = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "x" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LB = {} } });
 
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EQ = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.MINUS = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 1}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RCURLY = {}}});
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "x" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EQ = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "x" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .MINUS = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 1 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LB = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .RCURLY = {} } });
 
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EOF = {} } });
     defer tokens.deinit(std.testing.allocator);
 
-    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, &logger);
 
-    const expect: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
+    const expect: ast.Proc = ast.Proc{ .stmts = &[_]ast.Stmt{
+        ast.Stmt{ .stmt = ast.StmtInner{ .DeclareStmt = &[_]*const ast.Expr{&ast.Expr{ .expr = ast.ExprInner{ .AssignExpr = ast.AssignExpr{ .lhs = &ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "x" } }, .location = nolocation() }, .rhs = &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 10 } }, .location = nolocation() } } }, .location = nolocation() }} }, .location = nolocation() },
 
-        ast.Stmt {
-            .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {
-                &ast.Expr {
-                    .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
-                        .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
-                        .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 10}},.location = nolocation()}
-                    }},
-                    .location = nolocation()
-                }
-            }},
-            .location = nolocation()
-        },
-
-        ast.Stmt {
-            .stmt = ast.StmtInner {.WhileStmt = &ast.WhileStmt {
-                .cond = &ast.Expr {
-                    .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
-                        .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
-                        .op = ast.BinOp.Gt,
-                        .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},.location = nolocation()},
-                    }},
-                    .location = nolocation()
-                },
-                .body = ast.Stmt {
-                    .stmt = ast.StmtInner {.BlockStmt = &[_]ast.Stmt {
-                        ast.Stmt {
-                            .stmt = ast.StmtInner {.PrintStmt = &[_]*const ast.Expr {
-                                &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()}
-                            }},
-                            .location = nolocation()
-                        },
-                        ast.Stmt {
-                            .stmt = ast.StmtInner {.ExprStmt = &ast.Expr {
-                                .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
-                                    .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
-                                    .rhs = &ast.Expr {
-                                        .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
-                                            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
-                                            .op = .Sub,
-                                            .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},.location = nolocation()},
-                                        }},
-                                        .location = nolocation()
-                                    }
-                                }},
-                                .location = nolocation()
-                            }},
-                            .location = nolocation()
-                        }
-                    }},
-                    .location = nolocation()
-                },
-            }},
-            .location = nolocation()
-        },
-    }};
+        ast.Stmt{ .stmt = ast.StmtInner{ .WhileStmt = &ast.WhileStmt{
+            .cond = &ast.Expr{ .expr = ast.ExprInner{ .BinOpExpr = ast.BinOpExpr{
+                .lhs = &ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "x" } }, .location = nolocation() },
+                .op = ast.BinOp.Gt,
+                .rhs = &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 1 } }, .location = nolocation() },
+            } }, .location = nolocation() },
+            .body = ast.Stmt{ .stmt = ast.StmtInner{ .BlockStmt = &[_]ast.Stmt{ ast.Stmt{ .stmt = ast.StmtInner{ .PrintStmt = &[_]*const ast.Expr{&ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "x" } }, .location = nolocation() }} }, .location = nolocation() }, ast.Stmt{ .stmt = ast.StmtInner{ .ExprStmt = &ast.Expr{ .expr = ast.ExprInner{ .AssignExpr = ast.AssignExpr{ .lhs = &ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "x" } }, .location = nolocation() }, .rhs = &ast.Expr{ .expr = ast.ExprInner{ .BinOpExpr = ast.BinOpExpr{
+                .lhs = &ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "x" } }, .location = nolocation() },
+                .op = .Sub,
+                .rhs = &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 1 } }, .location = nolocation() },
+            } }, .location = nolocation() } } }, .location = nolocation() } }, .location = nolocation() } } }, .location = nolocation() },
+        } }, .location = nolocation() },
+    } };
 
     const actual: ast.Proc = try prs.parseProcedure();
     defer actual.destroyAll(std.testing.allocator);
@@ -1567,81 +1089,53 @@ test "more interesting while" {
     try std.testing.expectEqualDeep(expect, actual);
 }
 
-
 test "while with break statement" {
     var tokens: std.ArrayList(Token) = std.ArrayList(Token).empty;
 
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.DECLARE = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EQ = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 10}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .DECLARE = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "x" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EQ = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 10 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LB = {} } });
 
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.WHILE = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.GT = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 1}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .WHILE = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "x" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .GT = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 1 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LB = {} } });
 
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LCURLY = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.PRINT = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LCURLY = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LB = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .PRINT = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "x" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LB = {} } });
 
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.BREAK = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RCURLY = {}}});
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .BREAK = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LB = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .RCURLY = {} } });
 
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EOF = {} } });
     defer tokens.deinit(std.testing.allocator);
 
-    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, &logger);
 
-    const expect: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
+    const expect: ast.Proc = ast.Proc{ .stmts = &[_]ast.Stmt{
+        ast.Stmt{ .stmt = ast.StmtInner{ .DeclareStmt = &[_]*const ast.Expr{&ast.Expr{ .expr = ast.ExprInner{ .AssignExpr = ast.AssignExpr{ .lhs = &ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "x" } }, .location = nolocation() }, .rhs = &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 10 } }, .location = nolocation() } } }, .location = nolocation() }} }, .location = nolocation() },
 
-        ast.Stmt {
-            .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {
-                &ast.Expr {
-                    .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
-                        .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
-                        .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 10}},.location = nolocation()}
-                    }},
-                    .location = nolocation()
-                }
-            }},
-            .location = nolocation()
-        },
-
-        ast.Stmt {
-            .stmt = ast.StmtInner {.WhileStmt = &ast.WhileStmt {
-                .cond = &ast.Expr {
-                    .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
-                        .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
-                        .op = ast.BinOp.Gt,
-                        .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},.location = nolocation()},
-                    }},
-                    .location = nolocation()
-                },
-                .body = ast.Stmt {
-                    .stmt = ast.StmtInner {.BlockStmt = &[_]ast.Stmt {
-                        ast.Stmt {
-                            .stmt = ast.StmtInner {.PrintStmt = &[_]*const ast.Expr {
-                                &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()}
-                            }},
-                            .location = nolocation()
-                        },
-                        ast.Stmt {
-                            .stmt = ast.StmtInner {.BreakStmt = {}},
-                            .location = nolocation()
-                        },
-                    }},
-                    .location = nolocation()
-                },
-            }},
-            .location = nolocation()
-        },
-    }};
+        ast.Stmt{ .stmt = ast.StmtInner{ .WhileStmt = &ast.WhileStmt{
+            .cond = &ast.Expr{ .expr = ast.ExprInner{ .BinOpExpr = ast.BinOpExpr{
+                .lhs = &ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "x" } }, .location = nolocation() },
+                .op = ast.BinOp.Gt,
+                .rhs = &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 1 } }, .location = nolocation() },
+            } }, .location = nolocation() },
+            .body = ast.Stmt{ .stmt = ast.StmtInner{ .BlockStmt = &[_]ast.Stmt{
+                ast.Stmt{ .stmt = ast.StmtInner{ .PrintStmt = &[_]*const ast.Expr{&ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "x" } }, .location = nolocation() }} }, .location = nolocation() },
+                ast.Stmt{ .stmt = ast.StmtInner{ .BreakStmt = {} }, .location = nolocation() },
+            } }, .location = nolocation() },
+        } }, .location = nolocation() },
+    } };
 
     const actual: ast.Proc = try prs.parseProcedure();
     defer actual.destroyAll(std.testing.allocator);
@@ -1652,74 +1146,50 @@ test "while with break statement" {
 test "while with continue statement" {
     var tokens: std.ArrayList(Token) = std.ArrayList(Token).empty;
 
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.DECLARE = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EQ = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 10}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .DECLARE = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "x" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EQ = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 10 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LB = {} } });
 
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.WHILE = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.GT = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 1}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .WHILE = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "x" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .GT = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 1 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LB = {} } });
 
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LCURLY = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.PRINT = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LCURLY = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LB = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .PRINT = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "x" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LB = {} } });
 
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.CONTINUE = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RCURLY = {}}});
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .CONTINUE = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LB = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .RCURLY = {} } });
 
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EOF = {} } });
     defer tokens.deinit(std.testing.allocator);
 
-    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, &logger);
 
-    const expect: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
+    const expect: ast.Proc = ast.Proc{ .stmts = &[_]ast.Stmt{
+        ast.Stmt{ .stmt = ast.StmtInner{ .DeclareStmt = &[_]*const ast.Expr{&ast.Expr{ .expr = ast.ExprInner{ .AssignExpr = ast.AssignExpr{ .lhs = &ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "x" } }, .location = nolocation() }, .rhs = &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 10 } }, .location = nolocation() } } }, .location = nolocation() }} }, .location = nolocation() },
 
-        ast.Stmt {
-            .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {
-                &ast.Expr {
-                    .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
-                        .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
-                        .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 10}},.location = nolocation()}
-                    }},
-                    .location = nolocation()
-                }
-            }},
-            .location = nolocation()
-        },
-
-        ast.Stmt {
-            .stmt = ast.StmtInner {.WhileStmt = &ast.WhileStmt {
-                .cond = &ast.Expr {
-                    .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
-                        .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
-                        .op = ast.BinOp.Gt,
-                        .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},.location = nolocation()},
-                    }},
-                    .location = nolocation()
-                },
-                .body = ast.Stmt {
-                    .stmt = ast.StmtInner {.BlockStmt = &[_]ast.Stmt {
-                        ast.Stmt {
-                            .stmt = ast.StmtInner {.PrintStmt = &[_]*const ast.Expr {
-                                &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()}
-                            }},
-                            .location = nolocation()
-                        },
-                        ast.Stmt {.stmt = ast.StmtInner {.ContinueStmt = {}},.location = nolocation()},
-                    }},
-                    .location = nolocation()
-                },
-            }},
-            .location = nolocation()
-        },
-    }};
+        ast.Stmt{ .stmt = ast.StmtInner{ .WhileStmt = &ast.WhileStmt{
+            .cond = &ast.Expr{ .expr = ast.ExprInner{ .BinOpExpr = ast.BinOpExpr{
+                .lhs = &ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "x" } }, .location = nolocation() },
+                .op = ast.BinOp.Gt,
+                .rhs = &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 1 } }, .location = nolocation() },
+            } }, .location = nolocation() },
+            .body = ast.Stmt{ .stmt = ast.StmtInner{ .BlockStmt = &[_]ast.Stmt{
+                ast.Stmt{ .stmt = ast.StmtInner{ .PrintStmt = &[_]*const ast.Expr{&ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "x" } }, .location = nolocation() }} }, .location = nolocation() },
+                ast.Stmt{ .stmt = ast.StmtInner{ .ContinueStmt = {} }, .location = nolocation() },
+            } }, .location = nolocation() },
+        } }, .location = nolocation() },
+    } };
 
     const actual: ast.Proc = try prs.parseProcedure();
     defer actual.destroyAll(std.testing.allocator);
@@ -1727,60 +1197,38 @@ test "while with continue statement" {
     try std.testing.expectEqualDeep(expect, actual);
 }
 
-
 test "comma declaration" {
     var tokens: std.ArrayList(Token) = std.ArrayList(Token).empty;
 
-
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.DECLARE = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EQ = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 1}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "y"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EQ = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 2}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "z"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "w"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EQ = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 1}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .DECLARE = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "x" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EQ = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 1 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .COMMA = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "y" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EQ = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 2 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .COMMA = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "z" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .COMMA = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "w" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EQ = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 1 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EOF = {} } });
     defer tokens.deinit(std.testing.allocator);
 
-    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, &logger);
 
-    const expect: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
-
-        ast.Stmt {
-            .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {
-                &ast.Expr {
-                    .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
-                        .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
-                        .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},.location = nolocation()}
-                    }},
-                    .location = nolocation()
-                },
-                &ast.Expr {
-                    .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
-                        .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "y"}},.location = nolocation()},
-                        .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 2}},.location = nolocation()}
-                    }},
-                    .location = nolocation()
-                },
-                &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "z"}},.location = nolocation()},
-                &ast.Expr {
-                    .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
-                        .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "w"}},.location = nolocation()},
-                        .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},.location = nolocation()}
-                    }},
-                    .location = nolocation()
-                },
-            }},
-            .location = nolocation()
-        },
-    }};
+    const expect: ast.Proc = ast.Proc{ .stmts = &[_]ast.Stmt{
+        ast.Stmt{ .stmt = ast.StmtInner{ .DeclareStmt = &[_]*const ast.Expr{
+            &ast.Expr{ .expr = ast.ExprInner{ .AssignExpr = ast.AssignExpr{ .lhs = &ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "x" } }, .location = nolocation() }, .rhs = &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 1 } }, .location = nolocation() } } }, .location = nolocation() },
+            &ast.Expr{ .expr = ast.ExprInner{ .AssignExpr = ast.AssignExpr{ .lhs = &ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "y" } }, .location = nolocation() }, .rhs = &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 2 } }, .location = nolocation() } } }, .location = nolocation() },
+            &ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "z" } }, .location = nolocation() },
+            &ast.Expr{ .expr = ast.ExprInner{ .AssignExpr = ast.AssignExpr{ .lhs = &ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "w" } }, .location = nolocation() }, .rhs = &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 1 } }, .location = nolocation() } } }, .location = nolocation() },
+        } }, .location = nolocation() },
+    } };
 
     const actual: ast.Proc = try prs.parseProcedure();
     defer actual.destroyAll(std.testing.allocator);
@@ -1791,26 +1239,27 @@ test "comma declaration" {
 test "comma declaration double comma error" {
     var tokens: std.ArrayList(Token) = std.ArrayList(Token).empty;
 
-
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.DECLARE = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EQ = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 1}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "y"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EQ = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 2}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "z"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "w"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EQ = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 1}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .DECLARE = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "x" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EQ = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 1 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .COMMA = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "y" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EQ = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 2 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .COMMA = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .COMMA = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "z" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .COMMA = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "w" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EQ = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 1 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EOF = {} } });
     defer tokens.deinit(std.testing.allocator);
 
-    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, &logger);
     const res: parser.ParseError!ast.Proc = prs.parseProcedure();
 
     try std.testing.expectEqualDeep(res, parser.ParseError.ExpectedExpression);
@@ -1819,35 +1268,25 @@ test "comma declaration double comma error" {
 test "comma print" {
     var tokens: std.ArrayList(Token) = std.ArrayList(Token).empty;
 
-
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.PRINT = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.PLUS = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 1}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "y"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .PRINT = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "x" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .PLUS = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 1 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .COMMA = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "y" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EOF = {} } });
     defer tokens.deinit(std.testing.allocator);
 
-    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, &logger);
 
-    const expect: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
-
-        ast.Stmt {
-            .stmt = ast.StmtInner {.PrintStmt = &[_]*const ast.Expr {
-                &ast.Expr {
-                    .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
-                        .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
-                        .op = .Add,
-                        .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},.location = nolocation()}
-                    }},
-                    .location = nolocation()
-                },
-                &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "y"}},.location = nolocation()},
-            }},
-            .location = nolocation()
-        },
-    }};
+    const expect: ast.Proc = ast.Proc{ .stmts = &[_]ast.Stmt{
+        ast.Stmt{ .stmt = ast.StmtInner{ .PrintStmt = &[_]*const ast.Expr{
+            &ast.Expr{ .expr = ast.ExprInner{ .BinOpExpr = ast.BinOpExpr{ .lhs = &ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "x" } }, .location = nolocation() }, .op = .Add, .rhs = &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 1 } }, .location = nolocation() } } }, .location = nolocation() },
+            &ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "y" } }, .location = nolocation() },
+        } }, .location = nolocation() },
+    } };
 
     const actual: ast.Proc = try prs.parseProcedure();
     defer actual.destroyAll(std.testing.allocator);
@@ -1858,17 +1297,19 @@ test "comma print" {
 test "comma print multiple comma error" {
     var tokens: std.ArrayList(Token) = std.ArrayList(Token).empty;
 
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.PRINT = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "y"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "z"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .PRINT = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "x" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .COMMA = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "y" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .COMMA = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .COMMA = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "z" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EOF = {} } });
     defer tokens.deinit(std.testing.allocator);
 
-    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, &logger);
 
     const actual: parser.ParseError!ast.Proc = prs.parseProcedure();
 
@@ -1879,24 +1320,18 @@ test "call expression no args" {
     var tokens: std.ArrayList(Token) = .empty;
     defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "myfun"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LPAREN = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RPAREN = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "myfun" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LPAREN = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .RPAREN = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EOF = {} } });
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, &logger);
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
 
-
-    const expect: ast.Expr = ast.Expr {
-        .expr = ast.ExprInner {.CallExpr = ast.CallExpr {
-            .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "myfun"}},.location = nolocation()},
-            .args = &[_]*const ast.Expr {
-            }
-        }},
-        .location = nolocation()
-    };
+    const expect: ast.Expr = ast.Expr{ .expr = ast.ExprInner{ .CallExpr = ast.CallExpr{ .id = &ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "myfun" } }, .location = nolocation() }, .args = &[_]*const ast.Expr{} } }, .location = nolocation() };
 
     try std.testing.expectEqualDeep(expect, result.*);
 }
@@ -1905,26 +1340,21 @@ test "call expression one arg" {
     var tokens: std.ArrayList(Token) = .empty;
     defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "myfun"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LPAREN = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "y"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RPAREN = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "myfun" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LPAREN = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "y" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .RPAREN = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EOF = {} } });
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, &logger);
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
 
-
-    const expect: ast.Expr = ast.Expr {
-        .expr = ast.ExprInner {.CallExpr = ast.CallExpr {
-            .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "myfun"}},.location = nolocation()},
-            .args = &[_]*const ast.Expr {
-                &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "y"}},.location = nolocation()},
-            }
-        }},
-        .location = nolocation()
-    };
+    const expect: ast.Expr = ast.Expr{ .expr = ast.ExprInner{ .CallExpr = ast.CallExpr{ .id = &ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "myfun" } }, .location = nolocation() }, .args = &[_]*const ast.Expr{
+        &ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "y" } }, .location = nolocation() },
+    } } }, .location = nolocation() };
 
     try std.testing.expectEqualDeep(expect, result.*);
 }
@@ -1933,29 +1363,24 @@ test "call expression two args" {
     var tokens: std.ArrayList(Token) = .empty;
     defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "myfun"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LPAREN = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "y"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "somevar"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RPAREN = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "myfun" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LPAREN = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "y" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .COMMA = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "somevar" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .RPAREN = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EOF = {} } });
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, &logger);
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
 
-
-    const expect: ast.Expr = ast.Expr {
-        .expr = ast.ExprInner {.CallExpr = ast.CallExpr {
-            .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "myfun"}},.location = nolocation()},
-            .args = &[_]*const ast.Expr {
-                &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "y"}},.location = nolocation()},
-                &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "somevar"}},.location = nolocation()},
-            }
-        }},
-        .location = nolocation()
-    };
+    const expect: ast.Expr = ast.Expr{ .expr = ast.ExprInner{ .CallExpr = ast.CallExpr{ .id = &ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "myfun" } }, .location = nolocation() }, .args = &[_]*const ast.Expr{
+        &ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "y" } }, .location = nolocation() },
+        &ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "somevar" } }, .location = nolocation() },
+    } } }, .location = nolocation() };
 
     try std.testing.expectEqualDeep(expect, result.*);
 }
@@ -1964,46 +1389,28 @@ test "call expression complex expressions as args" {
     var tokens: std.ArrayList(Token) = .empty;
     defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "myfun"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LPAREN = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "otherfun"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LPAREN = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RPAREN = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "y"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.PLUS = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 3}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RPAREN = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "myfun" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LPAREN = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "otherfun" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LPAREN = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .RPAREN = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .COMMA = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "y" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .PLUS = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 3 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .RPAREN = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EOF = {} } });
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, &logger);
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
 
-
-    const expect: ast.Expr = ast.Expr {
-        .expr = ast.ExprInner {.CallExpr = ast.CallExpr {
-            .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "myfun"}},.location = nolocation()},
-            .args = &[_]*const ast.Expr {
-                &ast.Expr {
-                    .expr = ast.ExprInner {.CallExpr = ast.CallExpr {
-                        .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "otherfun"}},.location = nolocation()},
-                        .args = &[_]*const ast.Expr {},
-                    }},
-                    .location = nolocation()
-                },
-                &ast.Expr {
-                    .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
-                        .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "y"}},.location = nolocation()},
-                        .op = .Add,
-                        .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 3}},.location = nolocation()}
-                    }},
-                    .location = nolocation()
-                }
-            }
-        }},
-        .location = nolocation()
-    };
+    const expect: ast.Expr = ast.Expr{ .expr = ast.ExprInner{ .CallExpr = ast.CallExpr{ .id = &ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "myfun" } }, .location = nolocation() }, .args = &[_]*const ast.Expr{ &ast.Expr{ .expr = ast.ExprInner{ .CallExpr = ast.CallExpr{
+        .id = &ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "otherfun" } }, .location = nolocation() },
+        .args = &[_]*const ast.Expr{},
+    } }, .location = nolocation() }, &ast.Expr{ .expr = ast.ExprInner{ .BinOpExpr = ast.BinOpExpr{ .lhs = &ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "y" } }, .location = nolocation() }, .op = .Add, .rhs = &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 3 } }, .location = nolocation() } } }, .location = nolocation() } } } }, .location = nolocation() };
 
     try std.testing.expectEqualDeep(expect, result.*);
 }
@@ -2012,34 +1419,22 @@ test "expression as function funcall" {
     var tokens: std.ArrayList(Token) = .empty;
     defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LPAREN = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.MUL = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 3}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RPAREN = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LPAREN = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RPAREN = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LPAREN = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "x" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .MUL = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 3 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .RPAREN = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LPAREN = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .RPAREN = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EOF = {} } });
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, &logger);
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
 
-
-    const expect: ast.Expr = ast.Expr {
-        .expr = ast.ExprInner {.CallExpr = ast.CallExpr {
-            .id = &ast.Expr {
-                .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
-                    .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
-                    .op = .Mul,
-                    .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 3}},.location = nolocation()}
-                }},
-                .location = nolocation()
-            },
-            .args = &[_]*const ast.Expr {}
-        }},
-        .location = nolocation()
-    };
+    const expect: ast.Expr = ast.Expr{ .expr = ast.ExprInner{ .CallExpr = ast.CallExpr{ .id = &ast.Expr{ .expr = ast.ExprInner{ .BinOpExpr = ast.BinOpExpr{ .lhs = &ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "x" } }, .location = nolocation() }, .op = .Mul, .rhs = &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 3 } }, .location = nolocation() } } }, .location = nolocation() }, .args = &[_]*const ast.Expr{} } }, .location = nolocation() };
 
     try std.testing.expectEqualDeep(expect, result.*);
 }
@@ -2048,31 +1443,26 @@ test "funcall funcall" {
     var tokens: std.ArrayList(Token) = .empty;
     defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "myfun"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LPAREN = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RPAREN = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LPAREN = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RPAREN = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "myfun" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LPAREN = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .RPAREN = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LPAREN = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .RPAREN = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EOF = {} } });
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, &logger);
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
 
-
-    const expect: ast.Expr = ast.Expr {
-        .expr = ast.ExprInner {.CallExpr = ast.CallExpr {
-            .id = &ast.Expr {
-                .expr = ast.ExprInner {.CallExpr = ast.CallExpr {
-                    .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "myfun"}},.location = nolocation()},
-                    .args = &[_]*const ast.Expr {},
-                }},
-                .location = nolocation()
-            },
-            .args = &[_]*const ast.Expr {},
-        }},
-        .location = nolocation()
-    };
+    const expect: ast.Expr = ast.Expr{ .expr = ast.ExprInner{ .CallExpr = ast.CallExpr{
+        .id = &ast.Expr{ .expr = ast.ExprInner{ .CallExpr = ast.CallExpr{
+            .id = &ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "myfun" } }, .location = nolocation() },
+            .args = &[_]*const ast.Expr{},
+        } }, .location = nolocation() },
+        .args = &[_]*const ast.Expr{},
+    } }, .location = nolocation() };
 
     try std.testing.expectEqualDeep(expect, result.*);
 }
@@ -2081,202 +1471,153 @@ test "funcall funcall funcall" {
     var tokens: std.ArrayList(Token) = .empty;
     defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "myfun"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LPAREN = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RPAREN = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LPAREN = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RPAREN = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LPAREN = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RPAREN = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "myfun" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LPAREN = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .RPAREN = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LPAREN = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .RPAREN = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LPAREN = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .RPAREN = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EOF = {} } });
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, &logger);
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
 
-
-    const expect: ast.Expr = ast.Expr {
-        .expr = ast.ExprInner {.CallExpr = ast.CallExpr {
-            .id = &ast.Expr {
-                .expr = ast.ExprInner {.CallExpr = ast.CallExpr {
-                    .id = &ast.Expr {
-                        .expr = ast.ExprInner {.CallExpr = ast.CallExpr {
-                            .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "myfun"}},.location = nolocation()},
-                            .args = &[_]*const ast.Expr {},
-                        }},
-                        .location = nolocation()
-                    },
-                    .args = &[_]*const ast.Expr {},
-                }},
-                .location = nolocation()
-            },
-            .args = &[_]*const ast.Expr {}
-        }},
-        .location = nolocation()
-    };
+    const expect: ast.Expr = ast.Expr{ .expr = ast.ExprInner{ .CallExpr = ast.CallExpr{ .id = &ast.Expr{ .expr = ast.ExprInner{ .CallExpr = ast.CallExpr{
+        .id = &ast.Expr{ .expr = ast.ExprInner{ .CallExpr = ast.CallExpr{
+            .id = &ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "myfun" } }, .location = nolocation() },
+            .args = &[_]*const ast.Expr{},
+        } }, .location = nolocation() },
+        .args = &[_]*const ast.Expr{},
+    } }, .location = nolocation() }, .args = &[_]*const ast.Expr{} } }, .location = nolocation() };
 
     try std.testing.expectEqualDeep(expect, result.*);
 }
 
 test "empty return statement" {
-
     var tokens: std.ArrayList(Token) = std.ArrayList(Token).empty;
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RETURN = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.DECLARE = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .RETURN = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LB = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .DECLARE = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "x" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EOF = {} } });
     defer tokens.deinit(std.testing.allocator);
 
-    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, &logger);
 
-    const expect: ast.Stmt = ast.Stmt {
-        .stmt = ast.StmtInner {.ReturnStmt = &ast.Expr {
-            .expr = ast.ExprInner {.Lit = ast.Lit {.Void = {}}},
-            .location = nolocation()
-        }},
-        .location = nolocation()
-    };
+    const expect: ast.Stmt = ast.Stmt{ .stmt = ast.StmtInner{ .ReturnStmt = &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Void = {} } }, .location = nolocation() } }, .location = nolocation() };
 
     const actual: ast.Stmt = try prs.parseStmt();
     defer actual.destroyAll(std.testing.allocator);
 
     try std.testing.expectEqualDeep(expect, actual);
-
 }
 
 test "return statement with expression" {
-
     var tokens: std.ArrayList(Token) = std.ArrayList(Token).empty;
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RETURN = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.PLUS = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.DECLARE = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .RETURN = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "x" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .PLUS = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "x" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LB = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .DECLARE = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "x" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EOF = {} } });
     defer tokens.deinit(std.testing.allocator);
 
-    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, &logger);
 
-    const expect: ast.Stmt = ast.Stmt {
-        .stmt = ast.StmtInner {.ReturnStmt = &ast.Expr {
-            .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
-                .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
-                .op = .Add,
-                .rhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
-            }},
-            .location = nolocation()
-        }},
-        .location = nolocation()
-    };
+    const expect: ast.Stmt = ast.Stmt{ .stmt = ast.StmtInner{ .ReturnStmt = &ast.Expr{ .expr = ast.ExprInner{ .BinOpExpr = ast.BinOpExpr{
+        .lhs = &ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "x" } }, .location = nolocation() },
+        .op = .Add,
+        .rhs = &ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "x" } }, .location = nolocation() },
+    } }, .location = nolocation() } }, .location = nolocation() };
 
     const actual: ast.Stmt = try prs.parseStmt();
     defer actual.destroyAll(std.testing.allocator);
 
     try std.testing.expectEqualDeep(expect, actual);
-
 }
 
-
 test "empty return statement at the end" {
-
     var tokens: std.ArrayList(Token) = std.ArrayList(Token).empty;
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RETURN = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .RETURN = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EOF = {} } });
     defer tokens.deinit(std.testing.allocator);
 
-    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, &logger);
 
-    const expect: ast.Stmt = ast.Stmt {
-        .stmt = ast.StmtInner {.ReturnStmt = &ast.Expr {
-            .expr = ast.ExprInner {.Lit = ast.Lit {.Void = {}}},
-            .location = nolocation()
-        }},
-        .location = nolocation()
-    };
+    const expect: ast.Stmt = ast.Stmt{ .stmt = ast.StmtInner{ .ReturnStmt = &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Void = {} } }, .location = nolocation() } }, .location = nolocation() };
 
     const actual: ast.Stmt = try prs.parseStmt();
     defer actual.destroyAll(std.testing.allocator);
 
     try std.testing.expectEqualDeep(expect, actual);
-
 }
 
 test "return statement with expression at the end" {
-
     var tokens: std.ArrayList(Token) = std.ArrayList(Token).empty;
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RETURN = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.PLUS = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .RETURN = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "x" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .PLUS = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "x" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EOF = {} } });
     defer tokens.deinit(std.testing.allocator);
 
-    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, &logger);
 
-    const expect: ast.Stmt = ast.Stmt {
-        .stmt = ast.StmtInner {.ReturnStmt = &ast.Expr {
-            .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
-                .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
-                .op = .Add,
-                .rhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
-            }},
-            .location = nolocation()
-        }},
-        .location = nolocation()
-    };
+    const expect: ast.Stmt = ast.Stmt{ .stmt = ast.StmtInner{ .ReturnStmt = &ast.Expr{ .expr = ast.ExprInner{ .BinOpExpr = ast.BinOpExpr{
+        .lhs = &ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "x" } }, .location = nolocation() },
+        .op = .Add,
+        .rhs = &ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "x" } }, .location = nolocation() },
+    } }, .location = nolocation() } }, .location = nolocation() };
 
     const actual: ast.Stmt = try prs.parseStmt();
     defer actual.destroyAll(std.testing.allocator);
 
     try std.testing.expectEqualDeep(expect, actual);
-
 }
 
 test "simple inline function definition" {
-
     var tokens: std.ArrayList(Token) = std.ArrayList(Token).empty;
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.FUN = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "last"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LPAREN = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "y"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "z"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RPAREN = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RETURN = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "z"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .FUN = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "last" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LPAREN = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "x" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .COMMA = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "y" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .COMMA = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "z" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .RPAREN = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LB = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .RETURN = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "z" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EOF = {} } });
     defer tokens.deinit(std.testing.allocator);
 
-    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
 
-    const expect: ast.Stmt = ast.Stmt {
-        .stmt = ast.StmtInner {.FunDefStmt = &ast.FunDefStmt {
-            .id = "last",
-            .params = &[_]ast.Var {"x", "y", "z"},
-            .body = ast.Stmt {
-                .stmt = ast.StmtInner {.ReturnStmt = &ast.Expr {
-                    .expr = ast.ExprInner {.Lval = ast.Lval {.Var = "z"}},
-                    .location = nolocation()
-                }},
-                .location = nolocation()
-            }
-        }},
-        .location = nolocation()
-    };
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, &logger);
+
+    const expect: ast.Stmt = ast.Stmt{ .stmt = ast.StmtInner{ .FunDefStmt = &ast.FunDefStmt{ .id = "last", .params = &[_]ast.Var{ "x", "y", "z" }, .body = ast.Stmt{ .stmt = ast.StmtInner{ .ReturnStmt = &ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "z" } }, .location = nolocation() } }, .location = nolocation() } } }, .location = nolocation() };
 
     const actual: ast.Stmt = try prs.parseStmt();
     defer actual.destroyAll(std.testing.allocator);
 
     try std.testing.expectEqualDeep(expect, actual);
 }
-
-
 
 // test "function definition with trailing comma" {
 
@@ -2295,102 +1636,97 @@ test "simple inline function definition" {
 //     try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
 //     defer tokens.deinit(std.testing.allocator);
 
-//     var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
+//     var logger: Log.Logger = .new(std.testing.allocator);
+   // defer logger.destroyAll();
+// var prs: parser.Parser = .new(tokens, std.testing.allocator, &logger);
 //     const res: parser.ParseError!ast.Stmt = prs.parseStmt();
 
 //     try std.testing.expectEqualDeep(parser.ParseError.ExpectedIdentifier, res);
 // }
 
-
 test "function definition no name" {
-
     var tokens: std.ArrayList(Token) = std.ArrayList(Token).empty;
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.FUN = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LPAREN = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "y"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RPAREN = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RETURN = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "z"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .FUN = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LPAREN = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "x" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .COMMA = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "y" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .COMMA = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .RPAREN = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LB = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .RETURN = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "z" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EOF = {} } });
     defer tokens.deinit(std.testing.allocator);
 
-    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, &logger);
     const res: parser.ParseError!ast.Stmt = prs.parseStmt();
 
     try std.testing.expectEqualDeep(parser.ParseError.ExpectedIdentifier, res);
 }
 
-
 test "function definition no body" {
-
     var tokens: std.ArrayList(Token) = std.ArrayList(Token).empty;
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.FUN = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "afun"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LPAREN = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "y"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RPAREN = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .FUN = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "afun" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LPAREN = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "x" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .COMMA = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "y" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .COMMA = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .RPAREN = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EOF = {} } });
     defer tokens.deinit(std.testing.allocator);
 
-    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, &logger);
     const res: parser.ParseError!ast.Stmt = prs.parseStmt();
 
     try std.testing.expectEqualDeep(parser.ParseError.ExpectedLineBreak, res);
 }
 
 test "function definition no body 2" {
-
     var tokens: std.ArrayList(Token) = std.ArrayList(Token).empty;
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.FUN = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "afun"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LPAREN = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "y"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RPAREN = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .FUN = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "afun" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LPAREN = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "x" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .COMMA = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "y" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .COMMA = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .RPAREN = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LB = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EOF = {} } });
     defer tokens.deinit(std.testing.allocator);
 
-    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, &logger);
     const res: parser.ParseError!ast.Stmt = prs.parseStmt();
 
     try std.testing.expectEqualDeep(parser.ParseError.ExpectedStatement, res);
 }
 
 test "make statement" {
-
     var tokens: std.ArrayList(Token) = std.ArrayList(Token).empty;
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.DECLARE = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "list"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LBRACK = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 1}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RBRACK = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .DECLARE = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "list" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LBRACK = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 1 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .RBRACK = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EOF = {} } });
     defer tokens.deinit(std.testing.allocator);
 
-    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, &logger);
 
-    const expect: ast.Stmt = ast.Stmt {
-        .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {
-            &ast.Expr {
-                .expr = ast.ExprInner {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
-                    .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "list"}},.location = nolocation()},
-                    .idx = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},.location = nolocation()}
-                }}},
-                .location = nolocation()
-            },
-        }},
-        .location = nolocation()
-    };
+    const expect: ast.Stmt = ast.Stmt{ .stmt = ast.StmtInner{ .DeclareStmt = &[_]*const ast.Expr{
+        &ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .ListIndex = ast.ListIndex{ .id = &ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "list" } }, .location = nolocation() }, .idx = &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 1 } }, .location = nolocation() } } } }, .location = nolocation() },
+    } }, .location = nolocation() };
 
     const actual: ast.Stmt = try prs.parseStmt();
     defer actual.destroyAll(std.testing.allocator);
@@ -2399,42 +1735,28 @@ test "make statement" {
 }
 
 test "multi make statement" {
-
     var tokens: std.ArrayList(Token) = std.ArrayList(Token).empty;
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.DECLARE = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "list"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LBRACK = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 1}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RBRACK = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "otherlist"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LBRACK = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 7}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RBRACK = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .DECLARE = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "list" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LBRACK = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 1 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .RBRACK = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .COMMA = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "otherlist" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LBRACK = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 7 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .RBRACK = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EOF = {} } });
     defer tokens.deinit(std.testing.allocator);
 
-    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, &logger);
 
-    const expect: ast.Stmt = ast.Stmt {
-        .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {
-            &ast.Expr {
-                .expr = ast.ExprInner {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
-                    .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "list"}},.location = nolocation()},
-                    .idx = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},.location = nolocation()}
-                }}},
-                .location = nolocation()
-            },
-            &ast.Expr {
-                .expr = ast.ExprInner {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
-                    .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "otherlist"}},.location = nolocation()},
-                    .idx = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 7}},.location = nolocation()}
-                }}},
-                .location = nolocation()
-            },
-        }},
-        .location = nolocation()
-    };
+    const expect: ast.Stmt = ast.Stmt{ .stmt = ast.StmtInner{ .DeclareStmt = &[_]*const ast.Expr{
+        &ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .ListIndex = ast.ListIndex{ .id = &ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "list" } }, .location = nolocation() }, .idx = &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 1 } }, .location = nolocation() } } } }, .location = nolocation() },
+        &ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .ListIndex = ast.ListIndex{ .id = &ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "otherlist" } }, .location = nolocation() }, .idx = &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 7 } }, .location = nolocation() } } } }, .location = nolocation() },
+    } }, .location = nolocation() };
 
     const actual: ast.Stmt = try prs.parseStmt();
     defer actual.destroyAll(std.testing.allocator);
@@ -2443,221 +1765,143 @@ test "multi make statement" {
 }
 
 test "list index expression" {
-
     var tokens: std.ArrayList(Token) = .empty;
     defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "lst"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LBRACK = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 3}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RBRACK = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "lst" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LBRACK = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 3 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .RBRACK = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EOF = {} } });
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, &logger);
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
 
-
-    const expect: ast.Expr = ast.Expr {
-        .expr = ast.ExprInner {.Lval = ast.Lval {
-            .ListIndex = ast.ListIndex {
-                .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "lst"}},.location = nolocation()},
-                .idx = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 3}},.location = nolocation()}
-            }
-        }},
-        .location = nolocation()
-    };
+    const expect: ast.Expr = ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .ListIndex = ast.ListIndex{ .id = &ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "lst" } }, .location = nolocation() }, .idx = &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 3 } }, .location = nolocation() } } } }, .location = nolocation() };
 
     try std.testing.expectEqualDeep(expect, result.*);
 }
 
 test "complex list index expression" {
-
     var tokens: std.ArrayList(Token) = .empty;
     defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "lst"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LBRACK = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 3}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.MUL = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LPAREN = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 1}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.PLUS = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 4}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RPAREN = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RBRACK = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "lst" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LBRACK = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 3 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .MUL = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LPAREN = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 1 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .PLUS = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 4 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .RPAREN = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .RBRACK = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EOF = {} } });
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, &logger);
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
 
-
-    const expect: ast.Expr = ast.Expr {
-        .expr = ast.ExprInner {.Lval = ast.Lval {
-            .ListIndex = ast.ListIndex {
-                .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "lst"}},.location = nolocation()},
-                .idx = &ast.Expr {
-                    .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
-                        .lhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 3}},.location = nolocation()},
-                        .op = .Mul,
-                        .rhs = &ast.Expr {
-                            .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
-                                .lhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},.location = nolocation()},
-                                .op = .Add,
-                                .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 4}},.location = nolocation()}
-                            }},
-                            .location = nolocation()
-                        }
-                    }},
-                    .location = nolocation()
-                }
-            }
-        }},
-        .location = nolocation()
-    };
+    const expect: ast.Expr = ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .ListIndex = ast.ListIndex{ .id = &ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "lst" } }, .location = nolocation() }, .idx = &ast.Expr{ .expr = ast.ExprInner{ .BinOpExpr = ast.BinOpExpr{ .lhs = &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 3 } }, .location = nolocation() }, .op = .Mul, .rhs = &ast.Expr{ .expr = ast.ExprInner{ .BinOpExpr = ast.BinOpExpr{ .lhs = &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 1 } }, .location = nolocation() }, .op = .Add, .rhs = &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 4 } }, .location = nolocation() } } }, .location = nolocation() } } }, .location = nolocation() } } } }, .location = nolocation() };
 
     try std.testing.expectEqualDeep(expect, result.*);
 }
 
 test "double list index expression" {
-
     var tokens: std.ArrayList(Token) = .empty;
     defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "lst"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LBRACK = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 3}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RBRACK = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LBRACK = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 1}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RBRACK = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "lst" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LBRACK = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 3 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .RBRACK = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LBRACK = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 1 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .RBRACK = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EOF = {} } });
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, &logger);
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
 
-
-    const expect: ast.Expr = ast.Expr {
-        .expr = ast.ExprInner {.Lval = ast.Lval {
-            .ListIndex = ast.ListIndex {
-                .id = &ast.Expr {
-                    .expr = ast.ExprInner {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
-                        .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "lst"}},.location = nolocation()},
-                        .idx = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 3}},.location = nolocation()}
-                    }}},
-                    .location = nolocation()
-                },
-                .idx = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},.location = nolocation()}
-            }
-        }},
-        .location = nolocation()
-    };
+    const expect: ast.Expr = ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .ListIndex = ast.ListIndex{ .id = &ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .ListIndex = ast.ListIndex{ .id = &ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "lst" } }, .location = nolocation() }, .idx = &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 3 } }, .location = nolocation() } } } }, .location = nolocation() }, .idx = &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 1 } }, .location = nolocation() } } } }, .location = nolocation() };
 
     try std.testing.expectEqualDeep(expect, result.*);
 }
 
 test "list index assignment" {
-
     var tokens: std.ArrayList(Token) = .empty;
     defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "lst"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LBRACK = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 3}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RBRACK = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EQ = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 1}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "lst" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LBRACK = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 3 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .RBRACK = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EQ = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 1 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EOF = {} } });
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, &logger);
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
 
-
-    const expect: ast.Expr = ast.Expr {
-        .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
-            .lhs = &ast.Expr {
-                .expr = ast.ExprInner {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
-                    .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "lst"}},.location = nolocation()},
-                    .idx = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 3}},.location = nolocation()}
-                }}},
-                .location = nolocation()
-            },
-            .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},.location = nolocation()}
-        }},
-        .location = nolocation()
-    };
+    const expect: ast.Expr = ast.Expr{ .expr = ast.ExprInner{ .AssignExpr = ast.AssignExpr{ .lhs = &ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .ListIndex = ast.ListIndex{ .id = &ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "lst" } }, .location = nolocation() }, .idx = &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 3 } }, .location = nolocation() } } } }, .location = nolocation() }, .rhs = &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 1 } }, .location = nolocation() } } }, .location = nolocation() };
 
     try std.testing.expectEqualDeep(expect, result.*);
 }
 
 test "list index in parentheses" {
-
     var tokens: std.ArrayList(Token) = .empty;
     defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "lst"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LBRACK = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LPAREN = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "lst"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LBRACK = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 1}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RBRACK = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RPAREN = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RBRACK = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "lst" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LBRACK = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LPAREN = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "lst" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LBRACK = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 1 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .RBRACK = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .RPAREN = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .RBRACK = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EOF = {} } });
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, &logger);
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
 
-
-    const expect: ast.Expr = ast.Expr {
-        .expr = ast.ExprInner { .Lval = ast.Lval {
-            .ListIndex = ast.ListIndex {
-                .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "lst"}},.location = nolocation()},
-                .idx = &ast.Expr {
-                    .expr = ast.ExprInner {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
-                        .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "lst"}},.location = nolocation()},
-                        .idx = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},.location = nolocation()}
-                    }}},
-                    .location = nolocation()
-                }
-
-        }}},
-        .location = nolocation()
-    };
+    const expect: ast.Expr = ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .ListIndex = ast.ListIndex{ .id = &ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "lst" } }, .location = nolocation() }, .idx = &ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .ListIndex = ast.ListIndex{ .id = &ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "lst" } }, .location = nolocation() }, .idx = &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 1 } }, .location = nolocation() } } } }, .location = nolocation() } } } }, .location = nolocation() };
 
     try std.testing.expectEqualDeep(expect, result.*);
 }
 
 test "print list index statement" {
-
     var tokens: std.ArrayList(Token) = std.ArrayList(Token).empty;
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.PRINT = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "list"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LBRACK = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 1}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RBRACK = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .PRINT = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "list" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LBRACK = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 1 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .RBRACK = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EOF = {} } });
     defer tokens.deinit(std.testing.allocator);
 
-    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, &logger);
 
-    const expect: ast.Stmt = ast.Stmt {
-        .stmt = ast.StmtInner {.PrintStmt = &[_]*const ast.Expr {
-            &ast.Expr {
-                .expr = ast.ExprInner {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
-                    .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "list"}},.location = nolocation()},
-                    .idx = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},.location = nolocation()}
-                }}},
-                .location = nolocation()
-            },
-        }},
-        .location = nolocation()
-    };
+    const expect: ast.Stmt = ast.Stmt{ .stmt = ast.StmtInner{ .PrintStmt = &[_]*const ast.Expr{
+        &ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .ListIndex = ast.ListIndex{ .id = &ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "list" } }, .location = nolocation() }, .idx = &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 1 } }, .location = nolocation() } } } }, .location = nolocation() },
+    } }, .location = nolocation() };
 
     const actual: ast.Stmt = try prs.parseStmt();
     defer actual.destroyAll(std.testing.allocator);
@@ -2666,42 +1910,28 @@ test "print list index statement" {
 }
 
 test "print multi list index statement" {
-
     var tokens: std.ArrayList(Token) = std.ArrayList(Token).empty;
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.PRINT = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "lst"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LBRACK = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 1}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RBRACK = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "lst"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LBRACK = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 7}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RBRACK = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .PRINT = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "lst" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LBRACK = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 1 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .RBRACK = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .COMMA = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "lst" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LBRACK = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 7 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .RBRACK = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EOF = {} } });
     defer tokens.deinit(std.testing.allocator);
 
-    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, &logger);
 
-    const expect: ast.Stmt = ast.Stmt {
-        .stmt = ast.StmtInner {.PrintStmt = &[_]*const ast.Expr {
-            &ast.Expr {
-                .expr = ast.ExprInner {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
-                    .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "lst"}},.location = nolocation()},
-                    .idx = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},.location = nolocation()}
-                }}},
-                .location = nolocation()
-            },
-            &ast.Expr {
-                .expr = ast.ExprInner {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
-                    .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "lst"}},.location = nolocation()},
-                    .idx = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 7}},.location = nolocation()}
-                }}},
-                .location = nolocation()
-            },
-        }},
-        .location = nolocation()
-    };
+    const expect: ast.Stmt = ast.Stmt{ .stmt = ast.StmtInner{ .PrintStmt = &[_]*const ast.Expr{
+        &ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .ListIndex = ast.ListIndex{ .id = &ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "lst" } }, .location = nolocation() }, .idx = &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 1 } }, .location = nolocation() } } } }, .location = nolocation() },
+        &ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .ListIndex = ast.ListIndex{ .id = &ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "lst" } }, .location = nolocation() }, .idx = &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 7 } }, .location = nolocation() } } } }, .location = nolocation() },
+    } }, .location = nolocation() };
 
     const actual: ast.Stmt = try prs.parseStmt();
     defer actual.destroyAll(std.testing.allocator);
@@ -2710,58 +1940,32 @@ test "print multi list index statement" {
 }
 
 test "declare multi list with initialization" {
-
     var tokens: std.ArrayList(Token) = std.ArrayList(Token).empty;
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.DECLARE = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "lst"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LBRACK = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 1}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RBRACK = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EQ = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = -1}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "list"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LBRACK = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 5}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RBRACK = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EQ = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "lst"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .DECLARE = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "lst" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LBRACK = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 1 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .RBRACK = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EQ = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = -1 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .COMMA = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "list" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LBRACK = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 5 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .RBRACK = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EQ = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "lst" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EOF = {} } });
     defer tokens.deinit(std.testing.allocator);
 
-    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, &logger);
 
-    const expect: ast.Stmt = ast.Stmt {
-        .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {
-            &ast.Expr {
-                .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
-                    .lhs = &ast.Expr {
-                        .expr = ast.ExprInner {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
-                            .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "lst"}},.location = nolocation()},
-                            .idx = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},.location = nolocation()}
-                        }}},
-                        .location = nolocation()
-                    },
-                    .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = -1}},.location = nolocation()}
-                }},
-                .location = nolocation()
-            },
-            &ast.Expr {
-                .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
-                    .lhs = &ast.Expr {
-                        .expr = ast.ExprInner {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
-                            .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "list"}},.location = nolocation()},
-                            .idx = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 5}},.location = nolocation()}
-                        }}},
-                        .location = nolocation()
-                    },
-                    .rhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "lst"}},.location = nolocation()}
-                }},
-                .location = nolocation()
-            },
-        }},
-        .location = nolocation()
-    };
+    const expect: ast.Stmt = ast.Stmt{ .stmt = ast.StmtInner{ .DeclareStmt = &[_]*const ast.Expr{
+        &ast.Expr{ .expr = ast.ExprInner{ .AssignExpr = ast.AssignExpr{ .lhs = &ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .ListIndex = ast.ListIndex{ .id = &ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "lst" } }, .location = nolocation() }, .idx = &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 1 } }, .location = nolocation() } } } }, .location = nolocation() }, .rhs = &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = -1 } }, .location = nolocation() } } }, .location = nolocation() },
+        &ast.Expr{ .expr = ast.ExprInner{ .AssignExpr = ast.AssignExpr{ .lhs = &ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .ListIndex = ast.ListIndex{ .id = &ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "list" } }, .location = nolocation() }, .idx = &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 5 } }, .location = nolocation() } } } }, .location = nolocation() }, .rhs = &ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "lst" } }, .location = nolocation() } } }, .location = nolocation() },
+    } }, .location = nolocation() };
 
     const actual: ast.Stmt = try prs.parseStmt();
     defer actual.destroyAll(std.testing.allocator);
@@ -2770,227 +1974,148 @@ test "declare multi list with initialization" {
 }
 
 test "property access" {
-
     var tokens: std.ArrayList(Token) = .empty;
     defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "lst"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.DOT = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "size"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "lst" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .DOT = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "size" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EOF = {} } });
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, &logger);
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
 
-
-    const expect: ast.Expr = ast.Expr {
-        .expr = ast.ExprInner { .Lval = ast.Lval {
-            .PropertyAccess = ast.PropertyAccess {
-                .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "lst"}},.location = nolocation()},
-                .prop = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "size"}},.location = nolocation()}
-            }}
-        },
-        .location = nolocation()
-    };
+    const expect: ast.Expr = ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .PropertyAccess = ast.PropertyAccess{ .lhs = &ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "lst" } }, .location = nolocation() }, .prop = &ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "size" } }, .location = nolocation() } } } }, .location = nolocation() };
 
     try std.testing.expectEqualDeep(expect, result.*);
 }
 
 test "multi property access" {
-
     var tokens: std.ArrayList(Token) = .empty;
     defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "obj"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.DOT = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "prop1"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.DOT = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "prop2"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.DOT = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "prop3"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "obj" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .DOT = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "prop1" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .DOT = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "prop2" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .DOT = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "prop3" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EOF = {} } });
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, &logger);
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
 
-
-    const expect: ast.Expr = ast.Expr {
-        .expr = ast.ExprInner { .Lval = ast.Lval {
-            .PropertyAccess = ast.PropertyAccess {
-                .lhs = &ast.Expr {
-                    .expr = ast.ExprInner {.Lval = ast.Lval {
-                        .PropertyAccess = ast.PropertyAccess {
-                            .lhs = &ast.Expr {
-                                .expr = ast.ExprInner {.Lval = ast.Lval {
-                                    .PropertyAccess = ast.PropertyAccess {
-                                        .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "obj"}},.location = nolocation()},
-                                        .prop = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "prop1"}},.location = nolocation()}
-                                    }
-                                }},
-                                .location = nolocation()
-                            },
-                            .prop = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "prop2"}},.location = nolocation()}
-                        }
-                    }},
-                    .location = nolocation()
-                },
-                .prop = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "prop3"}},.location = nolocation()}
-            }}
-                               },
-        .location = nolocation()
-    };
+    const expect: ast.Expr = ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .PropertyAccess = ast.PropertyAccess{ .lhs = &ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .PropertyAccess = ast.PropertyAccess{ .lhs = &ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .PropertyAccess = ast.PropertyAccess{ .lhs = &ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "obj" } }, .location = nolocation() }, .prop = &ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "prop1" } }, .location = nolocation() } } } }, .location = nolocation() }, .prop = &ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "prop2" } }, .location = nolocation() } } } }, .location = nolocation() }, .prop = &ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "prop3" } }, .location = nolocation() } } } }, .location = nolocation() };
 
     try std.testing.expectEqualDeep(expect, result.*);
 }
 
 test "list immediate expression" {
-
     var tokens: std.ArrayList(Token) = .empty;
     defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.DECLARE = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EQ = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LT = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 1}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 2}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 3}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.GT = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .DECLARE = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "x" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LB = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "x" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EQ = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LT = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 1 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .COMMA = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 2 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .COMMA = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 3 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .GT = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EOF = {} } });
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, &logger);
 
     const result: ast.Proc = try prs.parseProcedure();
     defer result.destroyAll(std.testing.allocator);
 
+    const expect: ast.Proc = ast.Proc{ .stmts = &[_]ast.Stmt{
+        ast.Stmt{ .stmt = ast.StmtInner{ .DeclareStmt = &[_]*const ast.Expr{&ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "x" } }, .location = nolocation() }} }, .location = nolocation() },
 
-    const expect: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
-
-        ast.Stmt {
-            .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {
-                &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()}
-            }},
-            .location = nolocation()
-        },
-
-        ast.Stmt {
-            .stmt = ast.StmtInner {.ExprStmt = &ast.Expr {
-                .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
-                    .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
-                    .rhs = &ast.Expr {
-                        .expr = ast.ExprInner {.ListExpr = &[_]*const ast.Expr {
-                            &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},.location = nolocation()},
-                            &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 2}},.location = nolocation()},
-                            &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 3}},.location = nolocation()},
-                        }},
-                        .location = nolocation()
-                    }
-                }},
-                .location = nolocation()
-            }},
-            .location = nolocation()
-        },
-
-    }};
+        ast.Stmt{ .stmt = ast.StmtInner{ .ExprStmt = &ast.Expr{ .expr = ast.ExprInner{ .AssignExpr = ast.AssignExpr{ .lhs = &ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "x" } }, .location = nolocation() }, .rhs = &ast.Expr{ .expr = ast.ExprInner{ .ListExpr = &[_]*const ast.Expr{
+            &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 1 } }, .location = nolocation() },
+            &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 2 } }, .location = nolocation() },
+            &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 3 } }, .location = nolocation() },
+        } }, .location = nolocation() } } }, .location = nolocation() } }, .location = nolocation() },
+    } };
 
     try std.testing.expectEqualDeep(expect, result);
 }
 
 test "nested list immediate expression" {
-
     var tokens: std.ArrayList(Token) = .empty;
     defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.DECLARE = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EQ = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LT = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LT = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LT = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 1}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 2}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 3}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.GT = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.GT = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.GT = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .DECLARE = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "x" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LB = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "x" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EQ = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LT = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LT = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LT = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 1 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .COMMA = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 2 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .COMMA = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 3 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .GT = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .GT = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .GT = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EOF = {} } });
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, &logger);
 
     const result: ast.Proc = try prs.parseProcedure();
     defer result.destroyAll(std.testing.allocator);
 
+    const expect: ast.Proc = ast.Proc{ .stmts = &[_]ast.Stmt{
+        ast.Stmt{ .stmt = ast.StmtInner{ .DeclareStmt = &[_]*const ast.Expr{&ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "x" } }, .location = nolocation() }} }, .location = nolocation() },
 
-    const expect: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
-
-        ast.Stmt {
-            .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {
-                &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()}
-            }},
-            .location = nolocation()
-        },
-
-        ast.Stmt {
-            .stmt = ast.StmtInner {.ExprStmt = &ast.Expr {
-                .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
-                    .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
-                    .rhs = &ast.Expr {
-                        .expr = ast.ExprInner {.ListExpr = &[_]*const ast.Expr {
-                            &ast.Expr {
-                                .expr = ast.ExprInner {.ListExpr = &[_]*const ast.Expr {
-                                    &ast.Expr {
-                                        .expr = ast.ExprInner {.ListExpr = &[_]*const ast.Expr {
-                                            &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},.location = nolocation()},
-                                            &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 2}},.location = nolocation()},
-                                            &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 3}},.location = nolocation()},
-                                        }},
-                                        .location = nolocation()
-                                    }
-                                }},
-                                .location = nolocation()
-                            }
-                        }},
-                        .location = nolocation()
-                    }
-                }},
-                .location = nolocation()
-            }},
-            .location = nolocation()
-        },
-
-    }};
+        ast.Stmt{ .stmt = ast.StmtInner{ .ExprStmt = &ast.Expr{ .expr = ast.ExprInner{ .AssignExpr = ast.AssignExpr{ .lhs = &ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "x" } }, .location = nolocation() }, .rhs = &ast.Expr{ .expr = ast.ExprInner{ .ListExpr = &[_]*const ast.Expr{&ast.Expr{ .expr = ast.ExprInner{ .ListExpr = &[_]*const ast.Expr{&ast.Expr{ .expr = ast.ExprInner{ .ListExpr = &[_]*const ast.Expr{
+            &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 1 } }, .location = nolocation() },
+            &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 2 } }, .location = nolocation() },
+            &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 3 } }, .location = nolocation() },
+        } }, .location = nolocation() }} }, .location = nolocation() }} }, .location = nolocation() } } }, .location = nolocation() } }, .location = nolocation() },
+    } };
 
     try std.testing.expectEqualDeep(expect, result);
 }
 
 test "list immediate unmatched brackets" {
-
     var tokens: std.ArrayList(Token) = .empty;
     defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.DECLARE = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LB = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "x"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EQ = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LT = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LT = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 1}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 2}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 3}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.GT = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .DECLARE = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "x" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LB = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "x" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EQ = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LT = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LT = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 1 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .COMMA = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 2 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .COMMA = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 3 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .GT = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EOF = {} } });
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, &logger);
 
     const result: parser.ParseError!ast.Proc = prs.parseProcedure();
 
@@ -2999,531 +2124,411 @@ test "list immediate unmatched brackets" {
 }
 
 test "list immediates binary expression" {
-
     var tokens: std.ArrayList(Token) = .empty;
     defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LT = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 1}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 2}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 3}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.GT = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.DEQ = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LT = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 1}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 2}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 3}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.GT = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LT = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 1 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .COMMA = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 2 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .COMMA = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 3 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .GT = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .DEQ = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LT = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 1 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .COMMA = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 2 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .COMMA = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 3 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .GT = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EOF = {} } });
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, &logger);
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
 
-    const expect = &ast.Expr {
-        .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
-            .lhs = &ast.Expr {
-                .expr = ast.ExprInner {.ListExpr = &[_]*const ast.Expr {
-                    &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},.location = nolocation()},
-                    &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 2}},.location = nolocation()},
-                    &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 3}},.location = nolocation()},
-                }},
-                .location = nolocation()
-            },
-            .op = .Eq,
-            .rhs = &ast.Expr {
-                .expr = ast.ExprInner {.ListExpr = &[_]*const ast.Expr {
-                    &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},.location = nolocation()},
-                    &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 2}},.location = nolocation()},
-                    &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 3}},.location = nolocation()},
-                }},
-                .location = nolocation()
-            },
-        }},
-        .location = nolocation()
-    };
+    const expect = &ast.Expr{ .expr = ast.ExprInner{ .BinOpExpr = ast.BinOpExpr{
+        .lhs = &ast.Expr{ .expr = ast.ExprInner{ .ListExpr = &[_]*const ast.Expr{
+            &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 1 } }, .location = nolocation() },
+            &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 2 } }, .location = nolocation() },
+            &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 3 } }, .location = nolocation() },
+        } }, .location = nolocation() },
+        .op = .Eq,
+        .rhs = &ast.Expr{ .expr = ast.ExprInner{ .ListExpr = &[_]*const ast.Expr{
+            &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 1 } }, .location = nolocation() },
+            &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 2 } }, .location = nolocation() },
+            &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 3 } }, .location = nolocation() },
+        } }, .location = nolocation() },
+    } }, .location = nolocation() };
     try std.testing.expectEqualDeep(expect, result);
 }
 
-
 test "list immediates binary expression lt" {
-
     var tokens: std.ArrayList(Token) = .empty;
     defer tokens.deinit(std.testing.allocator);
 
     // <1, 2, 3> < <1, 2, 3>
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LT = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 1}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 2}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 3}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.GT = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LT = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LT = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 1}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 2}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 3}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.GT = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LT = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 1 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .COMMA = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 2 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .COMMA = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 3 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .GT = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LT = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LT = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 1 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .COMMA = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 2 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .COMMA = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 3 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .GT = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EOF = {} } });
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, &logger);
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
 
-    const expect = &ast.Expr {
-        .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
-            .lhs = &ast.Expr {
-                .expr = ast.ExprInner {.ListExpr = &[_]*const ast.Expr {
-                    &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},.location = nolocation()},
-                    &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 2}},.location = nolocation()},
-                    &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 3}},.location = nolocation()},
-                }},
-                .location = nolocation()
-            },
-            .op = .Lt,
-            .rhs = &ast.Expr {
-                .expr = ast.ExprInner {.ListExpr = &[_]*const ast.Expr {
-                    &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},.location = nolocation()},
-                    &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 2}},.location = nolocation()},
-                    &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 3}},.location = nolocation()},
-                }},
-                .location = nolocation()
-            },
-        }},
-        .location = nolocation()
-    };
+    const expect = &ast.Expr{ .expr = ast.ExprInner{ .BinOpExpr = ast.BinOpExpr{
+        .lhs = &ast.Expr{ .expr = ast.ExprInner{ .ListExpr = &[_]*const ast.Expr{
+            &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 1 } }, .location = nolocation() },
+            &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 2 } }, .location = nolocation() },
+            &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 3 } }, .location = nolocation() },
+        } }, .location = nolocation() },
+        .op = .Lt,
+        .rhs = &ast.Expr{ .expr = ast.ExprInner{ .ListExpr = &[_]*const ast.Expr{
+            &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 1 } }, .location = nolocation() },
+            &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 2 } }, .location = nolocation() },
+            &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 3 } }, .location = nolocation() },
+        } }, .location = nolocation() },
+    } }, .location = nolocation() };
     try std.testing.expectEqualDeep(expect, result);
 }
 
 test "list immediates binary expression gt" {
-
     var tokens: std.ArrayList(Token) = .empty;
     defer tokens.deinit(std.testing.allocator);
 
     // <1,2,3> > <1,2,3>
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LT = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 1}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 2}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 3}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.GT = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.GT = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LT = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 1}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 2}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 3}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.GT = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LT = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 1 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .COMMA = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 2 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .COMMA = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 3 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .GT = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .GT = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LT = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 1 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .COMMA = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 2 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .COMMA = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 3 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .GT = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EOF = {} } });
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, &logger);
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
 
-    const expect = &ast.Expr {
-        .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
-            .lhs = &ast.Expr {
-                .expr = ast.ExprInner {.ListExpr = &[_]*const ast.Expr {
-                    &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},.location = nolocation()},
-                    &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 2}},.location = nolocation()},
-                    &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 3}},.location = nolocation()},
-                }},
-                .location = nolocation()
-            },
-            .op = .Gt,
-            .rhs = &ast.Expr {
-                .expr = ast.ExprInner {.ListExpr = &[_]*const ast.Expr {
-                    &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},.location = nolocation()},
-                    &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 2}},.location = nolocation()},
-                    &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 3}},.location = nolocation()},
-                }},
-                .location = nolocation()
-            },
-        }},
-        .location = nolocation()
-    };
+    const expect = &ast.Expr{ .expr = ast.ExprInner{ .BinOpExpr = ast.BinOpExpr{
+        .lhs = &ast.Expr{ .expr = ast.ExprInner{ .ListExpr = &[_]*const ast.Expr{
+            &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 1 } }, .location = nolocation() },
+            &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 2 } }, .location = nolocation() },
+            &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 3 } }, .location = nolocation() },
+        } }, .location = nolocation() },
+        .op = .Gt,
+        .rhs = &ast.Expr{ .expr = ast.ExprInner{ .ListExpr = &[_]*const ast.Expr{
+            &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 1 } }, .location = nolocation() },
+            &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 2 } }, .location = nolocation() },
+            &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 3 } }, .location = nolocation() },
+        } }, .location = nolocation() },
+    } }, .location = nolocation() };
     try std.testing.expectEqualDeep(expect, result);
 }
 
 test "list immediates call expression" {
-
     var tokens: std.ArrayList(Token) = .empty;
     defer tokens.deinit(std.testing.allocator);
 
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.IDENT = "f"}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LPAREN = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LT = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 1}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 2}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 3}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.GT = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LT = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 1}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 2}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 3}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.GT = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.RPAREN = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .IDENT = "f" } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LPAREN = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LT = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 1 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .COMMA = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 2 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .COMMA = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 3 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .GT = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .COMMA = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LT = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 1 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .COMMA = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 2 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .COMMA = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 3 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .GT = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .RPAREN = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EOF = {} } });
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, &logger);
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
 
-    const expect = &ast.Expr {
-        .expr = ast.ExprInner {.CallExpr = ast.CallExpr {
-            .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "f"}},.location = nolocation()},
-            .args = &[_]*const ast.Expr {
-                &ast.Expr {
-                    .expr = ast.ExprInner {.ListExpr = &[_]*const ast.Expr {
-                        &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},.location = nolocation()},
-                        &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 2}},.location = nolocation()},
-                        &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 3}},.location = nolocation()},
-                    }},
-                    .location = nolocation()
-                },
+    const expect = &ast.Expr{ .expr = ast.ExprInner{ .CallExpr = ast.CallExpr{ .id = &ast.Expr{ .expr = ast.ExprInner{ .Lval = ast.Lval{ .Var = "f" } }, .location = nolocation() }, .args = &[_]*const ast.Expr{
+        &ast.Expr{ .expr = ast.ExprInner{ .ListExpr = &[_]*const ast.Expr{
+            &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 1 } }, .location = nolocation() },
+            &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 2 } }, .location = nolocation() },
+            &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 3 } }, .location = nolocation() },
+        } }, .location = nolocation() },
 
-                &ast.Expr {
-                    .expr = ast.ExprInner {.ListExpr = &[_]*const ast.Expr {
-                        &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},.location = nolocation()},
-                        &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 2}},.location = nolocation()},
-                        &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 3}},.location = nolocation()},
-                    }},
-                    .location = nolocation()
-                },
-            }
-        }},
-        .location = nolocation()
-    };
+        &ast.Expr{ .expr = ast.ExprInner{ .ListExpr = &[_]*const ast.Expr{
+            &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 1 } }, .location = nolocation() },
+            &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 2 } }, .location = nolocation() },
+            &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 3 } }, .location = nolocation() },
+        } }, .location = nolocation() },
+    } } }, .location = nolocation() };
 
     try std.testing.expectEqualDeep(expect, result);
 }
 
-
 test "list immediates with less than" {
-
     var tokens: std.ArrayList(Token) = .empty;
     defer tokens.deinit(std.testing.allocator);
 
     // <1,2, 3 < < 4 > >
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LT = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 1}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 2}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 3}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LT = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LT = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 4}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.GT = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.GT = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LT = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 1 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .COMMA = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 2 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .COMMA = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 3 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LT = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LT = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 4 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .GT = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .GT = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EOF = {} } });
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, &logger);
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
 
-    const expect = &ast.Expr {
-        .expr = ast.ExprInner {.ListExpr = &[_]*const ast.Expr {
-            &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},.location = nolocation()},
-            &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 2}},.location = nolocation()},
-            &ast.Expr {
-                .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
-                    .lhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 3}},.location = nolocation()},
-                    .op = .Lt,
-                    .rhs = &ast.Expr {
-                        .expr = ast.ExprInner {.ListExpr = &[_]*const ast.Expr {
-                            &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 4}},.location = nolocation()}
-                        }},
-                        .location = nolocation()
-                    }
-                }},
-                .location = nolocation()
-            },
-        }},
-        .location = nolocation()
-    };
+    const expect = &ast.Expr{ .expr = ast.ExprInner{ .ListExpr = &[_]*const ast.Expr{
+        &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 1 } }, .location = nolocation() },
+        &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 2 } }, .location = nolocation() },
+        &ast.Expr{ .expr = ast.ExprInner{ .BinOpExpr = ast.BinOpExpr{ .lhs = &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 3 } }, .location = nolocation() }, .op = .Lt, .rhs = &ast.Expr{ .expr = ast.ExprInner{ .ListExpr = &[_]*const ast.Expr{&ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 4 } }, .location = nolocation() }} }, .location = nolocation() } } }, .location = nolocation() },
+    } }, .location = nolocation() };
     try std.testing.expectEqualDeep(expect, result);
 }
 
 test "list immediates with greater than" {
-
     var tokens: std.ArrayList(Token) = .empty;
     defer tokens.deinit(std.testing.allocator);
 
     // <1,2, 3 > 5 >
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LT = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 1}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 2}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 3}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.GT = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 5}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.GT = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LT = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 1 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .COMMA = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 2 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .COMMA = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 3 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .GT = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 5 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .GT = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EOF = {} } });
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, &logger);
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
 
-    const expect = &ast.Expr {
-        .expr = ast.ExprInner {.ListExpr = &[_]*const ast.Expr {
-            &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},.location = nolocation()},
-            &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 2}},.location = nolocation()},
-            &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 3}},.location = nolocation()}
-        }},
-        .location = nolocation()
-    };
+    const expect = &ast.Expr{ .expr = ast.ExprInner{ .ListExpr = &[_]*const ast.Expr{ &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 1 } }, .location = nolocation() }, &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 2 } }, .location = nolocation() }, &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 3 } }, .location = nolocation() } } }, .location = nolocation() };
     try std.testing.expectEqualDeep(expect, result);
 }
 
 test "more complicated list immediates" {
-
     var tokens: std.ArrayList(Token) = .empty;
     defer tokens.deinit(std.testing.allocator);
 
     // <1, 2, 3 > < <1>
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LT = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 1}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 2}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 3}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.GT = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LT = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LT = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 1}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.GT = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LT = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 1 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .COMMA = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 2 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .COMMA = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 3 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .GT = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LT = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LT = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 1 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .GT = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EOF = {} } });
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, &logger);
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
 
-    const expect = &ast.Expr {
-        .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
-            .lhs = &ast.Expr {
-                .expr = ast.ExprInner {.ListExpr = &[_]*const ast.Expr {
-                    &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},.location = nolocation()},
-                    &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 2}},.location = nolocation()},
-                    &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 3}},.location = nolocation()},
-                }},
-                .location = nolocation()
-            },
-            .op = .Lt,
-            .rhs = &ast.Expr {
-                .expr = ast.ExprInner {.ListExpr = &[_]*const ast.Expr {
-                    &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},.location = nolocation()}
-                }},
-                .location = nolocation()
-            }
-        }},
-        .location = nolocation()
-    };
+    const expect = &ast.Expr{ .expr = ast.ExprInner{ .BinOpExpr = ast.BinOpExpr{ .lhs = &ast.Expr{ .expr = ast.ExprInner{ .ListExpr = &[_]*const ast.Expr{
+        &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 1 } }, .location = nolocation() },
+        &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 2 } }, .location = nolocation() },
+        &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 3 } }, .location = nolocation() },
+    } }, .location = nolocation() }, .op = .Lt, .rhs = &ast.Expr{ .expr = ast.ExprInner{ .ListExpr = &[_]*const ast.Expr{&ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 1 } }, .location = nolocation() }} }, .location = nolocation() } } }, .location = nolocation() };
 
     try std.testing.expectEqualDeep(expect, result);
 }
 
 test "more complicated list immediates 2" {
-
     var tokens: std.ArrayList(Token) = .empty;
     defer tokens.deinit(std.testing.allocator);
 
     // <1, 2, 3 > > <1>
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LT = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 1}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 2}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 3}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.GT = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.GT = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LT = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 1}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.GT = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LT = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 1 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .COMMA = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 2 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .COMMA = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 3 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .GT = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .GT = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LT = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 1 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .GT = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EOF = {} } });
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, &logger);
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
 
-    const expect = &ast.Expr {
-        .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
-            .lhs = &ast.Expr {
-                .expr = ast.ExprInner {.ListExpr = &[_]*const ast.Expr {
-                    &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},.location = nolocation()},
-                    &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 2}},.location = nolocation()},
-                    &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 3}},.location = nolocation()},
-                }},
-                .location = nolocation()
-            },
-            .op = .Gt,
-            .rhs = &ast.Expr {
-                .expr = ast.ExprInner {.ListExpr = &[_]*const ast.Expr {
-                    &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},.location = nolocation()}
-                }},
-                .location = nolocation()
-            }
-        }},
-        .location = nolocation()
-    };
+    const expect = &ast.Expr{ .expr = ast.ExprInner{ .BinOpExpr = ast.BinOpExpr{ .lhs = &ast.Expr{ .expr = ast.ExprInner{ .ListExpr = &[_]*const ast.Expr{
+        &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 1 } }, .location = nolocation() },
+        &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 2 } }, .location = nolocation() },
+        &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 3 } }, .location = nolocation() },
+    } }, .location = nolocation() }, .op = .Gt, .rhs = &ast.Expr{ .expr = ast.ExprInner{ .ListExpr = &[_]*const ast.Expr{&ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 1 } }, .location = nolocation() }} }, .location = nolocation() } } }, .location = nolocation() };
 
     try std.testing.expectEqualDeep(expect, result);
 }
 
 test "list immediates with assignment" {
-
     var tokens: std.ArrayList(Token) = .empty;
     defer tokens.deinit(std.testing.allocator);
 
     // <1,2, 3 = 5 >
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.LT = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 1}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 2}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.COMMA = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 3}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EQ = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 5}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.GT = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .LT = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 1 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .COMMA = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 2 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .COMMA = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 3 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EQ = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 5 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .GT = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EOF = {} } });
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, &logger);
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
 
-    const expect = &ast.Expr {
-        .expr = ast.ExprInner {.ListExpr = &[_]*const ast.Expr {
-            &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},.location = nolocation()},
-            &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 2}},.location = nolocation()},
-            &ast.Expr {
-                .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
-                    .lhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 3}},.location = nolocation()},
-                    .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 5}},.location = nolocation()}
-                }},
-                .location = nolocation()
-            }
-        }},
-        .location = nolocation()
-    };
+    const expect = &ast.Expr{ .expr = ast.ExprInner{ .ListExpr = &[_]*const ast.Expr{ &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 1 } }, .location = nolocation() }, &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 2 } }, .location = nolocation() }, &ast.Expr{ .expr = ast.ExprInner{ .AssignExpr = ast.AssignExpr{ .lhs = &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 3 } }, .location = nolocation() }, .rhs = &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 5 } }, .location = nolocation() } } }, .location = nolocation() } } }, .location = nolocation() };
     try std.testing.expectEqualDeep(expect, result);
 }
 
 test "float expression" {
-
     var tokens: std.ArrayList(Token) = .empty;
     defer tokens.deinit(std.testing.allocator);
 
     // <1,2, 3 = 5 >
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.FLOATLIT = 3.14}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.PLUS = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.FLOATLIT = 1.2}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .FLOATLIT = 3.14 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .PLUS = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .FLOATLIT = 1.2 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EOF = {} } });
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, &logger);
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
 
-    const expect = &ast.Expr {
-        .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
-            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Float = 3.14}},.location = nolocation()},
-            .op = .Add,
-            .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Float = 1.2}},.location = nolocation()}
-        }},
-        .location = nolocation()
-    };
+    const expect = &ast.Expr{ .expr = ast.ExprInner{ .BinOpExpr = ast.BinOpExpr{ .lhs = &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Float = 3.14 } }, .location = nolocation() }, .op = .Add, .rhs = &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Float = 1.2 } }, .location = nolocation() } } }, .location = nolocation() };
     try std.testing.expectEqualDeep(expect, result);
 }
 
-
 test "as expression" {
-
     var tokens: std.ArrayList(Token) = .empty;
     defer tokens.deinit(std.testing.allocator);
 
     // 3.14 as Int
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.FLOATLIT = 3.14}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.AS = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INT = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .FLOATLIT = 3.14 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .AS = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INT = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EOF = {} } });
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, &logger);
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
 
-    const expect = &ast.Expr {
-        .expr = ast.ExprInner {.AsExpr = ast.AsExpr {
-            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Float = 3.14}},.location = nolocation()},
-            .as = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Type = .Int}},.location = nolocation()}
-        }},
-        .location = nolocation()
-    };
+    const expect = &ast.Expr{ .expr = ast.ExprInner{ .AsExpr = ast.AsExpr{ .lhs = &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Float = 3.14 } }, .location = nolocation() }, .as = &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Type = .Int } }, .location = nolocation() } } }, .location = nolocation() };
     try std.testing.expectEqualDeep(expect, result);
 }
 
 test "as expression left-associative" {
-
     var tokens: std.ArrayList(Token) = .empty;
     defer tokens.deinit(std.testing.allocator);
 
     // 3.14 as Int
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.FLOATLIT = 3.14}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.AS = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INT = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.AS = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.BOOL = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .FLOATLIT = 3.14 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .AS = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INT = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .AS = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .BOOL = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EOF = {} } });
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, &logger);
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
 
-    const expect = &ast.Expr {
-        .expr = ast.ExprInner {.AsExpr = ast.AsExpr {
-            .lhs = &ast.Expr {
-                .expr = ast.ExprInner {.AsExpr = ast.AsExpr {
-                    .lhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Float = 3.14}},.location = nolocation()},
-                    .as = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Type = .Int}},.location = nolocation()}
-                }},
-                .location = nolocation()
-            },
-            .as = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Type = .Bool}},.location = nolocation()}
-        }},
-        .location = nolocation()
-    };
+    const expect = &ast.Expr{ .expr = ast.ExprInner{ .AsExpr = ast.AsExpr{ .lhs = &ast.Expr{ .expr = ast.ExprInner{ .AsExpr = ast.AsExpr{ .lhs = &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Float = 3.14 } }, .location = nolocation() }, .as = &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Type = .Int } }, .location = nolocation() } } }, .location = nolocation() }, .as = &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Type = .Bool } }, .location = nolocation() } } }, .location = nolocation() };
     try std.testing.expectEqualDeep(expect, result);
 }
 
-
 test "as expression binding power" {
-
     var tokens: std.ArrayList(Token) = .empty;
     defer tokens.deinit(std.testing.allocator);
 
     // 3.14 > 5 as Int
     // 1) 3.14 > (5 as Int)
     // 2) (3.14 > 5) as Int
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.FLOATLIT = 3.14}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.GT = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.INTLIT = 5}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.AS = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.FLOAT = {}}});
-    try tokens.append(std.testing.allocator, Token {.tokenType = TokenType {.EOF = {}}});
-    var prs: parser.Parser = .new(tokens, std.testing.allocator, Log.Logger.new(std.testing.allocator));
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .FLOATLIT = 3.14 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .GT = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .INTLIT = 5 } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .AS = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .FLOAT = {} } });
+    try tokens.append(std.testing.allocator, Token{ .tokenType = TokenType{ .EOF = {} } });
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+    var prs: parser.Parser = .new(tokens, std.testing.allocator, &logger);
 
     const result: *ast.Expr = try prs.parseExpr();
     defer result.destroyAll(std.testing.allocator);
@@ -3536,19 +2541,6 @@ test "as expression binding power" {
     //     }},
     //     .as = &ast.Expr {.Lit = ast.Lit {.Type = .Int}}
     // }};
-    const expect = &ast.Expr {
-        .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
-            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Float = 3.14}},.location = nolocation()},
-            .op = .Gt,
-            .rhs = &ast.Expr {
-                .expr = ast.ExprInner {.AsExpr = ast.AsExpr {
-                    .lhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 5}},.location = nolocation()},
-                    .as = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Type = .Float}},.location = nolocation()}
-                }},
-                .location = nolocation()
-            }
-        }},
-        .location = nolocation()
-    };
+    const expect = &ast.Expr{ .expr = ast.ExprInner{ .BinOpExpr = ast.BinOpExpr{ .lhs = &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Float = 3.14 } }, .location = nolocation() }, .op = .Gt, .rhs = &ast.Expr{ .expr = ast.ExprInner{ .AsExpr = ast.AsExpr{ .lhs = &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Int = 5 } }, .location = nolocation() }, .as = &ast.Expr{ .expr = ast.ExprInner{ .Lit = ast.Lit{ .Type = .Float } }, .location = nolocation() } } }, .location = nolocation() } } }, .location = nolocation() };
     try std.testing.expectEqualDeep(expect, result);
 }

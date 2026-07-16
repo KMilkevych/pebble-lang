@@ -431,7 +431,18 @@ pub const Lexer = struct {
                 self.allocator,
                 token.Token {
                     .tokenType = token.TokenType {.LB = {}},
-                    .location = loc.LocationRange {
+                    .location = if (!self.storeLocation) loc.LocationRange {
+                        .from = loc.Location {
+                            .file = lastToken.location.to.file,
+                            .column = lastToken.location.from.column,
+                            .line = lastToken.location.from.line
+                        },
+                        .to = loc.Location {
+                            .file = lastToken.location.to.file,
+                            .column = lastToken.location.to.column,
+                            .line = lastToken.location.to.line
+                        }
+                    } else loc.LocationRange {
                         .from = loc.Location {
                             .file = lastToken.location.to.file,
                             .column = lastToken.location.to.column+1,

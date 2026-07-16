@@ -1986,8 +1986,8 @@ test "location two lines auto line break" {
         Token {
             .tokenType = TokenType {.LB = {}},
             .location = LocationRange {
-                .from = Location {.file = "tf", .column = 16, .line = 0},
-                .to = Location {.file = "tf", .column = 16, .line = 0},
+                .from = Location {.file = "tf", .column = 17, .line = 0},
+                .to = Location {.file = "tf", .column = 17, .line = 0},
             }
         },
         Token {
@@ -2061,8 +2061,8 @@ test "location extra line break" {
         Token {
             .tokenType = TokenType {.LB = {}},
             .location = LocationRange {
-                .from = Location {.file = "tf", .column = 16, .line = 0},
-                .to = Location {.file = "tf", .column = 16, .line = 0},
+                .from = Location {.file = "tf", .column = 17, .line = 0},
+                .to = Location {.file = "tf", .column = 17, .line = 0},
             }
         },
         Token {
@@ -2149,8 +2149,8 @@ test "location if statement" {
         Token {
             .tokenType = TokenType {.LB = {}},
             .location = LocationRange {
-                .from = Location {.file = "tf", .column = 10, .line = 0},
-                .to = Location {.file = "tf", .column = 10, .line = 0},
+                .from = Location {.file = "tf", .column = 11, .line = 0},
+                .to = Location {.file = "tf", .column = 11, .line = 0},
             }
         },
         Token {
