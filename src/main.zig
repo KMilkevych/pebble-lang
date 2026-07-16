@@ -5,6 +5,8 @@ const token = @import("token.zig");
 const parser = @import("parser.zig");
 const venv = @import("env.zig");
 
+const Log = @import("logger.zig");
+
 // const Io = std.Io;
 
 const std = @import("std");
@@ -63,20 +65,40 @@ fn run(io: std.Io, allocator: std.mem.Allocator, stdout: *std.Io.Writer, loc: [:
     defer allocator.free(input);
 
     // Perform lexing parsing and interpreting...
-    var lxr: lexer.Lexer = lexer.Lexer.new(input, allocator);
+    var lxr: lexer.Lexer = lexer.Lexer.new(input, loc, allocator);
     var tokens: std.ArrayList(token.Token) = lxr.lex();
     defer tokens.deinit(allocator);
 
     // Create parser
-    var prsr: parser.Parser = parser.Parser.new(tokens, allocator);
+    var logger = Log.Logger.new(allocator);
+    defer logger.destroyAll();
+    var prsr: parser.Parser = parser.Parser.new(tokens, allocator, &logger);
 
     // Parse all statements into a procedure
-    const proc: ast.Proc = try prsr.parseProcedure();
+    const proc: ast.Proc = prsr.parseProcedure() catch {
+
+        for (logger.errors.items) |errinf| {
+            try stdout.print("{f}\n", .{errinf});
+        }
+        try stdout.flush();
+
+        return;
+    };
+
     defer proc.destroyAll(allocator);
 
     // Evaluate all
-    interpreter.setWriter(stdout);
-    try interpreter.evalProc(proc, &env);
+    var interprtr = interpreter.Interpreter.new(stdout, &logger);
+    interprtr.evalProc(proc, &env) catch {
+
+        for (logger.errors.items) |errinf| {
+            try stdout.print("{f}\n", .{errinf});
+        }
+        try stdout.flush();
+
+        return;
+
+    };
 }
 
 fn interactive(io: std.Io, gpa: std.mem.Allocator, out: *std.Io.Writer) !void {
@@ -107,25 +129,27 @@ fn interactive(io: std.Io, gpa: std.mem.Allocator, out: *std.Io.Writer) !void {
         const line = std.mem.trimEnd(u8, raw_line, "\r");
         const input = try alloc.dupe(u8, line);
 
-        var lxr = lexer.Lexer.new(input, alloc);
+        var lxr: lexer.Lexer = lexer.Lexer.new(input, "", alloc);
         var tokens = lxr.lex();
         defer tokens.deinit(alloc);
 
-        var prsr = parser.Parser.new(tokens, alloc);
+        var logger = Log.Logger.new(alloc);
+        defer logger.destroyAll();
+        var prsr = parser.Parser.new(tokens, alloc, &logger);
         const tree: ast.Stmt = prsr.parseStmt() catch |err| {
             try out.print("{}\n", .{err});
             try out.flush();
             continue;
         };
 
-        interpreter.setWriter(out);
-        const res: ?ast.Lit = blk: switch (tree) {
-            .ExprStmt => |exp| interpreter.evalExpr(exp, &env) catch |err| {
+        var interprtr = interpreter.Interpreter.new(out, &logger);
+        const res: ?ast.Lit = blk: switch (tree.stmt) {
+            .ExprStmt => |exp| interprtr.evalExpr(exp, &env) catch |err| {
                 try out.print("{}\n", .{err});
                 break :blk null;
             },
             else => {
-                _ = interpreter.evalStmt(tree, &env) catch |err| {
+                _ = interprtr.evalStmt(tree, &env) catch |err| {
                     try out.print("{}\n", .{err});
                     break :blk null;
                 };

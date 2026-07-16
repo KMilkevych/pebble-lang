@@ -2,6 +2,7 @@ const std = @import("std");
 const ArrayList = std.ArrayList;
 
 const token = @import("token.zig");
+const loc = @import("location.zig");
 
 // TODO: Make these comptime
 fn createLU(comptime chars: []const u8) [256]bool {
@@ -32,29 +33,29 @@ fn is_operator(chars: []const u8) bool {
     );
 }
 
-fn operator_from_string(str: []const u8) token.Token {
-    if (std.mem.eql(u8, str, "(")) return token.Token {.LPAREN = {}};
-    if (std.mem.eql(u8, str, ")")) return token.Token {.RPAREN = {}};
-    if (std.mem.eql(u8, str, "[")) return token.Token {.LBRACK = {}};
-    if (std.mem.eql(u8, str, "]")) return token.Token {.RBRACK = {}};
-    if (std.mem.eql(u8, str, "{")) return token.Token {.LCURLY = {}};
-    if (std.mem.eql(u8, str, "}")) return token.Token {.RCURLY = {}};
-    if (std.mem.eql(u8, str, "+")) return token.Token {.PLUS = {}};
-    if (std.mem.eql(u8, str, "-")) return token.Token {.MINUS = {}};
-    if (std.mem.eql(u8, str, "*")) return token.Token {.MUL = {}};
-    if (std.mem.eql(u8, str, "/")) return token.Token {.DIV = {}};
-    if (std.mem.eql(u8, str, "!")) return token.Token {.NOT = {}};
-    if (std.mem.eql(u8, str, "||")) return token.Token {.OR = {}};
-    if (std.mem.eql(u8, str, "&&")) return token.Token {.AND = {}};
-    if (std.mem.eql(u8, str, "==")) return token.Token {.DEQ = {}};
-    if (std.mem.eql(u8, str, "=")) return token.Token {.EQ = {}};
-    if (std.mem.eql(u8, str, "<")) return token.Token {.LT = {}};
-    if (std.mem.eql(u8, str, ">")) return token.Token {.GT = {}};
-    if (std.mem.eql(u8, str, "<=")) return token.Token {.LTE = {}};
-    if (std.mem.eql(u8, str, ">=")) return token.Token {.GTE = {}};
-    if (std.mem.eql(u8, str, ",")) return token.Token {.COMMA = {}};
-    if (std.mem.eql(u8, str, ".")) return token.Token {.DOT = {}};
-    if (std.mem.eql(u8, str, "\n")) return token.Token {.LB = {}};
+fn operator_from_string(str: []const u8) token.TokenType {
+    if (std.mem.eql(u8, str, "(")) return token.TokenType {.LPAREN = {}};
+    if (std.mem.eql(u8, str, ")")) return token.TokenType {.RPAREN = {}};
+    if (std.mem.eql(u8, str, "[")) return token.TokenType {.LBRACK = {}};
+    if (std.mem.eql(u8, str, "]")) return token.TokenType {.RBRACK = {}};
+    if (std.mem.eql(u8, str, "{")) return token.TokenType {.LCURLY = {}};
+    if (std.mem.eql(u8, str, "}")) return token.TokenType {.RCURLY = {}};
+    if (std.mem.eql(u8, str, "+")) return token.TokenType {.PLUS = {}};
+    if (std.mem.eql(u8, str, "-")) return token.TokenType {.MINUS = {}};
+    if (std.mem.eql(u8, str, "*")) return token.TokenType {.MUL = {}};
+    if (std.mem.eql(u8, str, "/")) return token.TokenType {.DIV = {}};
+    if (std.mem.eql(u8, str, "!")) return token.TokenType {.NOT = {}};
+    if (std.mem.eql(u8, str, "||")) return token.TokenType {.OR = {}};
+    if (std.mem.eql(u8, str, "&&")) return token.TokenType {.AND = {}};
+    if (std.mem.eql(u8, str, "==")) return token.TokenType {.DEQ = {}};
+    if (std.mem.eql(u8, str, "=")) return token.TokenType {.EQ = {}};
+    if (std.mem.eql(u8, str, "<")) return token.TokenType {.LT = {}};
+    if (std.mem.eql(u8, str, ">")) return token.TokenType {.GT = {}};
+    if (std.mem.eql(u8, str, "<=")) return token.TokenType {.LTE = {}};
+    if (std.mem.eql(u8, str, ">=")) return token.TokenType {.GTE = {}};
+    if (std.mem.eql(u8, str, ",")) return token.TokenType {.COMMA = {}};
+    if (std.mem.eql(u8, str, ".")) return token.TokenType {.DOT = {}};
+    if (std.mem.eql(u8, str, "\n")) return token.TokenType {.LB = {}};
     unreachable;
 }
 
@@ -62,22 +63,22 @@ fn is_keyword(chars: []const u8) bool {
     return contains(&[_][]const u8 {"declare", "print", "if", "else", "while", "break", "continue", "return", "function", "and", "or", "as", "Int", "Float", "Bool"}, chars);
 }
 
-fn keyword_from_string(str: []const u8) token.Token {
-    if (std.mem.eql(u8, str, "declare")) return token.Token {.DECLARE = {}};
-    if (std.mem.eql(u8, str, "print")) return token.Token {.PRINT = {}};
-    if (std.mem.eql(u8, str, "if")) return token.Token {.IF = {}};
-    if (std.mem.eql(u8, str, "else")) return token.Token {.ELSE = {}};
-    if (std.mem.eql(u8, str, "while")) return token.Token {.WHILE = {}};
-    if (std.mem.eql(u8, str, "break")) return token.Token {.BREAK = {}};
-    if (std.mem.eql(u8, str, "continue")) return token.Token {.CONTINUE = {}};
-    if (std.mem.eql(u8, str, "return")) return token.Token {.RETURN = {}};
-    if (std.mem.eql(u8, str, "function")) return token.Token {.FUN = {}};
-    if (std.mem.eql(u8, str, "and")) return token.Token {.AND = {}};
-    if (std.mem.eql(u8, str, "or")) return token.Token {.OR = {}};
-    if (std.mem.eql(u8, str, "as")) return token.Token {.AS = {}};
-    if (std.mem.eql(u8, str, "Int")) return token.Token {.INT = {}};
-    if (std.mem.eql(u8, str, "Float")) return token.Token {.FLOAT = {}};
-    if (std.mem.eql(u8, str, "Bool")) return token.Token {.BOOL = {}};
+fn keyword_from_string(str: []const u8) token.TokenType {
+    if (std.mem.eql(u8, str, "declare")) return token.TokenType {.DECLARE = {}};
+    if (std.mem.eql(u8, str, "print")) return token.TokenType {.PRINT = {}};
+    if (std.mem.eql(u8, str, "if")) return token.TokenType {.IF = {}};
+    if (std.mem.eql(u8, str, "else")) return token.TokenType {.ELSE = {}};
+    if (std.mem.eql(u8, str, "while")) return token.TokenType {.WHILE = {}};
+    if (std.mem.eql(u8, str, "break")) return token.TokenType {.BREAK = {}};
+    if (std.mem.eql(u8, str, "continue")) return token.TokenType {.CONTINUE = {}};
+    if (std.mem.eql(u8, str, "return")) return token.TokenType {.RETURN = {}};
+    if (std.mem.eql(u8, str, "function")) return token.TokenType {.FUN = {}};
+    if (std.mem.eql(u8, str, "and")) return token.TokenType {.AND = {}};
+    if (std.mem.eql(u8, str, "or")) return token.TokenType {.OR = {}};
+    if (std.mem.eql(u8, str, "as")) return token.TokenType {.AS = {}};
+    if (std.mem.eql(u8, str, "Int")) return token.TokenType {.INT = {}};
+    if (std.mem.eql(u8, str, "Float")) return token.TokenType {.FLOAT = {}};
+    if (std.mem.eql(u8, str, "Bool")) return token.TokenType {.BOOL = {}};
     unreachable;
 }
 
@@ -85,9 +86,9 @@ fn is_bool_literal(chars: []const u8) bool {
     return contains(&[_][]const u8 {"true", "false"}, chars);
 }
 
-fn bool_literal_from_string(str: []const u8) token.Token {
-    if (std.mem.eql(u8, str, "true")) return token.Token {.BOOLLIT = true};
-    if (std.mem.eql(u8, str, "false")) return token.Token {.BOOLLIT = false};
+fn bool_literal_from_string(str: []const u8) token.TokenType {
+    if (std.mem.eql(u8, str, "true")) return token.TokenType {.BOOLLIT = true};
+    if (std.mem.eql(u8, str, "false")) return token.TokenType {.BOOLLIT = false};
     unreachable;
 }
 
@@ -97,14 +98,81 @@ pub const Lexer = struct {
 
     pos: usize,
     input: []const u8,
+    file: []const u8,
     allocator: std.mem.Allocator,
 
-    pub fn new(input: []const u8, allocator: std.mem.Allocator) Self {
+    line: usize = 0,
+    column: usize = 0,
+
+    storeLocation: bool = true,
+
+    pub fn new(input: []const u8, file: []const u8, allocator: std.mem.Allocator) Self {
         return .{
             .pos = 0,
             .input = input,
-            .allocator = allocator,
+            .file = file,
+            .allocator = allocator
         };
+    }
+
+    fn getLocationAtPoint(self: *Self, offset: usize) loc.LocationRange {
+        if (!self.storeLocation) return loc.LocationRange {
+            .from = loc.Location {
+                .file = "",
+                .line = 0,
+                .column = 0
+            },
+            .to = loc.Location {
+                .file = "",
+                .line = 0,
+                .column = 0
+            },
+        };
+        return loc.LocationRange {
+            .from = loc.Location {
+                .file = self.file,
+                .column = self.column + offset,
+                .line = self.line
+            },
+            .to = loc.Location {
+                .file = self.file,
+                .column = self.column + offset,
+                .line = self.line
+            },
+        };
+    }
+
+
+    fn getLocationRange(self: *Self, length: usize) loc.LocationRange {
+        if (!self.storeLocation) return loc.LocationRange {
+            .from = loc.Location {
+                .file = "",
+                .line = 0,
+                .column = 0
+            },
+            .to = loc.Location {
+                .file = "",
+                .line = 0,
+                .column = 0
+            },
+        };
+        return loc.LocationRange {
+            .from = loc.Location {
+                .file = self.file,
+                .column = self.column - length,
+                .line = self.line
+            },
+            .to = loc.Location {
+                .file = self.file,
+                .column = self.column - 1,
+                .line = self.line
+            },
+        };
+    }
+
+    fn advanceLine(self: *Self) void {
+        self.column = 0;
+        self.line += 1;
     }
 
     fn topdigit(self: *Self) error{EndOfFile}!u8 {
@@ -114,6 +182,7 @@ pub const Lexer = struct {
 
     fn advance(self: *Self) error{EndOfFile}!u8 {
         self.pos += 1;
+        self.column += 1;
         return self.topdigit();
     }
 
@@ -135,13 +204,6 @@ pub const Lexer = struct {
                 else => unreachable
             };
         }
-    }
-
-    fn lexFloat(self: *Self, integer: []u8) !token.Token {
-        _ = self;
-        _ = integer;
-
-        unreachable;
     }
 
     fn lexIntOrFloat(self: *Self) !token.Token {
@@ -189,7 +251,10 @@ pub const Lexer = struct {
                     std.fmt.ParseFloatError.InvalidCharacter => unreachable
                 };
 
-                return token.Token {.FLOATLIT = lit};
+                return token.Token {
+                    .tokenType = token.TokenType { .FLOATLIT = lit },
+                    .location = self.getLocationRange(buf.items.len)
+                };
             }
         } else |_| {}
 
@@ -198,12 +263,19 @@ pub const Lexer = struct {
         // NOTE: we only expect valid characters here
         const lit: i64 = std.fmt.parseInt(i64, buf.items, 10) catch |err| switch (err) {
             std.fmt.ParseIntError.Overflow =>
-                return token.Token { .ERROR = self.inputBackSlice(buf.items.len) },
+                return token.Token {
+                    .tokenType = token.TokenType {
+                        .ERROR = self.inputBackSlice(buf.items.len)
+                    }
+                },
             std.fmt.ParseIntError.InvalidCharacter => unreachable
         };
 
         // Return constructed integer literal
-        return token.Token {.INTLIT = lit};
+        return token.Token {
+            .tokenType = token.TokenType { .INTLIT = lit },
+            .location = self.getLocationRange(buf.items.len)
+        };
     }
 
     fn lexIdent(self: *Self) !token.Token {
@@ -224,13 +296,24 @@ pub const Lexer = struct {
         }
 
         // Check if we are a boolean literal
-        if (is_bool_literal(buf.items)) return bool_literal_from_string(buf.items);
+        if (is_bool_literal(buf.items)) return token.Token {
+            .tokenType = bool_literal_from_string(buf.items),
+            .location = self.getLocationRange(buf.items.len)
+        };
 
         // Check if we are a keyword
-        if (is_keyword(buf.items)) return keyword_from_string(buf.items);
+        if (is_keyword(buf.items)) return token.Token {
+            .tokenType = keyword_from_string(buf.items),
+            .location = self.getLocationRange(buf.items.len)
+        };
 
         // Otherwise construct identifier
-        return token.Token {.IDENT = self.inputBackSlice(buf.items.len)};
+        return token.Token {
+            .tokenType = token.TokenType {
+                .IDENT = self.inputBackSlice(buf.items.len)
+            },
+            .location = self.getLocationRange(buf.items.len)
+        };
     }
 
     fn lexOperator(self: *Self) !token.Token {
@@ -267,9 +350,26 @@ pub const Lexer = struct {
 
         // Try to produce token based on construction
         if (!is_operator(buf.items))
-            return token.Token {.ERROR = self.inputBackSlice(buf.items.len)};
+            return token.Token {
+                .tokenType = token.TokenType {
+                    .ERROR = self.inputBackSlice(buf.items.len)
+                },
+                .location = self.getLocationRange(buf.items.len)
+            };
 
-        return operator_from_string(buf.items);
+        // Construct token with location
+        const tok = token.Token {
+            .tokenType = operator_from_string(buf.items),
+            .location = self.getLocationRange(buf.items.len),
+        };
+
+        // Reset line
+        switch (tok.tokenType) {
+            .LB => self.advanceLine(),
+            else => {}
+        }
+
+        return tok;
     }
 
     pub fn lexToken(self: *Self) token.Token {
@@ -279,13 +379,19 @@ pub const Lexer = struct {
 
         // We start by skipping the whitespace
         self.skipWhitespace() catch |err| switch (err) {
-            error.EndOfFile => return token.Token {.EOF = {}},
+            error.EndOfFile => return token.Token {
+                .tokenType = token.TokenType {.EOF = {}},
+                .location = self.getLocationAtPoint(0),
+            },
             else => unreachable
         };
 
         // Match against the first digit or EOF
         const c: u8 = self.topdigit() catch |err| switch (err) {
-            error.EndOfFile => return token.Token {.EOF = {}},
+            error.EndOfFile => return token.Token {
+                .tokenType = token.TokenType {.EOF = {}},
+                .location = self.getLocationAtPoint(0),
+            },
             else => unreachable
         };
 
@@ -301,7 +407,10 @@ pub const Lexer = struct {
             tok = self.lexToken();
         } else {
             // This is RAW token produce
-            tok = token.Token {.ILLEGAL = c};
+            tok = token.Token {
+                .tokenType = token.TokenType {.ILLEGAL = c},
+                .location = self.getLocationRange(1),
+            };
             self.pos += 1; // Force advance without check
         }
 
@@ -315,9 +424,38 @@ pub const Lexer = struct {
         // Insert line break if last token is not a line break
         // and there are items before this
         if (buf.items.len == 0) return;
-        switch (buf.getLast()) {
+        const lastToken: token.Token = buf.getLast();
+        switch (lastToken.tokenType) {
             .LB => return,
-            else => buf.append(self.allocator, token.Token {.LB = {}}) catch unreachable,
+            else => buf.append(
+                self.allocator,
+                token.Token {
+                    .tokenType = token.TokenType {.LB = {}},
+                    .location = if (!self.storeLocation) loc.LocationRange {
+                        .from = loc.Location {
+                            .file = lastToken.location.to.file,
+                            .column = lastToken.location.from.column,
+                            .line = lastToken.location.from.line
+                        },
+                        .to = loc.Location {
+                            .file = lastToken.location.to.file,
+                            .column = lastToken.location.to.column,
+                            .line = lastToken.location.to.line
+                        }
+                    } else loc.LocationRange {
+                        .from = loc.Location {
+                            .file = lastToken.location.to.file,
+                            .column = lastToken.location.to.column+1,
+                            .line = lastToken.location.to.line
+                        },
+                        .to = loc.Location {
+                            .file = lastToken.location.to.file,
+                            .column = lastToken.location.to.column+1,
+                            .line = lastToken.location.to.line
+                        }
+                    }
+                }
+            ) catch unreachable,
         }
     }
 
@@ -330,7 +468,7 @@ pub const Lexer = struct {
         while (true) {
 
             tok = self.lexToken();
-            switch (tok) {
+            switch (tok.tokenType) {
 
                 // Treat manual line breaks separetely
                 .LB => {

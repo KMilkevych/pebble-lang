@@ -1,0 +1,60 @@
+function merge(a, b) {
+	
+	declare ia = 0, ib = 0
+	declare res[a.size + b.size]
+	
+	while (ia < a.size) and (ib < b.size) {
+		if a[ia] <= b[ib]
+		{
+			res[ia + ib] = a[ia]
+			ia = ia + 1
+		}
+		else if a[ia] > b[ib]
+		{
+			res[ia + ib] = b[ib]
+			ib = ib + 1
+		}
+	}
+	
+	while ia < a.size {
+		res[ia + ib] = a[ia]
+		ia = ia + 1
+	}
+	
+	while ib < b.size {
+		res[ia + ib] = b[ib]
+		ib = ib + 1
+	}
+	
+	return res
+}
+
+function mergesort(lst) {
+
+	if lst.size <= 1
+		return lst
+		
+	declare left = (lst.size / 2) as Int
+	declare right = lst.size - left
+		
+	declare a[left], b[right]
+	declare i = 0
+	
+	while i < left {
+		a[i] = lst[i]
+		i = i + 1
+	}
+	
+	while i < lst.size {
+		b[i - left] = lst[i]
+		i = i + 1
+	}
+	
+	a = mergesort(a)
+	b = mergesort(b)
+	
+	return merge(a, b)
+}
+
+declare input = <141, 23, 991, -43, 0, 34, 1, 4, 5, 71, 34>
+print mergesort(input)

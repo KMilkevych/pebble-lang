@@ -1,25 +1,47 @@
 const ast = @import("../ast.zig");
-const interpreter = @import("../interpreter.zig");
+const interprtr = @import("../interpreter.zig");
 const venv = @import("../env.zig");
+const loc = @import("../location.zig");
+const log = @import("../logger.zig");
+const nolocation = loc.LocationRange.none;
+
 const std = @import("std");
 
 const expect = std.testing.expect;
 
 test "simple not" {
 
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
+
 
     const t: ast.Expr = ast.Expr {
-        .UnOpExpr = ast.UnOpExpr {
-            .rhs = &ast.Expr { .Lit = ast.Lit {.Bool = true} },
-            .op = ast.UnOp.Not
-        }
+        .expr = ast.ExprInner {
+            .UnOpExpr = ast.UnOpExpr {
+                .rhs = &ast.Expr {
+                    .expr = ast.ExprInner { .Lit = ast.Lit {.Bool = true} },
+                    .location = nolocation(),
+                },
+                .op = ast.UnOp.Not
+            }
+        },
+        .location = nolocation(),
     };
 
     const f: ast.Expr = ast.Expr {
-        .UnOpExpr = ast.UnOpExpr {
-            .rhs = &ast.Expr { .Lit = ast.Lit {.Bool = false} },
-            .op = ast.UnOp.Not
-        }
+        .expr = ast.ExprInner {
+            .UnOpExpr = ast.UnOpExpr {
+                .rhs = &ast.Expr {
+                    .expr = ast.ExprInner { .Lit = ast.Lit {.Bool = false} },
+                    .location = nolocation()
+                },
+                .op = ast.UnOp.Not
+            }
+        },
+        .location = nolocation()
     };
 
     var env = venv.Env.new(std.testing.allocator);
@@ -37,27 +59,51 @@ test "simple not" {
 
 test "simple neg" {
     const l3: ast.Expr = ast.Expr {
-        .UnOpExpr = ast.UnOpExpr {
-            .rhs = &ast.Expr { .Lit = ast.Lit {.Int = 3} },
-            .op = ast.UnOp.Neg
-        }
+        .expr = ast.ExprInner {
+            .UnOpExpr = ast.UnOpExpr {
+                .rhs = &ast.Expr {
+                    .expr = ast.ExprInner {.Lit = ast.Lit {.Int = 3}},
+                    .location = nolocation()
+                },
+                .op = ast.UnOp.Neg
+            }
+        },
+        .location = nolocation()
     };
 
     const lm19: ast.Expr = ast.Expr {
-        .UnOpExpr = ast.UnOpExpr {
-            .rhs = &ast.Expr { .Lit = ast.Lit {.Int = -19} },
-            .op = ast.UnOp.Neg
-        }
+        .expr = ast.ExprInner {
+            .UnOpExpr = ast.UnOpExpr {
+                .rhs = &ast.Expr {
+                    .expr = ast.ExprInner {.Lit = ast.Lit {.Int = -19}},
+                    .location = nolocation()
+                },
+                .op = ast.UnOp.Neg
+            }
+        },
+        .location = nolocation()
     };
 
     const l0: ast.Expr = ast.Expr {
-        .UnOpExpr = ast.UnOpExpr {
-            .rhs = &ast.Expr { .Lit = ast.Lit {.Int = 0} },
-            .op = ast.UnOp.Neg
-        }
+        .expr = ast.ExprInner {
+            .UnOpExpr = ast.UnOpExpr {
+                .rhs = &ast.Expr {
+                    .expr = ast.ExprInner {.Lit = ast.Lit {.Int = 0}},
+                    .location = nolocation()
+                },
+                .op = ast.UnOp.Neg
+            }
+        },
+        .location = nolocation()
     };
 
     var env = venv.Env.new(std.testing.allocator);
+
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
 
     try std.testing.expectEqual(
         ast.Lit {.Int = -3},
@@ -82,8 +128,17 @@ test "variable lookup" {
     env.insert(identifier, venv.ObjectVal { .Var = ast.Lit {.Int = 32}});
 
     const exp: ast.Expr = ast.Expr {
-        .Lval = ast.Lval {.Var = identifier}
+        .expr = ast.ExprInner {
+            .Lval = ast.Lval {.Var = identifier}
+        },
+        .location = nolocation()
     };
+
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
 
     try std.testing.expectEqual(
         ast.Lit {.Int = 32},
@@ -99,11 +154,26 @@ test "variable assignment" {
     defer env.deinit();
 
     const exp: ast.Expr = ast.Expr {
-        .AssignExpr = ast.AssignExpr {
-            .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-            .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 13}}
-        }
+        .expr = ast.ExprInner {
+            .AssignExpr = ast.AssignExpr {
+                .lhs = &ast.Expr {
+                    .expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},
+                    .location = nolocation(),
+                },
+                .rhs = &ast.Expr {
+                    .expr = ast.ExprInner {.Lit = ast.Lit {.Int = 13}},
+                    .location = nolocation(),
+                }
+            }
+        },
+        .location = nolocation()
     };
+
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
 
     try std.testing.expectEqual(
         ast.Lit {.Int = 13},
@@ -118,9 +188,25 @@ test "let x (= undefined)" {
     defer env.deinit();
 
     // Prepare statement
-    const stmt: ast.Stmt = ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {
-        &ast.Expr {.Lval = ast.Lval {.Var = "x"}}
-    }};
+    const stmt: ast.Stmt = ast.Stmt {
+        .stmt = ast.StmtInner {
+            .DeclareStmt = &[_]*const ast.Expr {
+                &ast.Expr {
+                    .expr = ast.ExprInner {
+                        .Lval = ast.Lval {.Var = "x"}
+                    },
+                    .location = nolocation()
+                }
+            }
+        },
+        .location = nolocation()
+    };
+
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
 
     // Evaluate statement
     _ = try interpreter.evalStmt(stmt, &env);
@@ -138,12 +224,36 @@ test "let x = 49" {
     defer env.deinit();
 
     // Prepare statement
-    const stmt: ast.Stmt = ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {
-        &ast.Expr {.AssignExpr = ast.AssignExpr {
-            .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-            .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 49}}
-        }}
-    }};
+    const stmt: ast.Stmt = ast.Stmt {
+        .stmt = ast.StmtInner {
+            .DeclareStmt = &[_]*const ast.Expr {
+                &ast.Expr {.expr = ast.ExprInner {
+                    .AssignExpr = ast.AssignExpr {
+                        .lhs = &ast.Expr {
+                            .expr = ast.ExprInner {
+                                .Lval = ast.Lval {.Var = "x"}
+                            },
+                            .location = nolocation()
+                        },
+                        .rhs = &ast.Expr {
+                            .expr = ast.ExprInner {
+                                .Lit = ast.Lit {.Int = 49}
+                            },
+                            .location = nolocation()
+                        }
+                    }
+                },
+                .location = nolocation()}
+            }
+        },
+        .location = nolocation()
+    };
+
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
 
     // Evaluate statement
     _ = try interpreter.evalStmt(stmt, &env);
@@ -161,19 +271,42 @@ test "invalid chain declaration" {
     defer env.deinit();
 
     // Prepare statement
-    const stmt: ast.Stmt = ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {
-        &ast.Expr {.AssignExpr = ast.AssignExpr {
-            .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-            .rhs = &ast.Expr {.AssignExpr = ast.AssignExpr {
-                .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "y"}},
-                .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 19}}
-            }}
-        }
-    }}};
+    const stmt: ast.Stmt = ast.Stmt {
+        .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {
+            &ast.Expr {.expr = ast.ExprInner {
+                .AssignExpr = ast.AssignExpr {
+                    .lhs = &ast.Expr {
+                        .expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},
+                        .location = nolocation()
+                    },
+                    .rhs = &ast.Expr {
+                        .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
+                            .lhs = &ast.Expr {
+                                .expr = ast.ExprInner {.Lval = ast.Lval {.Var = "y"}},
+                                .location = nolocation()
+                            },
+                            .rhs = &ast.Expr {
+                                .expr = ast.ExprInner {.Lit = ast.Lit {.Int = 19}},
+                                .location = nolocation()
+                            }
+                        }},
+                        .location = nolocation()
+                    }
+                }},
+                .location = nolocation()
+            }}},
+            .location = nolocation()
+        };
+
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
 
     // Evaluate statement to error for z
-    const err: interpreter.EvalError!interpreter.StmtReturn = interpreter.evalStmt(stmt, &env);
-    try std.testing.expectEqual(interpreter.EvalError.UndefinedVariable, err);
+    const err: interprtr.EvalError!interprtr.StmtReturn = interpreter.evalStmt(stmt, &env);
+    try std.testing.expectEqual(interprtr.EvalError.UndefinedVariable, err);
 }
 
 
@@ -184,15 +317,26 @@ test "redeclaration error" {
     defer env.deinit();
 
     // Prepare statement
-    const stmt: ast.Stmt = ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {&ast.Expr {.AssignExpr = ast.AssignExpr {
-        .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-        .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 1}}
-        }
-    }}};
+    const stmt: ast.Stmt = ast.Stmt {
+        .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {&ast.Expr {
+            .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
+                .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}}, .location = nolocation()},
+                .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}}, .location = nolocation()}
+            }},
+            .location = nolocation()
+        }}},
+        .location = nolocation()
+    };
+
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
 
     // Evaluate statement to error for z
-    const err: interpreter.EvalError!interpreter.StmtReturn = interpreter.evalStmt(stmt, &env);
-    try std.testing.expectEqual(interpreter.EvalError.IdentifierAlreadyDeclared, err);
+    const err: interprtr.EvalError!interprtr.StmtReturn = interpreter.evalStmt(stmt, &env);
+    try std.testing.expectEqual(interprtr.EvalError.IdentifierAlreadyDeclared, err);
 }
 
 test "redeclaration error 2" {
@@ -202,11 +346,23 @@ test "redeclaration error 2" {
     defer env.deinit();
 
     // Prepare statement
-    const stmt: ast.Stmt = ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {&ast.Expr {.Lval = ast.Lval {.Var = "x"}}}};
+    const stmt: ast.Stmt = ast.Stmt {
+        .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {&ast.Expr {
+            .expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},
+            .location = nolocation()
+        }}},
+        .location = nolocation()
+    };
+
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
 
     // Evaluate statement to error for z
-    const err: interpreter.EvalError!interpreter.StmtReturn = interpreter.evalStmt(stmt, &env);
-    try std.testing.expectEqual(interpreter.EvalError.IdentifierAlreadyDeclared, err);
+    const err: interprtr.EvalError!interprtr.StmtReturn = interpreter.evalStmt(stmt, &env);
+    try std.testing.expectEqual(interprtr.EvalError.IdentifierAlreadyDeclared, err);
 }
 
 test "smart scoped assignment" {
@@ -217,27 +373,55 @@ test "smart scoped assignment" {
     // Prepare procedure
     const proc: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
 
-        ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {&ast.Expr {.AssignExpr = ast.AssignExpr {
-            .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-            .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 10}}
-        }}}},
+        ast.Stmt {
+            .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {&ast.Expr {
+                .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
+                    .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+                    .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 10}},.location = nolocation()}
+                }},
+                .location = nolocation()
+            }}},
+            .location = nolocation()
+        },
 
-        ast.Stmt {.IfElseStmt = &ast.IfElseStmt {
-            .cond = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
-                .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-                .op = ast.BinOp.Eq,
-                .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 10}},
+        ast.Stmt {
+            .stmt = ast.StmtInner {.IfElseStmt = &ast.IfElseStmt {
+                .cond = &ast.Expr {
+                    .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
+                        .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+                        .op = ast.BinOp.Eq,
+                        .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 10}},.location = nolocation()},
+                    }},
+                    .location = nolocation()
+                },
+                .ifStmt = ast.Stmt {
+                    .stmt = ast.StmtInner {.BlockStmt = &[_]ast.Stmt {
+                        ast.Stmt {
+                            .stmt = ast.StmtInner {.ExprStmt = &ast.Expr {
+                                .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
+                                    .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+                                    .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 20}},.location = nolocation()},
+                                }},
+                                .location = nolocation()
+                            }},
+                            .location = nolocation()
+                        },
+                    }},
+                    .location = nolocation()
+                },
+                .elseStmt = ast.Stmt {
+                    .stmt = ast.StmtInner {.BlockStmt = &[_]ast.Stmt {}},
+                    .location = nolocation()
+                }
             }},
-            .ifStmt = ast.Stmt {.BlockStmt = &[_]ast.Stmt {
-                ast.Stmt {.ExprStmt = &ast.Expr {.AssignExpr = ast.AssignExpr {
-                    .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-                    .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 20}},
-                }}},
-            }},
-            .elseStmt = ast.Stmt {.BlockStmt = &[_]ast.Stmt {
-            }}
-        }},
+            .location = nolocation()},
     }};
+
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
 
     // Evaluate statement to error for z
     try interpreter.evalProc(proc, &env);
@@ -256,27 +440,55 @@ test "smart scoped declaration" {
     // Prepare procedure
     const proc: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
 
-        ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {&ast.Expr {.AssignExpr = ast.AssignExpr {
-            .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-            .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 10}}
-        }}}},
+        ast.Stmt {
+            .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {&ast.Expr {
+                .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
+                    .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+                    .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 10}},.location = nolocation()}
+                }},
+                .location = nolocation()
+            }}},
+            .location = nolocation()
+        },
 
-        ast.Stmt {.IfElseStmt = &ast.IfElseStmt {
-            .cond = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
-                .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-                .op = ast.BinOp.Eq,
-                .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 10}},
+        ast.Stmt {
+            .stmt = ast.StmtInner {.IfElseStmt = &ast.IfElseStmt {
+                .cond = &ast.Expr {
+                    .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
+                        .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+                        .op = ast.BinOp.Eq,
+                        .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 10}},.location = nolocation()},
+                    }},
+                    .location = nolocation()},
+                .ifStmt = ast.Stmt {
+                    .stmt = ast.StmtInner {.BlockStmt = &[_]ast.Stmt {
+                        ast.Stmt {
+                            .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {&ast.Expr {
+                                .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
+                                    .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+                                    .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 20}},.location = nolocation()},
+                                }},
+                                .location = nolocation()
+                            }}},
+                            .location = nolocation()
+                        },
+                    }},
+                    .location = nolocation()
+                },
+                .elseStmt = ast.Stmt {
+                    .stmt = ast.StmtInner {.BlockStmt = &[_]ast.Stmt {}},
+                    .location = nolocation()
+                }
             }},
-            .ifStmt = ast.Stmt {.BlockStmt = &[_]ast.Stmt {
-                ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {&ast.Expr {.AssignExpr = ast.AssignExpr {
-                    .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-                    .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 20}},
-                }}}},
-            }},
-            .elseStmt = ast.Stmt {.BlockStmt = &[_]ast.Stmt {
-            }}
-        }},
+            .location = nolocation()
+        },
     }};
+
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
 
     // Evaluate statement to error for z
     try interpreter.evalProc(proc, &env);
@@ -293,92 +505,134 @@ test "comparison expressions" {
     var env = venv.Env.new(std.testing.allocator);
     defer env.deinit();
 
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
+
     // Test less-than expressions
-    const exp1: ast.Expr = ast.Expr {.BinOpExpr = ast.BinOpExpr {
-        .lhs = &ast.Expr {.Lit = ast.Lit {.Int = 3}},
-        .op = .Lt,
-        .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 4}}
-    }};
+    const exp1: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
+            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 3}},.location = nolocation()},
+            .op = .Lt,
+            .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 4}},.location = nolocation()}
+        }},
+        .location = nolocation()
+    };
     try std.testing.expectEqual(try interpreter.evalExpr(&exp1, &env), ast.Lit {.Bool = true});
 
-    const exp2: ast.Expr = ast.Expr {.BinOpExpr = ast.BinOpExpr {
-        .lhs = &ast.Expr {.Lit = ast.Lit {.Int = 3}},
-        .op = .Lt,
-        .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 3}}
-    }};
+    const exp2: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
+            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 3}},.location = nolocation()},
+            .op = .Lt,
+            .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 3}},.location = nolocation()}
+        }},
+        .location = nolocation()
+    };
     try std.testing.expectEqual(try interpreter.evalExpr(&exp2, &env), ast.Lit {.Bool = false});
 
-    const exp3: ast.Expr = ast.Expr {.BinOpExpr = ast.BinOpExpr {
-        .lhs = &ast.Expr {.Lit = ast.Lit {.Int = 3}},
-        .op = .Lt,
-        .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 2}}
-    }};
+    const exp3: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
+            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 3}},.location = nolocation()},
+            .op = .Lt,
+            .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 2}},.location = nolocation()}
+        }},
+        .location = nolocation()
+    };
     try std.testing.expectEqual(try interpreter.evalExpr(&exp3, &env), ast.Lit {.Bool = false});
 
     // Test greater-than expressions
-    const exp4: ast.Expr = ast.Expr {.BinOpExpr = ast.BinOpExpr {
-        .lhs = &ast.Expr {.Lit = ast.Lit {.Int = 3}},
-        .op = .Gt,
-        .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 4}}
-    }};
+    const exp4: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
+            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 3}},.location = nolocation()},
+            .op = .Gt,
+            .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 4}},.location = nolocation()}
+        }},
+        .location = nolocation()
+    };
     try std.testing.expectEqual(try interpreter.evalExpr(&exp4, &env), ast.Lit {.Bool = false});
 
-    const exp5: ast.Expr = ast.Expr {.BinOpExpr = ast.BinOpExpr {
-        .lhs = &ast.Expr {.Lit = ast.Lit {.Int = 3}},
-        .op = .Gt,
-        .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 3}}
-    }};
+    const exp5: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
+            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 3}},.location = nolocation()},
+            .op = .Gt,
+            .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 3}},.location = nolocation()}
+        }},
+        .location = nolocation()
+    };
     try std.testing.expectEqual(try interpreter.evalExpr(&exp5, &env), ast.Lit {.Bool = false});
 
-    const exp6: ast.Expr = ast.Expr {.BinOpExpr = ast.BinOpExpr {
-        .lhs = &ast.Expr {.Lit = ast.Lit {.Int = 3}},
-        .op = .Gt,
-        .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 2}}
-    }};
+    const exp6: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
+            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 3}},.location = nolocation()},
+            .op = .Gt,
+            .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 2}},.location = nolocation()}
+        }},
+        .location = nolocation()
+    };
     try std.testing.expectEqual(try interpreter.evalExpr(&exp6, &env), ast.Lit {.Bool = true});
 
     // Test less-than or equal
-    const exp7: ast.Expr = ast.Expr {.BinOpExpr = ast.BinOpExpr {
-        .lhs = &ast.Expr {.Lit = ast.Lit {.Int = 3}},
-        .op = .Lte,
-        .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 4}}
-    }};
+    const exp7: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
+            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 3}},.location = nolocation()},
+            .op = .Lte,
+            .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 4}},.location = nolocation()}
+        }},
+        .location = nolocation()
+    };
     try std.testing.expectEqual(try interpreter.evalExpr(&exp7, &env), ast.Lit {.Bool = true});
 
-    const exp8: ast.Expr = ast.Expr {.BinOpExpr = ast.BinOpExpr {
-        .lhs = &ast.Expr {.Lit = ast.Lit {.Int = 3}},
-        .op = .Lte,
-        .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 3}}
-    }};
+    const exp8: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
+            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 3}},.location = nolocation()},
+            .op = .Lte,
+            .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 3}},.location = nolocation()}
+        }},
+        .location = nolocation()
+    };
     try std.testing.expectEqual(try interpreter.evalExpr(&exp8, &env), ast.Lit {.Bool = true});
 
-    const exp9: ast.Expr = ast.Expr {.BinOpExpr = ast.BinOpExpr {
-        .lhs = &ast.Expr {.Lit = ast.Lit {.Int = 3}},
-        .op = .Lte,
-        .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 2}}
-    }};
+    const exp9: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
+            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 3}},.location = nolocation()},
+            .op = .Lte,
+            .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 2}},.location = nolocation()}
+        }},
+        .location = nolocation()
+    };
     try std.testing.expectEqual(try interpreter.evalExpr(&exp9, &env), ast.Lit {.Bool = false});
 
     // Test greater-than or equal
-    const exp10: ast.Expr = ast.Expr {.BinOpExpr = ast.BinOpExpr {
-        .lhs = &ast.Expr {.Lit = ast.Lit {.Int = 3}},
-        .op = .Gte,
-        .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 4}}
-    }};
+    const exp10: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
+            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 3}},.location = nolocation()},
+            .op = .Gte,
+            .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 4}},.location = nolocation()}
+        }},
+        .location = nolocation()
+    };
     try std.testing.expectEqual(try interpreter.evalExpr(&exp10, &env), ast.Lit {.Bool = false});
 
-    const exp11: ast.Expr = ast.Expr {.BinOpExpr = ast.BinOpExpr {
-        .lhs = &ast.Expr {.Lit = ast.Lit {.Int = 3}},
-        .op = .Gte,
-        .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 3}}
-    }};
+    const exp11: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
+            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 3}},.location = nolocation()},
+            .op = .Gte,
+            .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 3}},.location = nolocation()}
+        }},
+        .location = nolocation()
+    };
     try std.testing.expectEqual(try interpreter.evalExpr(&exp11, &env), ast.Lit {.Bool = true});
 
-    const exp12: ast.Expr = ast.Expr {.BinOpExpr = ast.BinOpExpr {
-        .lhs = &ast.Expr {.Lit = ast.Lit {.Int = 3}},
-        .op = .Gte,
-        .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 2}}
-    }};
+    const exp12: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
+            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 3}},.location = nolocation()},
+            .op = .Gte,
+            .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 2}},.location = nolocation()}
+        }},
+        .location = nolocation()
+    };
     try std.testing.expectEqual(try interpreter.evalExpr(&exp12, &env), ast.Lit {.Bool = true});
 }
 
@@ -391,38 +645,77 @@ test "break works" {
     // Prepare procedure
     const proc: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
 
-        ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {&ast.Expr {.AssignExpr = ast.AssignExpr {
-            .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-            .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 10}}
-        }}}},
+        ast.Stmt {
+            .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {&ast.Expr {
+                .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
+                    .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+                    .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 10}},.location = nolocation()}
+                }},
+                .location = nolocation()
+            }}},
+            .location = nolocation()
+        },
 
-        ast.Stmt {.WhileStmt = &ast.WhileStmt {
-            .cond = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
-                .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-                .op = ast.BinOp.Gt,
-                .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 0}},
-            }},
-            .body = ast.Stmt {.BlockStmt = &[_]ast.Stmt {
-                ast.Stmt {.ExprStmt = &ast.Expr {.AssignExpr = ast.AssignExpr {
-                    .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-                    .rhs = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
-                        .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-                        .op = .Sub,
-                        .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 1}},
+        ast.Stmt {
+            .stmt = ast.StmtInner {.WhileStmt = &ast.WhileStmt {
+                .cond = &ast.Expr {
+                    .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
+                        .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+                        .op = ast.BinOp.Gt,
+                        .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 0}},.location = nolocation()},
                     }},
-                }}},
-                ast.Stmt {.BreakStmt = {}},
-                ast.Stmt {.ExprStmt = &ast.Expr {.AssignExpr = ast.AssignExpr {
-                    .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-                    .rhs = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
-                        .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-                        .op = .Sub,
-                        .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 1}},
+                    .location = nolocation()
+                },
+                .body = ast.Stmt {
+                    .stmt = ast.StmtInner {.BlockStmt = &[_]ast.Stmt {
+                        ast.Stmt {
+                            .stmt = ast.StmtInner {.ExprStmt = &ast.Expr {
+                                .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
+                                    .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+                                    .rhs = &ast.Expr {
+                                        .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
+                                            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+                                            .op = .Sub,
+                                            .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},.location = nolocation()},
+                                        }},
+                                        .location = nolocation()
+                                    },
+                                }},
+                                .location = nolocation()
+                            }},
+                            .location = nolocation()
+                        },
+                        ast.Stmt {.stmt = ast.StmtInner {.BreakStmt = {}},.location = nolocation()},
+                        ast.Stmt {
+                            .stmt = ast.StmtInner {.ExprStmt = &ast.Expr {
+                                .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
+                                    .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+                                    .rhs = &ast.Expr {
+                                        .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
+                                            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+                                            .op = .Sub,
+                                            .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},.location = nolocation()},
+                                        }},
+                                        .location = nolocation()
+                                    },
+                                }},
+                                .location = nolocation()
+                            }},
+                            .location = nolocation()
+                        },
                     }},
-                }}},
+                    .location = nolocation()
+                },
             }},
-        }},
+            .location = nolocation()
+        },
     }};
+
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
 
     // Evaluate statement to error for z
     try interpreter.evalProc(proc, &env);
@@ -440,42 +733,85 @@ test "break in block works" {
     // Prepare procedure
     const proc: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
 
-        ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {&ast.Expr {.AssignExpr = ast.AssignExpr {
-            .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-            .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 10}}
-        }}}},
-
-        ast.Stmt {.WhileStmt = &ast.WhileStmt {
-            .cond = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
-                .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-                .op = ast.BinOp.Gt,
-                .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 0}},
-            }},
-            .body = ast.Stmt {.BlockStmt = &[_]ast.Stmt {
-                ast.Stmt {.ExprStmt = &ast.Expr {.AssignExpr = ast.AssignExpr {
-                    .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-                    .rhs = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
-                        .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-                        .op = .Sub,
-                        .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 1}},
-                    }},
-                }}},
-                ast.Stmt {.BlockStmt = &[_]ast.Stmt {
-                    ast.Stmt {.BlockStmt = &[_]ast.Stmt {
-                        ast.Stmt {.BreakStmt = {}},
-                    }},
+        ast.Stmt {
+            .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {&ast.Expr {
+                .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
+                    .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+                    .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 10}},.location = nolocation()}
                 }},
-                ast.Stmt {.ExprStmt = &ast.Expr {.AssignExpr = ast.AssignExpr {
-                    .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-                    .rhs = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
-                        .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-                        .op = .Sub,
-                        .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 1}},
+                .location = nolocation()
+            }}},
+            .location = nolocation()
+        },
+
+        ast.Stmt {
+            .stmt = ast.StmtInner {.WhileStmt = &ast.WhileStmt {
+                .cond = &ast.Expr {
+                    .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
+                        .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+                        .op = ast.BinOp.Gt,
+                        .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 0}},.location = nolocation()},
                     }},
-                }}},
+                    .location = nolocation()
+                },
+                .body = ast.Stmt {
+                    .stmt = ast.StmtInner {.BlockStmt = &[_]ast.Stmt {
+                        ast.Stmt {
+                            .stmt = ast.StmtInner {.ExprStmt = &ast.Expr {
+                                .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
+                                    .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+                                    .rhs = &ast.Expr {
+                                        .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
+                                            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+                                            .op = .Sub,
+                                            .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},.location = nolocation()},
+                                        }},
+                                        .location = nolocation()
+                                    },
+                                }},
+                                .location = nolocation()
+                            }},
+                            .location = nolocation()
+                        },
+                        ast.Stmt {
+                            .stmt = ast.StmtInner {.BlockStmt = &[_]ast.Stmt {
+                                ast.Stmt {
+                                    .stmt = ast.StmtInner {.BlockStmt = &[_]ast.Stmt {
+                                        ast.Stmt {.stmt = ast.StmtInner {.BreakStmt = {}},.location = nolocation()},
+                                    }},
+                                    .location = nolocation()
+                                },
+                            }},
+                            .location = nolocation()},
+                        ast.Stmt {
+                            .stmt = ast.StmtInner {.ExprStmt = &ast.Expr {
+                                .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
+                                    .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+                                    .rhs = &ast.Expr {
+                                        .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
+                                            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+                                            .op = .Sub,
+                                            .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},.location = nolocation()},
+                                        }},
+                                        .location = nolocation()
+                                    },
+                                }},
+                                .location = nolocation()
+                            }},
+                            .location = nolocation()
+                        },
+                    }},
+                    .location = nolocation()
+                },
             }},
-        }},
+            .location = nolocation()},
     }};
+
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
 
     // Evaluate statement to error for z
     try interpreter.evalProc(proc, &env);
@@ -493,42 +829,87 @@ test "continue works" {
     // Prepare procedure
     const proc: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
 
-        ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {&ast.Expr {.AssignExpr = ast.AssignExpr {
-            .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-            .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 10}}
-        }}}},
-        ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {&ast.Expr {.AssignExpr = ast.AssignExpr {
-            .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "y"}},
-            .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 0}}
-        }}}},
+        ast.Stmt {
+            .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {&ast.Expr {
+                .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
+                    .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+                    .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 10}},.location = nolocation()}
+                }},
+                .location = nolocation()
+            }}},
+            .location = nolocation()
+        },
+        ast.Stmt {
+            .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {&ast.Expr {
+                .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
+                    .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "y"}},.location = nolocation()},
+                    .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 0}},.location = nolocation()}
+                }},
+                .location = nolocation()
+            }}},
+            .location = nolocation()
+        },
 
-        ast.Stmt {.WhileStmt = &ast.WhileStmt {
-            .cond = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
-                .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-                .op = ast.BinOp.Gt,
-                .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 0}},
-            }},
-            .body = ast.Stmt {.BlockStmt = &[_]ast.Stmt {
-                ast.Stmt {.ExprStmt = &ast.Expr {.AssignExpr = ast.AssignExpr {
-                    .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-                    .rhs = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
-                        .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-                        .op = .Sub,
-                        .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 1}},
+        ast.Stmt {
+            .stmt = ast.StmtInner {.WhileStmt = &ast.WhileStmt {
+                .cond = &ast.Expr {
+                    .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
+                        .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+                        .op = ast.BinOp.Gt,
+                        .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 0}},.location = nolocation()},
                     }},
-                }}},
-                ast.Stmt {.ContinueStmt = {}},
-                ast.Stmt {.ExprStmt = &ast.Expr {.AssignExpr = ast.AssignExpr {
-                    .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "y"}},
-                    .rhs = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
-                        .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "y"}},
-                        .op = .Add,
-                        .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 1}},
+                    .location = nolocation()
+                },
+                .body = ast.Stmt {
+                    .stmt = ast.StmtInner {.BlockStmt = &[_]ast.Stmt {
+                        ast.Stmt {
+                            .stmt = ast.StmtInner {.ExprStmt = &ast.Expr {
+                                .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
+                                    .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+                                    .rhs = &ast.Expr {
+                                        .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
+                                            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+                                            .op = .Sub,
+                                            .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},.location = nolocation()},
+                                        }},
+                                        .location = nolocation()
+                                    },
+                                }},
+                                .location = nolocation()
+                            }},
+                            .location = nolocation()
+                        },
+                        ast.Stmt {.stmt = ast.StmtInner {.ContinueStmt = {}},.location = nolocation()},
+                        ast.Stmt {
+                            .stmt = ast.StmtInner {.ExprStmt = &ast.Expr {
+                                .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
+                                    .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "y"}},.location = nolocation()},
+                                    .rhs = &ast.Expr {
+                                        .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
+                                            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "y"}},.location = nolocation()},
+                                            .op = .Add,
+                                            .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},.location = nolocation()},
+                                        }},
+                                        .location = nolocation()
+                                    },
+                                }},
+                                .location = nolocation()
+                            }},
+                            .location = nolocation()
+                        },
                     }},
-                }}},
+                    .location = nolocation()
+                },
             }},
-        }},
+            .location = nolocation()
+        },
     }};
+
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
 
     // Evaluate statement to error for z
     try interpreter.evalProc(proc, &env);
@@ -546,46 +927,96 @@ test "continue in block works" {
     // Prepare procedure
     const proc: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
 
-        ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {&ast.Expr {.AssignExpr = ast.AssignExpr {
-            .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-            .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 10}}
-        }}}},
-        ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {&ast.Expr {.AssignExpr = ast.AssignExpr {
-            .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "y"}},
-            .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 0}}
-        }}}},
-
-        ast.Stmt {.WhileStmt = &ast.WhileStmt {
-            .cond = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
-                .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-                .op = ast.BinOp.Gt,
-                .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 0}},
-            }},
-            .body = ast.Stmt {.BlockStmt = &[_]ast.Stmt {
-                ast.Stmt {.ExprStmt = &ast.Expr {.AssignExpr = ast.AssignExpr {
-                    .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-                    .rhs = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
-                        .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-                        .op = .Sub,
-                        .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 1}},
-                    }},
-                }}},
-                ast.Stmt {.BlockStmt = &[_]ast.Stmt {
-                    ast.Stmt {.BlockStmt = &[_]ast.Stmt {
-                        ast.Stmt {.ContinueStmt = {}},
-                    }}
+        ast.Stmt {
+            .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {&ast.Expr {
+                .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
+                    .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+                    .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 10}},.location = nolocation()}
                 }},
-                ast.Stmt {.ExprStmt = &ast.Expr {.AssignExpr = ast.AssignExpr {
-                    .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "y"}},
-                    .rhs = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
-                        .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "y"}},
-                        .op = .Add,
-                        .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 1}},
+                .location = nolocation()
+            }}},
+            .location = nolocation()
+        },
+        ast.Stmt {
+            .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {&ast.Expr {
+                .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
+                    .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "y"}},.location = nolocation()},
+                    .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 0}},.location = nolocation()}
+                }},
+                .location = nolocation()
+            }}},
+            .location = nolocation()
+        },
+
+        ast.Stmt {
+            .stmt = ast.StmtInner {.WhileStmt = &ast.WhileStmt {
+                .cond = &ast.Expr {
+                    .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
+                        .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+                        .op = ast.BinOp.Gt,
+                        .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 0}},.location = nolocation()},
                     }},
-                }}},
+                    .location = nolocation()
+                },
+                .body = ast.Stmt {
+                    .stmt = ast.StmtInner {.BlockStmt = &[_]ast.Stmt {
+                        ast.Stmt {
+                            .stmt = ast.StmtInner {.ExprStmt = &ast.Expr {
+                                .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
+                                    .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+                                    .rhs = &ast.Expr {
+                                        .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
+                                            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+                                            .op = .Sub,
+                                            .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},.location = nolocation()},
+                                        }},
+                                        .location = nolocation()
+                                    },
+                                }},
+                                .location = nolocation()
+                            }},
+                            .location = nolocation()
+                        },
+                        ast.Stmt {
+                            .stmt = ast.StmtInner {.BlockStmt = &[_]ast.Stmt {
+                                ast.Stmt {
+                                    .stmt = ast.StmtInner {.BlockStmt = &[_]ast.Stmt {
+                                        ast.Stmt {.stmt = ast.StmtInner {.ContinueStmt = {}},.location = nolocation()},
+                                    }},
+                                    .location = nolocation()
+                                }
+                            }},
+                            .location = nolocation()
+                        },
+                        ast.Stmt {
+                            .stmt = ast.StmtInner {.ExprStmt = &ast.Expr {
+                                .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
+                                    .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "y"}},.location = nolocation()},
+                                    .rhs = &ast.Expr {
+                                        .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
+                                            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "y"}},.location = nolocation()},
+                                            .op = .Add,
+                                            .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},.location = nolocation()},
+                                        }},
+                                        .location = nolocation()
+                                    },
+                                }},
+                                .location = nolocation()}},
+                            .location = nolocation()
+                        },
+                    }},
+                    .location = nolocation()
+                },
             }},
-        }},
+            .location = nolocation()
+        },
     }};
+
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
 
     // Evaluate statement to error for z
     try interpreter.evalProc(proc, &env);
@@ -604,16 +1035,25 @@ test "break outside error" {
     // Prepare procedure
     const proc: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
 
-        ast.Stmt {.BlockStmt = &[_]ast.Stmt {
-            ast.Stmt {.BreakStmt = {}}
-        }}
+        ast.Stmt {
+            .stmt = ast.StmtInner {.BlockStmt = &[_]ast.Stmt {
+                ast.Stmt {.stmt = ast.StmtInner {.BreakStmt = {}},.location = nolocation()}
+            }},
+            .location = nolocation()
+        }
     }};
 
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
+
     // Evaluate statement to error for z
-    const res: interpreter.EvalError!void = interpreter.evalProc(proc, &env);
+    const res: interprtr.EvalError!void = interpreter.evalProc(proc, &env);
     try std.testing.expectEqualDeep(
         res,
-        interpreter.EvalError.UnexpectedBreak
+        interprtr.EvalError.UnexpectedBreak
     );
 }
 
@@ -624,14 +1064,20 @@ test "break outside error 2" {
 
     // Prepare procedure
     const proc: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
-        ast.Stmt {.BreakStmt = {}}
+        ast.Stmt {.stmt = ast.StmtInner {.BreakStmt = {}},.location = nolocation()}
     }};
 
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
+
     // Evaluate statement to error for z
-    const res: interpreter.EvalError!void = interpreter.evalProc(proc, &env);
+    const res: interprtr.EvalError!void = interpreter.evalProc(proc, &env);
     try std.testing.expectEqualDeep(
         res,
-        interpreter.EvalError.UnexpectedBreak
+        interprtr.EvalError.UnexpectedBreak
     );
 }
 
@@ -643,16 +1089,25 @@ test "continue outside error" {
     // Prepare procedure
     const proc: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
 
-        ast.Stmt {.BlockStmt = &[_]ast.Stmt {
-            ast.Stmt {.ContinueStmt = {}}
-        }}
+        ast.Stmt {
+            .stmt = ast.StmtInner {.BlockStmt = &[_]ast.Stmt {
+                ast.Stmt {.stmt = ast.StmtInner {.ContinueStmt = {}},.location = nolocation()}
+            }},
+            .location = nolocation()
+        }
     }};
 
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
+
     // Evaluate statement to error for z
-    const res: interpreter.EvalError!void = interpreter.evalProc(proc, &env);
+    const res: interprtr.EvalError!void = interpreter.evalProc(proc, &env);
     try std.testing.expectEqualDeep(
         res,
-        interpreter.EvalError.UnexpectedContinue
+        interprtr.EvalError.UnexpectedContinue
     );
 }
 
@@ -664,14 +1119,20 @@ test "continue outside error 2" {
 
     // Prepare procedure
     const proc: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
-        ast.Stmt {.ContinueStmt = {}}
+        ast.Stmt {.stmt = ast.StmtInner {.ContinueStmt = {}},.location = nolocation()}
     }};
 
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
+
     // Evaluate statement to error for z
-    const res: interpreter.EvalError!void = interpreter.evalProc(proc, &env);
+    const res: interprtr.EvalError!void = interpreter.evalProc(proc, &env);
     try std.testing.expectEqualDeep(
         res,
-        interpreter.EvalError.UnexpectedContinue
+        interprtr.EvalError.UnexpectedContinue
     );
 }
 
@@ -683,22 +1144,42 @@ test "comma declaration" {
     // Prepare procedure
     const proc: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
 
-        ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {
-            &ast.Expr {.AssignExpr = ast.AssignExpr {
-                .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-                .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 1}}
+        ast.Stmt {
+            .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {
+                &ast.Expr {
+                    .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
+                        .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+                        .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},.location = nolocation()}
+                    }},
+                    .location = nolocation()
+                },
+                &ast.Expr {
+                    .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
+                        .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "y"}},.location = nolocation()},
+                        .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 2}},.location = nolocation()}
+                    }},
+                    .location = nolocation()
+                },
+                &ast.Expr {
+                    .expr = ast.ExprInner {.Lval = ast.Lval {.Var = "z"}},
+                    .location = nolocation()
+                },
+                &ast.Expr {
+                    .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
+                        .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "w"}},.location = nolocation()},
+                        .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},.location = nolocation()}
+                    }},
+                    .location = nolocation()
+                },
             }},
-            &ast.Expr {.AssignExpr = ast.AssignExpr {
-                .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "y"}},
-                .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 2}}
-            }},
-            &ast.Expr {.Lval = ast.Lval {.Var = "z"}},
-            &ast.Expr {.AssignExpr = ast.AssignExpr {
-                .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "w"}},
-                .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 1}}
-            }},
-        }},
+            .location = nolocation()},
     }};
+
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
 
     // Evaluate procedure
     _ = try interpreter.evalProc(proc, &env);
@@ -716,28 +1197,46 @@ test "undefined variable in comma declaration" {
     // Prepare procedure
     const proc: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
 
-        ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {
-            &ast.Expr {.AssignExpr = ast.AssignExpr {
-                .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-                .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 1}}
+        ast.Stmt {
+            .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {
+                &ast.Expr {
+                    .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
+                        .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+                        .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},.location = nolocation()}
+                    }},
+                    .location = nolocation()
+                },
+                &ast.Expr {
+                    .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
+                        .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "y"}},.location = nolocation()},
+                        .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 2}},.location = nolocation()}
+                    }},
+                    .location = nolocation()
+                },
+                &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "z"}},.location = nolocation()},
+                &ast.Expr {
+                    .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
+                        .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "w"}},.location = nolocation()},
+                        .rhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "z"}},.location = nolocation()}
+                    }},
+                    .location = nolocation()
+                },
             }},
-            &ast.Expr {.AssignExpr = ast.AssignExpr {
-                .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "y"}},
-                .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 2}}
-            }},
-            &ast.Expr {.Lval = ast.Lval {.Var = "z"}},
-            &ast.Expr {.AssignExpr = ast.AssignExpr {
-                .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "w"}},
-                .rhs = &ast.Expr {.Lval = ast.Lval {.Var = "z"}}
-            }},
-        }},
+            .location = nolocation()
+        },
     }};
 
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
+
     // Evaluate statement to error for z
-    const res: interpreter.EvalError!void = interpreter.evalProc(proc, &env);
+    const res: interprtr.EvalError!void = interpreter.evalProc(proc, &env);
     try std.testing.expectEqualDeep(
         res,
-        interpreter.EvalError.UndefinedVariable
+        interprtr.EvalError.UndefinedVariable
     );
 }
 
@@ -751,17 +1250,31 @@ test "simple funcall" {
         .Callable = ast.Callable {
             .params = &[_] ast.Var {},
             .body = ast.Stmt {
-                .ReturnStmt = &ast.Expr {.Lit = ast.Lit {.Int = 1}},
-            },
+                .stmt = ast.StmtInner {
+                    .ReturnStmt = &ast.Expr {
+                        .expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},
+                        .location = nolocation()
+                    },
+                },
+                .location = nolocation()},
             .closure = &env,
         }
     }});
 
     // Prepare expression
-    const expr: ast.Expr = ast.Expr {.CallExpr = ast.CallExpr {
-        .id = &ast.Expr {.Lval = ast.Lval {.Var = "always1"}},
-        .args = &[_]*const ast.Expr {},
-    }};
+    const expr: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.CallExpr = ast.CallExpr {
+            .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "always1"}},.location = nolocation()},
+            .args = &[_]*const ast.Expr {},
+        }},
+        .location = nolocation()
+    };
+
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
 
     // Evaluate statement
     const r: ast.Lit = try interpreter.evalExpr(&expr, &env);
@@ -780,23 +1293,38 @@ test "simple funcall one param" {
         .Callable = ast.Callable {
             .params = &[_] ast.Var {"arg1"},
             .body = ast.Stmt {
-                .ReturnStmt = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
-                    .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "arg1"}},
-                    .op = .Mul,
-                    .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 2}}
-                }},
+                .stmt = ast.StmtInner {
+                    .ReturnStmt = &ast.Expr {
+                        .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
+                            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "arg1"}},.location = nolocation()},
+                            .op = .Mul,
+                            .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 2}},.location = nolocation()}
+                        }},
+                        .location = nolocation()
+                    },
+                },
+                .location = nolocation()
             },
             .closure = &env,
         }
     }});
 
     // Prepare expression
-    const expr: ast.Expr = ast.Expr {.CallExpr = ast.CallExpr {
-        .id = &ast.Expr {.Lval = ast.Lval {.Var = "double"}},
-        .args = &[_]*const ast.Expr {
-            &ast.Expr {.Lit = ast.Lit {.Int = 7}}
-        },
-    }};
+    const expr: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.CallExpr = ast.CallExpr {
+            .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "double"}},.location = nolocation()},
+            .args = &[_]*const ast.Expr {
+                &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 7}},.location = nolocation()}
+            },
+        }},
+        .location = nolocation()
+    };
+
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
 
     // Evaluate statement
     const r: ast.Lit = try interpreter.evalExpr(&expr, &env);
@@ -815,29 +1343,47 @@ test "simple funcall three params" {
         .Callable = ast.Callable {
             .params = &[_] ast.Var {"x", "y", "z"},
             .body = ast.Stmt {
-                .ReturnStmt = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
-                    .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-                    .op = .Add,
-                    .rhs = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
-                        .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "y"}},
-                        .op = .Add,
-                        .rhs = &ast.Expr {.Lval = ast.Lval {.Var = "z"}}
-                    }}
-                }},
+                .stmt = ast.StmtInner {
+                    .ReturnStmt = &ast.Expr {
+                        .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
+                            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+                            .op = .Add,
+                            .rhs = &ast.Expr {
+                                .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
+                                    .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "y"}},.location = nolocation()},
+                                    .op = .Add,
+                                    .rhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "z"}},.location = nolocation()}
+                                }},
+                                .location = nolocation()
+                            }
+                        }},
+                        .location = nolocation()
+                    },
+                },
+                .location = nolocation()
             },
             .closure = &env,
         }
     }});
 
     // Prepare expression
-    const expr: ast.Expr = ast.Expr {.CallExpr = ast.CallExpr {
-        .id = &ast.Expr {.Lval = ast.Lval {.Var = "sum"}},
-        .args = &[_]*const ast.Expr {
-            &ast.Expr {.Lit = ast.Lit {.Int = 7}},
-            &ast.Expr {.Lit = ast.Lit {.Int = 13}},
-            &ast.Expr {.Lit = ast.Lit {.Int = -5}},
-        },
-    }};
+    const expr: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.CallExpr = ast.CallExpr {
+            .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "sum"}},.location = nolocation()},
+            .args = &[_]*const ast.Expr {
+                &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 7}},.location = nolocation()},
+                &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 13}},.location = nolocation()},
+                &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = -5}},.location = nolocation()},
+            },
+        }},
+        .location = nolocation()
+    };
+
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
 
     // Evaluate statement
     const r: ast.Lit = try interpreter.evalExpr(&expr, &env);
@@ -856,17 +1402,29 @@ test "simple funcall no return" {
         .Callable = ast.Callable {
             .params = &[_] ast.Var {},
             .body = ast.Stmt {
-                .BlockStmt = &[_] ast.Stmt {},
+                .stmt = ast.StmtInner {
+                    .BlockStmt = &[_] ast.Stmt {},
+                },
+                .location = nolocation()
             },
             .closure = &env,
         }
     }});
 
     // Prepare expression
-    const expr: ast.Expr = ast.Expr {.CallExpr = ast.CallExpr {
-        .id = &ast.Expr {.Lval = ast.Lval {.Var = "voidfun"}},
-        .args = &[_]*const ast.Expr {},
-    }};
+    const expr: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.CallExpr = ast.CallExpr {
+            .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "voidfun"}},.location = nolocation()},
+            .args = &[_]*const ast.Expr {},
+        }},
+        .location = nolocation()
+    };
+
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
 
     // Evaluate statement
     const r: ast.Lit = try interpreter.evalExpr(&expr, &env);
@@ -889,23 +1447,37 @@ test "function closure works" {
         .Callable = ast.Callable {
             .params = &[_] ast.Var {"other"},
             .body = ast.Stmt {
-                .ReturnStmt = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
-                    .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "other"}},
-                    .op = .Mul,
-                    .rhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}}
-                }}
+                .stmt = ast.StmtInner {
+                    .ReturnStmt = &ast.Expr {
+                        .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
+                            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "other"}},.location = nolocation()},
+                            .op = .Mul,
+                            .rhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()}
+                        }},
+                        .location = nolocation()}
+                },
+                .location = nolocation()
             },
             .closure = &env,
         }
     }});
 
     // Prepare expression
-    const expr: ast.Expr = ast.Expr {.CallExpr = ast.CallExpr {
-        .id = &ast.Expr {.Lval = ast.Lval {.Var = "mulbyx"}},
-        .args = &[_]*const ast.Expr {
-            &ast.Expr {.Lit = ast.Lit {.Int = 3}}
-        },
-    }};
+    const expr: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.CallExpr = ast.CallExpr {
+            .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "mulbyx"}},.location = nolocation()},
+            .args = &[_]*const ast.Expr {
+                &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 3}},.location = nolocation()}
+            },
+        }},
+        .location = nolocation()
+    };
+
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
 
     // Evaluate statement
     const r: ast.Lit = try interpreter.evalExpr(&expr, &env);
@@ -928,23 +1500,38 @@ test "function closure works 2" {
         .Callable = ast.Callable {
             .params = &[_] ast.Var {"other"},
             .body = ast.Stmt {
-                .ReturnStmt = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
-                    .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "other"}},
-                    .op = .Mul,
-                    .rhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}}
-                }}
+                .stmt = ast.StmtInner {
+                    .ReturnStmt = &ast.Expr {
+                        .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
+                            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "other"}},.location = nolocation()},
+                            .op = .Mul,
+                            .rhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()}
+                        }},
+                        .location = nolocation()
+                    }
+                },
+                .location = nolocation()
             },
             .closure = &env,
         }
     }});
 
     // Prepare expression
-    const expr: ast.Expr = ast.Expr {.CallExpr = ast.CallExpr {
-        .id = &ast.Expr {.Lval = ast.Lval {.Var = "mulbyx"}},
-        .args = &[_]*const ast.Expr {
-            &ast.Expr {.Lval = ast.Lval {.Var = "x"}}
-        },
-    }};
+    const expr: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.CallExpr = ast.CallExpr {
+            .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "mulbyx"}},.location = nolocation()},
+            .args = &[_]*const ast.Expr {
+                &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()}
+            },
+        }},
+        .location = nolocation()
+    };
+
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
 
     // Evaluate statement
     const r: ast.Lit = try interpreter.evalExpr(&expr, &env);
@@ -967,24 +1554,39 @@ test "function argument shadow closure scope" {
         .Callable = ast.Callable {
             .params = &[_] ast.Var {"x", "x2"},
             .body = ast.Stmt {
-                .ReturnStmt = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
-                    .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-                    .op = .Mul,
-                    .rhs = &ast.Expr {.Lval = ast.Lval {.Var = "x2"}}
-                }}
+                .stmt = ast.StmtInner {
+                    .ReturnStmt = &ast.Expr {
+                        .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
+                            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+                            .op = .Mul,
+                            .rhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x2"}},.location = nolocation()}
+                        }},
+                        .location = nolocation()
+                    }
+                },
+                .location = nolocation()
             },
             .closure = &env,
         }
     }});
 
     // Prepare expression
-    const expr: ast.Expr = ast.Expr {.CallExpr = ast.CallExpr {
-        .id = &ast.Expr {.Lval = ast.Lval {.Var = "mul"}},
-        .args = &[_]*const ast.Expr {
-            &ast.Expr {.Lit = ast.Lit {.Int = 2}},
-            &ast.Expr {.Lval = ast.Lval {.Var = "x"}}
-        },
-    }};
+    const expr: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.CallExpr = ast.CallExpr {
+            .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "mul"}},.location = nolocation()},
+            .args = &[_]*const ast.Expr {
+                &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 2}},.location = nolocation()},
+                &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()}
+            },
+        }},
+        .location = nolocation()
+    };
+
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
 
     // Evaluate statement
     const r: ast.Lit = try interpreter.evalExpr(&expr, &env);
@@ -1007,25 +1609,51 @@ test "re-declaring outer variable in function local scope" {
         .Callable = ast.Callable {
             .params = &[_] ast.Var {},
             .body = ast.Stmt {
-                .BlockStmt = &[_]ast.Stmt {
-                    ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {
-                        &ast.Expr {.AssignExpr = ast.AssignExpr {
-                            .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-                            .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 3}}
-                        }}
-                    }},
-                    ast.Stmt {.ReturnStmt = &ast.Expr {.Lval = ast.Lval {.Var = "x"}}}
-                }
+                .stmt = ast.StmtInner {
+                    .BlockStmt = &[_]ast.Stmt {
+                        ast.Stmt {
+                            .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {
+                                &ast.Expr {
+                                    .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
+                                        .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+                                        .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 3}},.location = nolocation()}
+                                    }},
+                                    .location = nolocation()
+                                }
+                            }},
+                            .location = nolocation()
+                        },
+                        ast.Stmt {
+                            .stmt = ast.StmtInner {
+                                .ReturnStmt = &ast.Expr {
+                                    .expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},
+                                    .location = nolocation()
+                                }
+                            },
+                            .location = nolocation()
+                        }
+                    }
+                },
+                .location = nolocation()
             },
             .closure = &env,
         }
     }});
 
     // Prepare expression
-    const expr: ast.Expr = ast.Expr {.CallExpr = ast.CallExpr {
-        .id = &ast.Expr {.Lval = ast.Lval {.Var = "return3"}},
-        .args = &[_]*const ast.Expr {},
-    }};
+    const expr: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.CallExpr = ast.CallExpr {
+            .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "return3"}},.location = nolocation()},
+            .args = &[_]*const ast.Expr {},
+        }},
+        .location = nolocation()
+    };
+
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
 
     // Evaluate statement
     const r: ast.Lit = try interpreter.evalExpr(&expr, &env);
@@ -1044,24 +1672,39 @@ test "wrong argument count 1" {
     env.insert("dummyfun", venv.ObjectVal {.Var = ast.Lit {
         .Callable = ast.Callable {
             .params = &[_] ast.Var {},
-            .body = ast.Stmt {.ReturnStmt = &ast.Expr {.Lit = ast.Lit {.Void = {}}}},
+            .body = ast.Stmt {
+                .stmt = ast.StmtInner {.ReturnStmt = &ast.Expr {
+                    .expr = ast.ExprInner {.Lit = ast.Lit {.Void = {}}},
+                    .location = nolocation()
+                }},
+                .location = nolocation()
+            },
             .closure = &env,
         }
     }});
 
     // Prepare expression
-    const expr: ast.Expr = ast.Expr {.CallExpr = ast.CallExpr {
-        .id = &ast.Expr {.Lval = ast.Lval {.Var = "dummyfun"}},
-        .args = &[_]*const ast.Expr {
-            &ast.Expr {.Lit = ast.Lit {.Int = 1}}
-        },
-    }};
+    const expr: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.CallExpr = ast.CallExpr {
+            .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "dummyfun"}},.location = nolocation()},
+            .args = &[_]*const ast.Expr {
+                &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},.location = nolocation()}
+            },
+        }},
+        .location = nolocation()
+    };
+
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
 
     // Evaluate statement
-    const r: interpreter.EvalError!ast.Lit = interpreter.evalExpr(&expr, &env);
+    const r: interprtr.EvalError!ast.Lit = interpreter.evalExpr(&expr, &env);
 
     // Assert that function computes correctly
-    try std.testing.expectEqualDeep(interpreter.EvalError.WrongArgCount, r);
+    try std.testing.expectEqualDeep(interprtr.EvalError.WrongArgCount, r);
 }
 
 test "wrong argument count 2" {
@@ -1073,25 +1716,40 @@ test "wrong argument count 2" {
     env.insert("dummyfun", venv.ObjectVal {.Var = ast.Lit {
         .Callable = ast.Callable {
             .params = &[_] ast.Var { "x", "y", "z" },
-            .body = ast.Stmt {.ReturnStmt = &ast.Expr {.Lit = ast.Lit {.Void = {}}}},
+            .body = ast.Stmt {
+                .stmt = ast.StmtInner {.ReturnStmt = &ast.Expr {
+                    .expr = ast.ExprInner {.Lit = ast.Lit {.Void = {}}},
+                    .location = nolocation()
+                }},
+                .location = nolocation()
+            },
             .closure = &env,
         }
     }});
 
     // Prepare expression
-    const expr: ast.Expr = ast.Expr {.CallExpr = ast.CallExpr {
-        .id = &ast.Expr {.Lval = ast.Lval {.Var = "dummyfun"}},
-        .args = &[_]*const ast.Expr {
-            &ast.Expr {.Lit = ast.Lit {.Int = 1}},
-            &ast.Expr {.Lit = ast.Lit {.Int = 2}}
-        },
-    }};
+    const expr: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.CallExpr = ast.CallExpr {
+            .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "dummyfun"}},.location = nolocation()},
+            .args = &[_]*const ast.Expr {
+                &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},.location = nolocation()},
+                &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 2}},.location = nolocation()}
+            },
+        }},
+        .location = nolocation()
+    };
+
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
 
     // Evaluate statement
-    const r: interpreter.EvalError!ast.Lit = interpreter.evalExpr(&expr, &env);
+    const r: interprtr.EvalError!ast.Lit = interpreter.evalExpr(&expr, &env);
 
     // Assert that function computes correctly
-    try std.testing.expectEqualDeep(interpreter.EvalError.WrongArgCount, r);
+    try std.testing.expectEqualDeep(interprtr.EvalError.WrongArgCount, r);
 }
 
 test "recursion 1" {
@@ -1104,43 +1762,76 @@ test "recursion 1" {
         .Callable = ast.Callable {
             .params = &[_] ast.Var {"x"},
             .body = ast.Stmt {
-                .BlockStmt = &[_]ast.Stmt {
-                    ast.Stmt {.IfElseStmt = &ast.IfElseStmt {
-                        .cond = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
-                            .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-                            .op = .Eq,
-                            .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 1}},
-                        }},
-                        .ifStmt = ast.Stmt {.ReturnStmt = &ast.Expr {.Lit = ast.Lit {.Int = 1}}},
-                        .elseStmt = null,
-                    }},
-                    ast.Stmt {.ReturnStmt = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
-                        .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-                        .op = .Mul,
-                        .rhs = &ast.Expr {.CallExpr = ast.CallExpr {
-                            .id = &ast.Expr {.Lval = ast.Lval {.Var = "fac"}},
-                            .args = &[_]*const ast.Expr {
-                                &ast.Expr {.BinOpExpr = ast.BinOpExpr {
-                                    .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-                                    .op = .Sub,
-                                    .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 1}},
-                                }}
-                            }
-                        }}
-                    }}}
-                }
+                .stmt = ast.StmtInner {
+                    .BlockStmt = &[_]ast.Stmt {
+                        ast.Stmt {
+                            .stmt = ast.StmtInner {.IfElseStmt = &ast.IfElseStmt {
+                                .cond = &ast.Expr {
+                                    .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
+                                        .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+                                        .op = .Eq,
+                                        .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},.location = nolocation()},
+                                    }},
+                                    .location = nolocation()
+                                },
+                                .ifStmt = ast.Stmt {
+                                    .stmt = ast.StmtInner {.ReturnStmt = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},.location = nolocation()}},
+                                    .location = nolocation()
+                                },
+                                .elseStmt = null,
+                            }},
+                            .location = nolocation()
+                        },
+                        ast.Stmt {
+                            .stmt = ast.StmtInner {.ReturnStmt = &ast.Expr {
+                                .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
+                                    .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+                                    .op = .Mul,
+                                    .rhs = &ast.Expr {
+                                        .expr = ast.ExprInner {.CallExpr = ast.CallExpr {
+                                            .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "fac"}},.location = nolocation()},
+                                            .args = &[_]*const ast.Expr {
+                                                &ast.Expr {
+                                                    .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
+                                                        .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+                                                        .op = .Sub,
+                                                        .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},.location = nolocation()},
+                                                    }},
+                                                    .location = nolocation()
+                                                }
+                                            }
+                                        }},
+                                        .location = nolocation()
+                                    }
+                                }},
+                                .location = nolocation()
+                            }},
+                            .location = nolocation()
+                        }
+                    }
+                },
+                .location = nolocation()
             },
             .closure = &env,
         }
     }});
 
     // Prepare expression
-    const expr: ast.Expr = ast.Expr {.CallExpr = ast.CallExpr {
-        .id = &ast.Expr {.Lval = ast.Lval {.Var = "fac"}},
-        .args = &[_]*const ast.Expr {
-            &ast.Expr {.Lit = ast.Lit {.Int = 1}}
-        },
-    }};
+    const expr: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.CallExpr = ast.CallExpr {
+            .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "fac"}},.location = nolocation()},
+            .args = &[_]*const ast.Expr {
+                &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},.location = nolocation()}
+            },
+        }},
+        .location = nolocation()};
+
+
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
 
     // Evaluate statement
     const r: ast.Lit = try interpreter.evalExpr(&expr, &env);
@@ -1160,43 +1851,76 @@ test "recursion 2" {
         .Callable = ast.Callable {
             .params = &[_] ast.Var {"x"},
             .body = ast.Stmt {
-                .BlockStmt = &[_]ast.Stmt {
-                    ast.Stmt {.IfElseStmt = &ast.IfElseStmt {
-                        .cond = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
-                            .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-                            .op = .Eq,
-                            .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 1}},
-                        }},
-                        .ifStmt = ast.Stmt {.ReturnStmt = &ast.Expr {.Lit = ast.Lit {.Int = 1}}},
-                        .elseStmt = null,
-                    }},
-                    ast.Stmt {.ReturnStmt = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
-                        .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-                        .op = .Mul,
-                        .rhs = &ast.Expr {.CallExpr = ast.CallExpr {
-                            .id = &ast.Expr {.Lval = ast.Lval {.Var = "fac"}},
-                            .args = &[_]*const ast.Expr {
-                                &ast.Expr {.BinOpExpr = ast.BinOpExpr {
-                                    .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-                                    .op = .Sub,
-                                    .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 1}},
-                                }}
-                            }
-                        }}
-                    }}}
-                }
+                .stmt = ast.StmtInner {
+                    .BlockStmt = &[_]ast.Stmt {
+                        ast.Stmt {
+                            .stmt = ast.StmtInner {.IfElseStmt = &ast.IfElseStmt {
+                                .cond = &ast.Expr {
+                                    .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
+                                        .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+                                        .op = .Eq,
+                                        .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},.location = nolocation()},
+                                    }},
+                                    .location = nolocation()
+                                },
+                                .ifStmt = ast.Stmt {
+                                    .stmt = ast.StmtInner {.ReturnStmt = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},.location = nolocation()}},
+                                    .location = nolocation()
+                                },
+                                .elseStmt = null,
+                            }},
+                            .location = nolocation()
+                        },
+                        ast.Stmt {
+                            .stmt = ast.StmtInner {.ReturnStmt = &ast.Expr {
+                                .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
+                                    .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+                                    .op = .Mul,
+                                    .rhs = &ast.Expr {
+                                        .expr = ast.ExprInner {.CallExpr = ast.CallExpr {
+                                            .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "fac"}},.location = nolocation()},
+                                            .args = &[_]*const ast.Expr {
+                                                &ast.Expr {
+                                                    .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
+                                                        .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+                                                        .op = .Sub,
+                                                        .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},.location = nolocation()},
+                                                    }},
+                                                    .location = nolocation()
+                                                }
+                                            }
+                                        }},
+                                        .location = nolocation()
+                                    }
+                                }},
+                                .location = nolocation()
+                            }},
+                            .location = nolocation()
+                        }
+                    }
+                },
+                .location = nolocation()
             },
             .closure = &env,
         }
     }});
 
     // Prepare expression
-    const expr: ast.Expr = ast.Expr {.CallExpr = ast.CallExpr {
-        .id = &ast.Expr {.Lval = ast.Lval {.Var = "fac"}},
-        .args = &[_]*const ast.Expr {
-            &ast.Expr {.Lit = ast.Lit {.Int = 4}}
-        },
-    }};
+    const expr: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.CallExpr = ast.CallExpr {
+            .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "fac"}},.location = nolocation()},
+            .args = &[_]*const ast.Expr {
+                &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 4}},.location = nolocation()}
+            },
+        }},
+        .location = nolocation()
+    };
+
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
 
     // Evaluate statement
     const r: ast.Lit = try interpreter.evalExpr(&expr, &env);
@@ -1214,32 +1938,59 @@ test "mutual recursion" {
     env.insert("even", venv.ObjectVal {.Var = ast.Lit {
         .Callable = ast.Callable {
             .params = &[_] ast.Var {"x"},
-            .body = ast.Stmt {.IfElseStmt = &ast.IfElseStmt {
-                .cond = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
-                    .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-                    .op = .Eq,
-                    .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 0}},
+            .body = ast.Stmt {
+                .stmt = ast.StmtInner {.IfElseStmt = &ast.IfElseStmt {
+                    .cond = &ast.Expr {
+                        .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
+                            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+                            .op = .Eq,
+                            .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 0}},.location = nolocation()},
+                        }},
+                        .location = nolocation()
+                    },
+                    .ifStmt = ast.Stmt {
+                        .stmt = ast.StmtInner {.ReturnStmt = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Bool = true}},.location = nolocation()}},
+                        .location = nolocation()
+                    },
+                    .elseStmt = ast.Stmt {
+                        .stmt = ast.StmtInner { .IfElseStmt = &ast.IfElseStmt {
+                            .cond = &ast.Expr {
+                                .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
+                                    .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+                                    .op = .Gt,
+                                    .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 0}},.location = nolocation()},
+                                }},
+                                .location = nolocation()
+                            },
+                            .ifStmt = ast.Stmt {
+                                .stmt = ast.StmtInner {.ReturnStmt = &ast.Expr {
+                                    .expr = ast.ExprInner {.CallExpr = ast.CallExpr {
+                                        .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "odd"}},.location = nolocation()},
+                                        .args = &[_]*const ast.Expr {
+                                            &ast.Expr {
+                                                .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
+                                                    .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+                                                    .op = .Sub,
+                                                    .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},.location = nolocation()}
+                                                }},
+                                                .location = nolocation()
+                                            }
+                                        }
+                                    }},
+                                    .location = nolocation()
+                                }},
+                                .location = nolocation()
+                            },
+                            .elseStmt = ast.Stmt {
+                                .stmt = ast.StmtInner {.ReturnStmt = &ast.Expr {.expr = ast.ExprInner { .Lit = ast.Lit {.Bool = false}},.location = nolocation()}},
+                                .location = nolocation()
+                            }
+                        }},
+                        .location = nolocation()
+                    },
                 }},
-                .ifStmt = ast.Stmt {.ReturnStmt = &ast.Expr {.Lit = ast.Lit {.Bool = true}}},
-                .elseStmt = ast.Stmt { .IfElseStmt = &ast.IfElseStmt {
-                    .cond = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
-                        .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-                        .op = .Gt,
-                        .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 0}},
-                    }},
-                    .ifStmt = ast.Stmt {.ReturnStmt = &ast.Expr {.CallExpr = ast.CallExpr {
-                        .id = &ast.Expr {.Lval = ast.Lval {.Var = "odd"}},
-                        .args = &[_]*const ast.Expr {
-                            &ast.Expr {.BinOpExpr = ast.BinOpExpr {
-                                .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-                                .op = .Sub,
-                                .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 1}}
-                            }}
-                        }
-                    }}},
-                    .elseStmt = ast.Stmt {.ReturnStmt = &ast.Expr { .Lit = ast.Lit {.Bool = false}}}
-                }},
-            }},
+                .location = nolocation()
+            },
             .closure = &env,
         }
     }});
@@ -1247,64 +1998,112 @@ test "mutual recursion" {
     env.insert("odd", venv.ObjectVal {.Var = ast.Lit {
         .Callable = ast.Callable {
             .params = &[_] ast.Var {"x"},
-            .body = ast.Stmt {.IfElseStmt = &ast.IfElseStmt {
-                .cond = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
-                    .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-                    .op = .Eq,
-                    .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 1}},
+            .body = ast.Stmt {
+                .stmt = ast.StmtInner {.IfElseStmt = &ast.IfElseStmt {
+                    .cond = &ast.Expr {
+                        .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
+                            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+                            .op = .Eq,
+                            .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},.location = nolocation()},
+                        }},
+                        .location = nolocation()
+                    },
+                    .ifStmt = ast.Stmt {
+                        .stmt = ast.StmtInner {.ReturnStmt = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Bool = true}},.location = nolocation()}},
+                        .location = nolocation()
+                    },
+                    .elseStmt = ast.Stmt {
+                        .stmt = ast.StmtInner { .IfElseStmt = &ast.IfElseStmt {
+                            .cond = &ast.Expr {
+                                .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
+                                    .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+                                    .op = .Gt,
+                                    .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},.location = nolocation()},
+                                }},
+                                .location = nolocation()
+                            },
+                            .ifStmt = ast.Stmt {
+                                .stmt = ast.StmtInner {.ReturnStmt = &ast.Expr {
+                                    .expr = ast.ExprInner {.CallExpr = ast.CallExpr {
+                                        .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "even"}},.location = nolocation()},
+                                        .args = &[_]*const ast.Expr {
+                                            &ast.Expr {
+                                                .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
+                                                    .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+                                                    .op = .Sub,
+                                                    .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},.location = nolocation()}
+                                                }},
+                                                .location = nolocation()
+                                            }
+                                        }
+                                    }},
+                                    .location = nolocation()
+                                }},
+                                .location = nolocation()
+                            },
+                            .elseStmt = ast.Stmt {
+                                .stmt = ast.StmtInner {.ReturnStmt = &ast.Expr {
+                                    .expr = ast.ExprInner { .Lit = ast.Lit {.Bool = false}},
+                                    .location = nolocation()
+                                }},
+                                .location = nolocation()
+                            }
+                        }},
+                        .location = nolocation()
+                    },
                 }},
-                .ifStmt = ast.Stmt {.ReturnStmt = &ast.Expr {.Lit = ast.Lit {.Bool = true}}},
-                .elseStmt = ast.Stmt { .IfElseStmt = &ast.IfElseStmt {
-                    .cond = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
-                        .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-                        .op = .Gt,
-                        .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 1}},
-                    }},
-                    .ifStmt = ast.Stmt {.ReturnStmt = &ast.Expr {.CallExpr = ast.CallExpr {
-                        .id = &ast.Expr {.Lval = ast.Lval {.Var = "even"}},
-                        .args = &[_]*const ast.Expr {
-                            &ast.Expr {.BinOpExpr = ast.BinOpExpr {
-                                .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-                                .op = .Sub,
-                                .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 1}}
-                            }}
-                        }
-                    }}},
-                    .elseStmt = ast.Stmt {.ReturnStmt = &ast.Expr { .Lit = ast.Lit {.Bool = false}}}
-                }},
-            }},
+                .location = nolocation()
+            },
             .closure = &env,
         }
     }});
 
     // Prepare expressions
-    const expr1: ast.Expr = ast.Expr {.CallExpr = ast.CallExpr {
-        .id = &ast.Expr {.Lval = ast.Lval {.Var = "even"}},
-        .args = &[_]*const ast.Expr {
-            &ast.Expr {.Lit = ast.Lit {.Int = 4}}
-        },
-    }};
+    const expr1: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.CallExpr = ast.CallExpr {
+            .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "even"}},.location = nolocation()},
+            .args = &[_]*const ast.Expr {
+                &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 4}},.location = nolocation()}
+            },
+        }},
+        .location = nolocation()
+    };
 
-    const expr2: ast.Expr = ast.Expr {.CallExpr = ast.CallExpr {
-        .id = &ast.Expr {.Lval = ast.Lval {.Var = "even"}},
-        .args = &[_]*const ast.Expr {
-            &ast.Expr {.Lit = ast.Lit {.Int = 5}}
-        },
-    }};
+    const expr2: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.CallExpr = ast.CallExpr {
+            .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "even"}},.location = nolocation()},
+            .args = &[_]*const ast.Expr {
+                &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 5}},.location = nolocation()}
+            },
+        }},
+        .location = nolocation()
+    };
 
-    const expr3: ast.Expr = ast.Expr {.CallExpr = ast.CallExpr {
-        .id = &ast.Expr {.Lval = ast.Lval {.Var = "odd"}},
-        .args = &[_]*const ast.Expr {
-            &ast.Expr {.Lit = ast.Lit {.Int = 5}}
-        },
-    }};
+    const expr3: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.CallExpr = ast.CallExpr {
+            .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "odd"}},.location = nolocation()},
+            .args = &[_]*const ast.Expr {
+                &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 5}},.location = nolocation()}
+            },
+        }},
+        .location = nolocation()
+    };
 
-    const expr4: ast.Expr = ast.Expr {.CallExpr = ast.CallExpr {
-        .id = &ast.Expr {.Lval = ast.Lval {.Var = "odd"}},
-        .args = &[_]*const ast.Expr {
-            &ast.Expr {.Lit = ast.Lit {.Int = 4}}
-        },
-    }};
+    const expr4: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.CallExpr = ast.CallExpr {
+            .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "odd"}},.location = nolocation()},
+            .args = &[_]*const ast.Expr {
+                &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 4}},.location = nolocation()}
+            },
+        }},
+        .location = nolocation()
+    };
+
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
 
     // Assert that function computes correctly
     try std.testing.expectEqualDeep(ast.Lit {.Bool = true}, try interpreter.evalExpr(&expr1, &env));
@@ -1323,17 +2122,38 @@ test "function definition" {
     env.insert("dummyfun", venv.ObjectVal {.Var = ast.Lit {
         .Callable = ast.Callable {
             .params = &[_] ast.Var {},
-            .body = ast.Stmt {.ReturnStmt = &ast.Expr {.Lit = ast.Lit {.Void = {}}}},
+            .body = ast.Stmt {
+                .stmt = ast.StmtInner {.ReturnStmt = &ast.Expr {
+                    .expr = ast.ExprInner {.Lit = ast.Lit {.Void = {}}},
+                    .location = nolocation()
+                }},
+                .location = nolocation()
+            },
             .closure = &env,
         }
     }});
 
     // Prepare expression
-    const stmt: ast.Stmt = ast.Stmt {.FunDefStmt = &ast.FunDefStmt {
-        .id = "last",
-        .params = &[_]ast.Var {"x", "y", "z"},
-        .body = ast.Stmt {.ReturnStmt = &ast.Expr {.Lval = ast.Lval {.Var = "z"}}}
-    }};
+    const stmt: ast.Stmt = ast.Stmt {
+        .stmt = ast.StmtInner {.FunDefStmt = &ast.FunDefStmt {
+            .id = "last",
+            .params = &[_]ast.Var {"x", "y", "z"},
+            .body = ast.Stmt {
+                .stmt = ast.StmtInner {.ReturnStmt = &ast.Expr {
+                    .expr = ast.ExprInner {.Lval = ast.Lval {.Var = "z"}},
+                    .location = nolocation()
+                }},
+                .location = nolocation()
+            }
+        }},
+        .location = nolocation()
+    };
+
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
 
     // Evaluate statement
     _ = try interpreter.evalStmt(stmt, &env);
@@ -1343,7 +2163,13 @@ test "function definition" {
         venv.ObjectVal {.Var = ast.Lit {
             .Callable = ast.Callable {
                 .params = &[_] ast.Var {"x", "y", "z"},
-                .body = ast.Stmt {.ReturnStmt = &ast.Expr {.Lval = ast.Lval {.Var = "z"}}},
+                .body = ast.Stmt {
+                    .stmt = ast.StmtInner {.ReturnStmt = &ast.Expr {
+                        .expr = ast.ExprInner {.Lval = ast.Lval {.Var = "z"}},
+                        .location = nolocation()
+                    }},
+                    .location = nolocation()
+                },
                 .closure = &env,
             }
         }},
@@ -1359,41 +2185,76 @@ test "closure test" {
     // Prepare procedure
     const proc: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
 
-        ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {
-            &ast.Expr {.AssignExpr = ast.AssignExpr {
-                .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-                .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 7}},
-            }}
-        }},
-
-        ast.Stmt {.FunDefStmt = &ast.FunDefStmt {
-            .id = "f",
-            .params = &[_]ast.Var {"n"},
-            .body = ast.Stmt {.ReturnStmt = &ast.Expr {.BinOpExpr = ast.BinOpExpr {
-                .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-                .op = .Mul,
-                .rhs = &ast.Expr {.Lval = ast.Lval {.Var = "n"}}
-            }}}
-        }},
-
-        ast.Stmt {.ExprStmt = &ast.Expr {.AssignExpr = ast.AssignExpr {
-                .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-                .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 13}},
-            }}
+        ast.Stmt {
+            .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {
+                &ast.Expr {
+                    .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
+                        .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+                        .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 7}},.location = nolocation()},
+                    }},
+                    .location = nolocation()
+                }
+            }},
+            .location = nolocation()
         },
 
-        ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {
-            &ast.Expr {.AssignExpr = ast.AssignExpr {
-                .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "y"}},
-                .rhs = &ast.Expr {.CallExpr = ast.CallExpr {
-                    .id = &ast.Expr {.Lval = ast.Lval {.Var = "f"}},
-                    .args = &[_]*const ast.Expr {
-                        &ast.Expr {.Lit = ast.Lit {.Int = 2}}
-                    }
+        ast.Stmt {
+            .stmt = ast.StmtInner {.FunDefStmt = &ast.FunDefStmt {
+                .id = "f",
+                .params = &[_]ast.Var {"n"},
+                .body = ast.Stmt {
+                    .stmt = ast.StmtInner {.ReturnStmt = &ast.Expr {
+                        .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
+                            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+                            .op = .Mul,
+                            .rhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "n"}},.location = nolocation()}
+                        }},
+                        .location = nolocation()
+                    }},
+                    .location = nolocation()
+                }
+            }},
+            .location = nolocation()
+        },
+
+        ast.Stmt {
+            .stmt = ast.StmtInner {.ExprStmt = &ast.Expr {
+                .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
+                    .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+                    .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 13}},.location = nolocation()},
                 }},
-            }}
-        }},
+                .location = nolocation()
+            }},
+            .location = nolocation()
+        },
+
+        ast.Stmt {
+            .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {
+                &ast.Expr {
+                    .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
+                        .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "y"}},.location = nolocation()},
+                        .rhs = &ast.Expr {
+                            .expr = ast.ExprInner {.CallExpr = ast.CallExpr {
+                                .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "f"}},.location = nolocation()},
+                                .args = &[_]*const ast.Expr {
+                                    &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 2}},.location = nolocation()}
+                                }
+                            }},
+                            .location = nolocation()
+                        },
+                    }},
+                    .location = nolocation()
+                }
+            }},
+            .location = nolocation()
+        },
     }};
+
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
 
     // Make sure that y is set with updated x
     _ = try interpreter.evalProc(proc, &env);
@@ -1411,12 +2272,18 @@ test "make statement test" {
     // Prepare procedure
     const proc: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
 
-        ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {
-            &ast.Expr {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
-                .id = &ast.Expr {.Lval = ast.Lval {.Var = "lst"}},
-                .idx = &ast.Expr {.Lit = ast.Lit {.Int = 4}}
-            }}},
-        }},
+        ast.Stmt {
+            .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {
+                &ast.Expr {
+                    .expr = ast.ExprInner {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
+                        .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "lst"}},.location = nolocation()},
+                        .idx = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 4}},.location = nolocation()}
+                    }}},
+                    .location = nolocation()
+                },
+            }},
+            .location = nolocation()
+        },
 
     }};
 
@@ -1430,6 +2297,12 @@ test "make statement test" {
         .len = 4,
         .items = items
     };
+
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
 
     // Make sure that y is set with updated x
     _ = try interpreter.evalProc(proc, &env);
@@ -1447,16 +2320,25 @@ test "multi make statement test" {
     // Prepare procedure
     const proc: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
 
-        ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {
-            &ast.Expr {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
-                .id = &ast.Expr {.Lval = ast.Lval {.Var = "list"}},
-                .idx = &ast.Expr {.Lit = ast.Lit {.Int = 1}}
-            }}},
-            &ast.Expr {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
-                .id = &ast.Expr {.Lval = ast.Lval {.Var = "otherlist"}},
-                .idx = &ast.Expr {.Lit = ast.Lit {.Int = 7}}
-            }}},
-        }},
+        ast.Stmt {
+            .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {
+                &ast.Expr {
+                    .expr = ast.ExprInner {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
+                        .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "list"}},.location = nolocation()},
+                        .idx = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},.location = nolocation()}
+                    }}},
+                    .location = nolocation()
+                },
+                &ast.Expr {
+                    .expr = ast.ExprInner {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
+                        .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "otherlist"}},.location = nolocation()},
+                        .idx = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 7}},.location = nolocation()}
+                    }}},
+                    .location = nolocation()
+                },
+            }},
+            .location = nolocation()
+        },
 
     }};
 
@@ -1482,6 +2364,12 @@ test "multi make statement test" {
         .items = items2
     };
 
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
+
     // Make sure that y is set with updated x
     _ = try interpreter.evalProc(proc, &env);
     try std.testing.expectEqualDeep(
@@ -1503,23 +2391,37 @@ test "list mutation" {
     // Prepare procedure
     const proc: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
 
-        ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {
-            &ast.Expr {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
-                .id = &ast.Expr {.Lval = ast.Lval {.Var = "lst"}},
-                .idx = &ast.Expr {.Lit = ast.Lit {.Int = 3}}
-            }}}
-        }},
+        ast.Stmt {
+            .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {
+                &ast.Expr {
+                    .expr = ast.ExprInner {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
+                        .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "lst"}},.location = nolocation()},
+                        .idx = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 3}},.location = nolocation()}
+                    }}},
+                    .location = nolocation()
+                }
+            }},
+            .location = nolocation()
+        },
 
-        ast.Stmt {.ExprStmt = &ast.Expr {
-            .AssignExpr = ast.AssignExpr {
-                .lhs = &ast.Expr {.Lval = ast.Lval {
-                    .ListIndex = ast.ListIndex {
-                        .id = &ast.Expr {.Lval = ast.Lval {.Var = "lst"}},
-                        .idx = &ast.Expr {.Lit = ast.Lit {.Int = 1}}
-                    }
+        ast.Stmt {
+            .stmt = ast.StmtInner {.ExprStmt = &ast.Expr {
+                .expr = ast.ExprInner {
+                .AssignExpr = ast.AssignExpr {
+                    .lhs = &ast.Expr {
+                        .expr = ast.ExprInner {.Lval = ast.Lval {
+                            .ListIndex = ast.ListIndex {
+                                .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "lst"}},.location = nolocation()},
+                                .idx = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},.location = nolocation()}
+                            }
+                        }},
+                        .location = nolocation()
+                    },
+                    .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Bool = true}},.location = nolocation()}
                 }},
-                .rhs = &ast.Expr {.Lit = ast.Lit {.Bool = true}}
-            }}
+                .location = nolocation()
+            }},
+            .location = nolocation()
         }
 
     }};
@@ -1535,6 +2437,12 @@ test "list mutation" {
         .items = items,
         .len = 3
     };
+
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
 
     // Make sure that y is set with updated x
     _ = try interpreter.evalProc(proc, &env);
@@ -1552,30 +2460,50 @@ test "list referencing" {
     // Prepare procedure
     const proc: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
 
-        ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {
-            &ast.Expr {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
-                .id = &ast.Expr {.Lval = ast.Lval {.Var = "lst"}},
-                .idx = &ast.Expr {.Lit = ast.Lit {.Int = 3}}
-            }}}
-        }},
+        ast.Stmt {
+            .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {
+                &ast.Expr {
+                    .expr = ast.ExprInner {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
+                        .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "lst"}},.location = nolocation()},
+                        .idx = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 3}},.location = nolocation()}
+                    }}},
+                    .location = nolocation()
+                }
+            }},
+            .location = nolocation()
+        },
 
-        ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {
-            &ast.Expr {.AssignExpr = ast.AssignExpr {
-                .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "a"}},
-                .rhs = &ast.Expr {.Lval = ast.Lval {.Var = "lst"}}
-            }}
-        }},
+        ast.Stmt {
+            .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {
+                &ast.Expr {
+                    .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
+                        .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "a"}},.location = nolocation()},
+                        .rhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "lst"}},.location = nolocation()}
+                    }},
+                    .location = nolocation()
+                }
+            }},
+            .location = nolocation()
+        },
 
-        ast.Stmt {.ExprStmt = &ast.Expr {
-            .AssignExpr = ast.AssignExpr {
-                .lhs = &ast.Expr {.Lval = ast.Lval {
-                    .ListIndex = ast.ListIndex {
-                        .id = &ast.Expr {.Lval = ast.Lval {.Var = "lst"}},
-                        .idx = &ast.Expr {.Lit = ast.Lit {.Int = 1}}
-                    }
+        ast.Stmt {
+            .stmt = ast.StmtInner {.ExprStmt = &ast.Expr {
+                .expr = ast.ExprInner {
+                .AssignExpr = ast.AssignExpr {
+                    .lhs = &ast.Expr {
+                        .expr = ast.ExprInner {.Lval = ast.Lval {
+                            .ListIndex = ast.ListIndex {
+                                .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "lst"}},.location = nolocation()},
+                                .idx = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},.location = nolocation()}
+                            }
+                        }},
+                        .location = nolocation()
+                    },
+                    .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Bool = true}},.location = nolocation()}
                 }},
-                .rhs = &ast.Expr {.Lit = ast.Lit {.Bool = true}}
-            }}
+                .location = nolocation()
+            }},
+            .location = nolocation()
         }
 
     }};
@@ -1592,6 +2520,12 @@ test "list referencing" {
         .len = 3,
         .refs = 2
     };
+
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
 
     // Make sure that y is set with updated x
     _ = try interpreter.evalProc(proc, &env);
@@ -1609,32 +2543,51 @@ test "list referencing 2" {
     // Prepare procedure
     const proc: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
 
-        ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {
-            &ast.Expr {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
-                .id = &ast.Expr {.Lval = ast.Lval {.Var = "lst"}},
-                .idx = &ast.Expr {.Lit = ast.Lit {.Int = 3}}
-            }}}
-        }},
+        ast.Stmt {
+            .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {
+                &ast.Expr {
+                    .expr = ast.ExprInner {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
+                        .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "lst"}},.location = nolocation()},
+                        .idx = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 3}},.location = nolocation()}
+                    }}},
+                    .location = nolocation()
+                }
+            }},
+            .location = nolocation()
+        },
 
-        ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {
-            &ast.Expr {.AssignExpr = ast.AssignExpr {
-                .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "a"}},
-                .rhs = &ast.Expr {.Lval = ast.Lval {.Var = "lst"}}
-            }}
-        }},
+        ast.Stmt {
+            .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {
+                &ast.Expr {
+                    .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
+                        .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "a"}},.location = nolocation()},
+                        .rhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "lst"}},.location = nolocation()}
+                    }},
+                    .location = nolocation()
+                }
+            }},
+            .location = nolocation()
+        },
 
-        ast.Stmt {.ExprStmt = &ast.Expr {
-            .AssignExpr = ast.AssignExpr {
-                .lhs = &ast.Expr {.Lval = ast.Lval {
-                    .ListIndex = ast.ListIndex {
-                        .id = &ast.Expr {.Lval = ast.Lval {.Var = "a"}},
-                        .idx = &ast.Expr {.Lit = ast.Lit {.Int = 1}}
-                    }
+        ast.Stmt {
+            .stmt = ast.StmtInner {.ExprStmt = &ast.Expr {
+                .expr = ast.ExprInner {
+                .AssignExpr = ast.AssignExpr {
+                    .lhs = &ast.Expr {
+                        .expr = ast.ExprInner {.Lval = ast.Lval {
+                            .ListIndex = ast.ListIndex {
+                                .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "a"}},.location = nolocation()},
+                                .idx = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},.location = nolocation()}
+                            }
+                        }},
+                        .location = nolocation()
+                    },
+                    .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Bool = true}},.location = nolocation()}
                 }},
-                .rhs = &ast.Expr {.Lit = ast.Lit {.Bool = true}}
-            }}
+                .location = nolocation()
+            }},
+            .location = nolocation()
         }
-
     }};
 
     const items = try std.testing.allocator.alloc(ast.Lit, 3);
@@ -1649,6 +2602,12 @@ test "list referencing 2" {
         .len = 3,
         .refs = 2
     };
+
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
 
     // Make sure that y is set with updated x
     _ = try interpreter.evalProc(proc, &env);
@@ -1666,21 +2625,39 @@ test "list overwrite" {
     // Prepare procedure
     const proc: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
 
-        ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {
-            &ast.Expr {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
-                .id = &ast.Expr {.Lval = ast.Lval {.Var = "lst"}},
-                .idx = &ast.Expr {.Lit = ast.Lit {.Int = 3}}
-            }}}
-        }},
+        ast.Stmt {
+            .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {
+                &ast.Expr {
+                    .expr = ast.ExprInner {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
+                        .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "lst"}},.location = nolocation()},
+                        .idx = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 3}},.location = nolocation()}
+                    }}},
+                    .location = nolocation()
+                }
+            }},
+            .location = nolocation()
+        },
 
-        ast.Stmt {.ExprStmt = &ast.Expr {
-            .AssignExpr = ast.AssignExpr {
-                .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "lst"}},
-                .rhs = &ast.Expr {.Lit = ast.Lit {.Bool = true}}
-            }}
+        ast.Stmt {
+            .stmt = ast.StmtInner {.ExprStmt = &ast.Expr {
+                .expr = ast.ExprInner {
+                    .AssignExpr = ast.AssignExpr {
+                        .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "lst"}},.location = nolocation()},
+                        .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Bool = true}},.location = nolocation()}
+                    }
+                },
+                .location = nolocation()
+            }},
+            .location = nolocation()
         }
 
     }};
+
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
 
     // Make sure that y is set with updated x
     _ = try interpreter.evalProc(proc, &env);
@@ -1700,33 +2677,57 @@ test "list function mutation" {
     // Prepare procedure
     const proc: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
 
-        ast.Stmt {.FunDefStmt = &ast.FunDefStmt {
-            .id = "f",
-            .params = &[_]ast.Var {"lst"},
-            .body = ast.Stmt {.ReturnStmt = &ast.Expr {.AssignExpr = ast.AssignExpr {
-                .lhs = &ast.Expr {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
-                    .id = &ast.Expr {.Lval = ast.Lval {.Var = "lst"}},
-                    .idx = &ast.Expr {.Lit = ast.Lit {.Int = 1}}
-                }}},
-                .rhs = &ast.Expr {.Lit = ast.Lit {.Bool = true}}
-            }}
-        }}},
+        ast.Stmt {
+            .stmt = ast.StmtInner {.FunDefStmt = &ast.FunDefStmt {
+                .id = "f",
+                .params = &[_]ast.Var {"lst"},
+                .body = ast.Stmt {
+                    .stmt = ast.StmtInner {.ReturnStmt = &ast.Expr {
+                        .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
+                            .lhs = &ast.Expr {
+                                .expr = ast.ExprInner {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
+                                    .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "lst"}},.location = nolocation()},
+                                    .idx = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},.location = nolocation()}
+                                }}},
+                                .location = nolocation()
+                            },
+                            .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Bool = true}},.location = nolocation()}
+                        }},
+                        .location = nolocation()
+                    }
+                },
+                .location = nolocation()
+            }}},
+            .location = nolocation()
+        },
 
-        ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {
-            &ast.Expr {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
-                .id = &ast.Expr {.Lval = ast.Lval {.Var = "mylist"}},
-                .idx = &ast.Expr {.Lit = ast.Lit {.Int = 10}}
-            }}}
-        }},
-
-        ast.Stmt {.ExprStmt = &ast.Expr {
-            .CallExpr = ast.CallExpr {
-                .id = &ast.Expr {.Lval = ast.Lval {.Var = "f"}},
-                .args = &[_]*const ast.Expr {
-                    &ast.Expr {.Lval = ast.Lval {.Var = "mylist"}}
+        ast.Stmt {
+            .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {
+                &ast.Expr {
+                    .expr = ast.ExprInner {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
+                        .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "mylist"}},.location = nolocation()},
+                        .idx = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 10}},.location = nolocation()}
+                    }}},
+                    .location = nolocation()
                 }
-            }
-        }}
+            }},
+            .location = nolocation()
+        },
+
+        ast.Stmt {
+            .stmt = ast.StmtInner {.ExprStmt = &ast.Expr {
+                .expr = ast.ExprInner {
+                    .CallExpr = ast.CallExpr {
+                        .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "f"}},.location = nolocation()},
+                        .args = &[_]*const ast.Expr {
+                            &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "mylist"}},.location = nolocation()}
+                        }
+                    }
+                },
+                .location = nolocation()
+            }},
+            .location = nolocation()
+        }
     }};
 
     // Prepare expected list
@@ -1742,6 +2743,12 @@ test "list function mutation" {
         .len = 10,
         .refs = 1
     };
+
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
 
     // Make sure that y is set with updated x
     _ = try interpreter.evalProc(proc, &env);
@@ -1761,29 +2768,53 @@ test "list function return" {
     // Prepare procedure
     const proc: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
 
-        ast.Stmt {.FunDefStmt = &ast.FunDefStmt {
-            .id = "f",
-            .params = &[_]ast.Var {},
-            .body = ast.Stmt {.BlockStmt = &[_]ast.Stmt {
-                ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {
-                    &ast.Expr {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
-                        .id = &ast.Expr {.Lval = ast.Lval {.Var = "lst"}},
-                        .idx = &ast.Expr {.Lit = ast.Lit {.Int = 10}}
-                    }}}
-                }},
-                ast.Stmt {.ReturnStmt = &ast.Expr {.Lval = ast.Lval {.Var = "lst"}}}
-            }}
-        }},
+        ast.Stmt {
+            .stmt = ast.StmtInner {.FunDefStmt = &ast.FunDefStmt {
+                .id = "f",
+                .params = &[_]ast.Var {},
+                .body = ast.Stmt {
+                    .stmt = ast.StmtInner {.BlockStmt = &[_]ast.Stmt {
+                        ast.Stmt {
+                            .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {
+                                &ast.Expr {
+                                    .expr = ast.ExprInner {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
+                                        .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "lst"}},.location = nolocation()},
+                                        .idx = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 10}},.location = nolocation()}
+                                    }}},
+                                    .location = nolocation()
+                                }
+                            }},
+                            .location = nolocation()
+                        },
+                        ast.Stmt {
+                            .stmt = ast.StmtInner {.ReturnStmt = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "lst"}},.location = nolocation()}},
+                            .location = nolocation()
+                        }
+                    }},
+                    .location = nolocation()
+                }
+            }},
+            .location = nolocation()
+        },
 
-        ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {
-            &ast.Expr {.AssignExpr = ast.AssignExpr {
-                .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "mylist"}},
-                .rhs = &ast.Expr {.CallExpr = ast.CallExpr {
-                    .id = &ast.Expr {.Lval = ast.Lval {.Var = "f"}},
-                    .args = &[_]*const ast.Expr {}
-                }}
-            }}
-        }},
+        ast.Stmt {
+            .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {
+                &ast.Expr {
+                    .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
+                        .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "mylist"}},.location = nolocation()},
+                        .rhs = &ast.Expr {
+                            .expr = ast.ExprInner {.CallExpr = ast.CallExpr {
+                                .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "f"}},.location = nolocation()},
+                                .args = &[_]*const ast.Expr {}
+                            }},
+                            .location = nolocation()
+                        }
+                    }},
+                    .location = nolocation()
+                }
+            }},
+            .location = nolocation()
+        },
 
     }};
 
@@ -1799,6 +2830,12 @@ test "list function return" {
         .len = 10,
         .refs = 1
     };
+
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
 
     // Make sure that y is set with updated x
     _ = try interpreter.evalProc(proc, &env);
@@ -1818,39 +2855,75 @@ test "nested list function return" {
     // Prepare procedure
     const proc: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
 
-        ast.Stmt {.FunDefStmt = &ast.FunDefStmt {
-            .id = "f",
-            .params = &[_]ast.Var {},
-            .body = ast.Stmt {.BlockStmt = &[_]ast.Stmt {
-                ast.Stmt {.FunDefStmt = &ast.FunDefStmt {
-                    .id = "g",
-                    .params = &[_]ast.Var {},
-                    .body = ast.Stmt {.BlockStmt = &[_]ast.Stmt {
-                        ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {
-                            &ast.Expr {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
-                                .id = &ast.Expr {.Lval = ast.Lval {.Var = "lst"}},
-                                .idx = &ast.Expr {.Lit = ast.Lit {.Int = 10}}
-                            }}}
-                        }},
-                        ast.Stmt {.ReturnStmt = &ast.Expr {.Lval = ast.Lval {.Var = "lst"}}}
-                    }}
-                }},
-                ast.Stmt {.ReturnStmt = &ast.Expr{.CallExpr = ast.CallExpr {
-                    .id = &ast.Expr {.Lval = ast.Lval {.Var = "g"}},
-                    .args = &[_]*const ast.Expr {}
-                }}}
-            }}
-        }},
+        ast.Stmt {
+            .stmt = ast.StmtInner {.FunDefStmt = &ast.FunDefStmt {
+                .id = "f",
+                .params = &[_]ast.Var {},
+                .body = ast.Stmt {
+                    .stmt = ast.StmtInner {.BlockStmt = &[_]ast.Stmt {
+                        ast.Stmt {
+                            .stmt = ast.StmtInner {.FunDefStmt = &ast.FunDefStmt {
+                                .id = "g",
+                                .params = &[_]ast.Var {},
+                                .body = ast.Stmt {
+                                    .stmt = ast.StmtInner {.BlockStmt = &[_]ast.Stmt {
+                                        ast.Stmt {
+                                            .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {
+                                                &ast.Expr {
+                                                    .expr = ast.ExprInner {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
+                                                        .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "lst"}},.location = nolocation()},
+                                                        .idx = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 10}},.location = nolocation()}
+                                                    }}},
+                                                    .location = nolocation()
+                                                }
+                                            }},
+                                            .location = nolocation()
+                                        },
+                                        ast.Stmt {
+                                            .stmt = ast.StmtInner {.ReturnStmt = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "lst"}},.location = nolocation()}},
+                                            .location = nolocation()
+                                        }
+                                    }},
+                                    .location = nolocation()
+                                }
+                            }},
+                            .location = nolocation()
+                        },
+                        ast.Stmt {
+                            .stmt = ast.StmtInner {.ReturnStmt = &ast.Expr{
+                                .expr = ast.ExprInner {.CallExpr = ast.CallExpr {
+                                    .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "g"}},.location = nolocation()},
+                                    .args = &[_]*const ast.Expr {}
+                                }},
+                                .location = nolocation()
+                            }},
+                            .location = nolocation()
+                        }
+                    }},
+                    .location = nolocation()
+                }
+            }},
+            .location = nolocation()
+        },
 
-        ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {
-            &ast.Expr {.AssignExpr = ast.AssignExpr {
-                .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "mylist"}},
-                .rhs = &ast.Expr {.CallExpr = ast.CallExpr {
-                    .id = &ast.Expr {.Lval = ast.Lval {.Var = "f"}},
-                    .args = &[_]*const ast.Expr {}
-                }}
-            }}
-        }},
+        ast.Stmt {
+            .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {
+                &ast.Expr {
+                    .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
+                        .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "mylist"}},.location = nolocation()},
+                        .rhs = &ast.Expr {
+                            .expr = ast.ExprInner {.CallExpr = ast.CallExpr {
+                                .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "f"}},.location = nolocation()},
+                                .args = &[_]*const ast.Expr {}
+                            }},
+                            .location = nolocation()
+                        }
+                    }},
+                    .location = nolocation()
+                }
+            }},
+            .location = nolocation()
+        },
 
     }};
 
@@ -1866,6 +2939,12 @@ test "nested list function return" {
         .len = 10,
         .refs = 1
     };
+
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
 
     // Make sure that y is set with updated x
     _ = try interpreter.evalProc(proc, &env);
@@ -1884,22 +2963,37 @@ test "multi list declaration with initialization" {
     // Prepare procedure
     const proc: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
 
-        ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {
-            &ast.Expr {.AssignExpr = ast.AssignExpr {
-                .lhs = &ast.Expr {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
-                    .id = &ast.Expr {.Lval = ast.Lval {.Var = "lst"}},
-                    .idx = &ast.Expr {.Lit = ast.Lit {.Int = 1}}
-                }}},
-                .rhs = &ast.Expr {.Lit = ast.Lit {.Int = -1}}
+        ast.Stmt {
+            .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {
+                &ast.Expr {
+                    .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
+                        .lhs = &ast.Expr {
+                            .expr = ast.ExprInner {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
+                                .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "lst"}},.location = nolocation()},
+                                .idx = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},.location = nolocation()}
+                            }}},
+                            .location = nolocation()
+                        },
+                        .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = -1}},.location = nolocation()}
+                    }},
+                    .location = nolocation()
+                },
+                &ast.Expr {
+                    .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
+                        .lhs = &ast.Expr {
+                            .expr = ast.ExprInner {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
+                                .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "list"}},.location = nolocation()},
+                                .idx = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 5}},.location = nolocation()}
+                            }}},
+                            .location = nolocation()
+                        },
+                        .rhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "lst"}},.location = nolocation()}
+                    }},
+                    .location = nolocation()
+                },
             }},
-            &ast.Expr {.AssignExpr = ast.AssignExpr {
-                .lhs = &ast.Expr {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
-                    .id = &ast.Expr {.Lval = ast.Lval {.Var = "list"}},
-                    .idx = &ast.Expr {.Lit = ast.Lit {.Int = 5}}
-                }}},
-                .rhs = &ast.Expr {.Lval = ast.Lval {.Var = "lst"}}
-            }},
-        }}
+            .location = nolocation()
+        }
 
     }};
 
@@ -1927,6 +3021,12 @@ test "multi list declaration with initialization" {
         .len = 5,
         .refs = 1
     };
+
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
 
     // Make sure that y is set with updated x
     _ = try interpreter.evalProc(proc, &env);
@@ -1958,12 +3058,21 @@ test "list size" {
     }});
 
     // Prepare expression
-    const expr: ast.Expr = ast.Expr { .Lval = ast.Lval {
-        .PropertyAccess = ast.PropertyAccess {
-            .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "list"}},
-            .prop = &ast.Expr {.Lval = ast.Lval {.Var = "size"}}
-        }}
+    const expr: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner { .Lval = ast.Lval {
+            .PropertyAccess = ast.PropertyAccess {
+                .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "list"}},.location = nolocation()},
+                .prop = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "size"}},.location = nolocation()}
+            }}
+        },
+        .location = nolocation()
     };
+
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
 
     // Evaluate statement
     const r: ast.Lit = try interpreter.evalExpr(&expr, &env);
@@ -1990,18 +3099,27 @@ test "list invalid property" {
     }});
 
     // Prepare expression
-    const expr: ast.Expr = ast.Expr { .Lval = ast.Lval {
-        .PropertyAccess = ast.PropertyAccess {
-            .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "list"}},
-            .prop = &ast.Expr {.Lval = ast.Lval {.Var = "sz"}}
-        }}
+    const expr: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner { .Lval = ast.Lval {
+            .PropertyAccess = ast.PropertyAccess {
+                .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "list"}},.location = nolocation()},
+                .prop = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "sz"}},.location = nolocation()}
+            }}
+                               },
+        .location = nolocation()
     };
 
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
+
     // Evaluate statement
-    const r: interpreter.EvalError!ast.Lit = interpreter.evalExpr(&expr, &env);
+    const r: interprtr.EvalError!ast.Lit = interpreter.evalExpr(&expr, &env);
 
     // Assert that function computes correctly
-    try std.testing.expectEqualDeep(r, interpreter.EvalError.InvalidProperty);
+    try std.testing.expectEqualDeep(r, interprtr.EvalError.InvalidProperty);
 }
 
 test "property not on list" {
@@ -2015,18 +3133,27 @@ test "property not on list" {
     }});
 
     // Prepare expression
-    const expr: ast.Expr = ast.Expr { .Lval = ast.Lval {
-        .PropertyAccess = ast.PropertyAccess {
-            .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "var"}},
-            .prop = &ast.Expr {.Lval = ast.Lval {.Var = "size"}}
-        }}
+    const expr: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner { .Lval = ast.Lval {
+            .PropertyAccess = ast.PropertyAccess {
+                .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "var"}},.location = nolocation()},
+                .prop = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "size"}},.location = nolocation()}
+            }}
+                               },
+        .location = nolocation()
     };
 
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
+
     // Evaluate statement
-    const r: interpreter.EvalError!ast.Lit = interpreter.evalExpr(&expr, &env);
+    const r: interprtr.EvalError!ast.Lit = interpreter.evalExpr(&expr, &env);
 
     // Assert that function computes correctly
-    try std.testing.expectEqualDeep(r, interpreter.EvalError.InvalidProperty);
+    try std.testing.expectEqualDeep(r, interprtr.EvalError.InvalidProperty);
 }
 
 test "list overwrite with list" {
@@ -2037,32 +3164,57 @@ test "list overwrite with list" {
     // Prepare procedure
     const proc: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
 
-        ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {
-            &ast.Expr {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
-                .id = &ast.Expr {.Lval = ast.Lval {.Var = "list"}},
-                .idx = &ast.Expr {.Lit = ast.Lit {.Int = 1}}
-            }}}
-        }},
-
-        ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {
-            &ast.Expr {.AssignExpr = ast.AssignExpr {
-                .lhs = &ast.Expr {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
-                    .id = &ast.Expr {.Lval = ast.Lval {.Var = "lst"}},
-                    .idx = &ast.Expr {.Lit = ast.Lit {.Int = 1}}
-                }}},
-                .rhs = &ast.Expr {.Lit = ast.Lit {.Int = 3}}
-            }}}
+        ast.Stmt {
+            .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {
+                &ast.Expr {
+                    .expr = ast.ExprInner {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
+                        .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "list"}},.location = nolocation()},
+                        .idx = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},.location = nolocation()}
+                    }}},
+                    .location = nolocation()
+                }
+            }},
+            .location = nolocation()
         },
 
-        ast.Stmt {.ExprStmt = &ast.Expr {
-            .AssignExpr = ast.AssignExpr {
-                .lhs = &ast.Expr {.Lval = ast.Lval {
-                    .Var = "list"
-                }},
-                .rhs = &ast.Expr {.Lval = ast.Lval {
-                    .Var = "lst"
+        ast.Stmt {
+            .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {
+                &ast.Expr {
+                    .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
+                        .lhs = &ast.Expr {
+                            .expr = ast.ExprInner {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
+                                .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "lst"}},.location = nolocation()},
+                                .idx = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},.location = nolocation()}
+                            }}},
+                            .location = nolocation()
+                        },
+                        .rhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 3}},.location = nolocation()}
+                    }},
+                    .location = nolocation()
                 }}
-            }}
+            },
+            .location = nolocation()
+        },
+
+        ast.Stmt {
+            .stmt = ast.StmtInner {.ExprStmt = &ast.Expr {
+                .expr = ast.ExprInner { .AssignExpr = ast.AssignExpr {
+                    .lhs = &ast.Expr {
+                        .expr = ast.ExprInner {.Lval = ast.Lval {
+                            .Var = "list"
+                        }},
+                        .location = nolocation()
+                    },
+                    .rhs = &ast.Expr {
+                        .expr = ast.ExprInner {.Lval = ast.Lval {
+                            .Var = "lst"
+                        }},
+                        .location = nolocation()
+                    }
+                }},
+                .location = nolocation()
+            }},
+            .location = nolocation()
         }
 
     }};
@@ -2078,6 +3230,12 @@ test "list overwrite with list" {
         .len = 1,
         .refs = 2
     };
+
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
 
     // Make sure that y is set with updated x
     _ = try interpreter.evalProc(proc, &env);
@@ -2101,28 +3259,58 @@ test "list function return unused" {
     // Prepare procedure
     const proc: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
 
-        ast.Stmt {.FunDefStmt = &ast.FunDefStmt {
-            .id = "f",
-            .params = &[_]ast.Var {},
-            .body = ast.Stmt {.BlockStmt = &[_]ast.Stmt {
-                ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {
-                    &ast.Expr {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
-                        .id = &ast.Expr {.Lval = ast.Lval {.Var = "lst"}},
-                        .idx = &ast.Expr {.Lit = ast.Lit {.Int = 10}}
-                    }}}
-                }},
-                ast.Stmt {.ReturnStmt = &ast.Expr {.Lval = ast.Lval {.Var = "lst"}}}
-            }}
-        }},
+        ast.Stmt {
+            .stmt = ast.StmtInner {.FunDefStmt = &ast.FunDefStmt {
+                .id = "f",
+                .params = &[_]ast.Var {},
+                .body = ast.Stmt {
+                    .stmt = ast.StmtInner {.BlockStmt = &[_]ast.Stmt {
+                        ast.Stmt {
+                            .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {
+                                &ast.Expr {
+                                    .expr = ast.ExprInner {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
+                                        .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "lst"}},.location = nolocation()},
+                                        .idx = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 10}},.location = nolocation()}
+                                    }}},
+                                    .location = nolocation()
+                                }
+                            }},
+                            .location = nolocation()
+                        },
+                        ast.Stmt {
+                            .stmt = ast.StmtInner {.ReturnStmt = &ast.Expr {
+                                .expr = ast.ExprInner {.Lval = ast.Lval {.Var = "lst"}},
+                                .location = nolocation()
+                            }},
+                            .location = nolocation()
+                        }
+                    }},
+                    .location = nolocation()
+                }
+            }},
+            .location = nolocation()
+        },
 
-        ast.Stmt {.ExprStmt =
-            &ast.Expr {.CallExpr = ast.CallExpr {
-                .id = &ast.Expr {.Lval = ast.Lval {.Var = "f"}},
-                .args = &[_]*const ast.Expr {}
-            }}
+        ast.Stmt {
+            .stmt = ast.StmtInner {
+                .ExprStmt = &ast.Expr {
+                    .expr = ast.ExprInner {.CallExpr = ast.CallExpr {
+                        .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "f"}},.location = nolocation()},
+                        .args = &[_]*const ast.Expr {}
+                    }},
+                    .location = nolocation()
+                }
+            },
+            .location = nolocation()
         },
 
     }};
+
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
 
 
     // Make sure that y is set with updated x
@@ -2138,38 +3326,78 @@ test "nested list function return unused" {
     // Prepare procedure
     const proc: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
 
-        ast.Stmt {.FunDefStmt = &ast.FunDefStmt {
-            .id = "f",
-            .params = &[_]ast.Var {},
-            .body = ast.Stmt {.BlockStmt = &[_]ast.Stmt {
-                ast.Stmt {.FunDefStmt = &ast.FunDefStmt {
-                    .id = "g",
-                    .params = &[_]ast.Var {},
-                    .body = ast.Stmt {.BlockStmt = &[_]ast.Stmt {
-                        ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {
-                            &ast.Expr {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
-                                .id = &ast.Expr {.Lval = ast.Lval {.Var = "lst"}},
-                                .idx = &ast.Expr {.Lit = ast.Lit {.Int = 10}}
-                            }}}
-                        }},
-                        ast.Stmt {.ReturnStmt = &ast.Expr {.Lval = ast.Lval {.Var = "lst"}}}
-                    }}
-                }},
-                ast.Stmt {.ReturnStmt = &ast.Expr{.CallExpr = ast.CallExpr {
-                    .id = &ast.Expr {.Lval = ast.Lval {.Var = "g"}},
-                    .args = &[_]*const ast.Expr {}
-                }}}
-            }}
-        }},
+        ast.Stmt {
+            .stmt = ast.StmtInner {.FunDefStmt = &ast.FunDefStmt {
+                .id = "f",
+                .params = &[_]ast.Var {},
+                .body = ast.Stmt {
+                    .stmt = ast.StmtInner {.BlockStmt = &[_]ast.Stmt {
+                        ast.Stmt {
+                            .stmt = ast.StmtInner {.FunDefStmt = &ast.FunDefStmt {
+                                .id = "g",
+                                .params = &[_]ast.Var {},
+                                .body = ast.Stmt {
+                                    .stmt = ast.StmtInner {.BlockStmt = &[_]ast.Stmt {
+                                        ast.Stmt {
+                                            .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {
+                                                &ast.Expr {
+                                                    .expr = ast.ExprInner {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
+                                                        .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "lst"}},.location = nolocation()},
+                                                        .idx = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 10}},.location = nolocation()}
+                                                    }}},
+                                                    .location = nolocation()
+                                                }
+                                            }},
+                                            .location = nolocation()
+                                        },
+                                        ast.Stmt {
+                                            .stmt = ast.StmtInner {.ReturnStmt = &ast.Expr {
+                                                .expr = ast.ExprInner {.Lval = ast.Lval {.Var = "lst"}},
+                                                .location = nolocation()
+                                            }},
+                                            .location = nolocation()
+                                        }
+                                    }},
+                                    .location = nolocation()
+                                }
+                            }},
+                            .location = nolocation()
+                        },
+                        ast.Stmt {
+                            .stmt = ast.StmtInner {.ReturnStmt = &ast.Expr{
+                                .expr = ast.ExprInner {.CallExpr = ast.CallExpr {
+                                    .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "g"}},.location = nolocation()},
+                                    .args = &[_]*const ast.Expr {}
+                                }},
+                                .location = nolocation()
+                            }},
+                            .location = nolocation()
+                        }
+                    }},
+                    .location = nolocation()
+                }
+            }},
+            .location = nolocation()
+        },
 
-        ast.Stmt {.ExprStmt =
-            &ast.Expr {.CallExpr = ast.CallExpr {
-                .id = &ast.Expr {.Lval = ast.Lval {.Var = "f"}},
-                .args = &[_]*const ast.Expr {}
-            }}
+        ast.Stmt {
+            .stmt = ast.StmtInner {.ExprStmt = &ast.Expr {
+                .expr = ast.ExprInner {.CallExpr = ast.CallExpr {
+                    .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "f"}},.location = nolocation()},
+                    .args = &[_]*const ast.Expr {}
+                }},
+                .location = nolocation()
+            }},
+            .location = nolocation()
         },
 
     }};
+
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
 
     // Make sure that y is set with updated x
     _ = try interpreter.evalProc(proc, &env);
@@ -2184,52 +3412,95 @@ test "nested list function return assignexpr" {
     // Prepare procedure
     const proc: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
 
-        ast.Stmt {.FunDefStmt = &ast.FunDefStmt {
-            .id = "f",
-            .params = &[_]ast.Var {},
-            .body = ast.Stmt {.BlockStmt = &[_]ast.Stmt {
-                ast.Stmt {.FunDefStmt = &ast.FunDefStmt {
-                    .id = "g",
-                    .params = &[_]ast.Var {},
-                    .body = ast.Stmt {.BlockStmt = &[_]ast.Stmt {
-                        ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {
-                            &ast.Expr {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
-                                .id = &ast.Expr {.Lval = ast.Lval {.Var = "lst"}},
-                                .idx = &ast.Expr {.Lit = ast.Lit {.Int = 10}}
-                            }}},
+        ast.Stmt {
+            .stmt = ast.StmtInner {.FunDefStmt = &ast.FunDefStmt {
+                .id = "f",
+                .params = &[_]ast.Var {},
+                .body = ast.Stmt {
+                    .stmt = ast.StmtInner {.BlockStmt = &[_]ast.Stmt {
+                        ast.Stmt {
+                            .stmt = ast.StmtInner {.FunDefStmt = &ast.FunDefStmt {
+                                .id = "g",
+                                .params = &[_]ast.Var {},
+                                .body = ast.Stmt {
+                                    .stmt = ast.StmtInner {.BlockStmt = &[_]ast.Stmt {
+                                        ast.Stmt {
+                                            .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {
+                                                &ast.Expr {
+                                                    .expr = ast.ExprInner {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
+                                                        .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "lst"}},.location = nolocation()},
+                                                        .idx = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 10}},.location = nolocation()}
+                                                    }}},
+                                                    .location = nolocation()
+                                                },
 
-                            &ast.Expr {.Lval = ast.Lval {.Var = "var"}}
-                        }},
-                        ast.Stmt {.ReturnStmt = &ast.Expr {
-                            .AssignExpr = ast.AssignExpr {
-                                .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "var"}},
-                                .rhs = &ast.Expr {.Lval = ast.Lval {.Var = "lst"}}
-                            }
-                        }}
-                    }}
+                                                &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "var"}},.location = nolocation()}
+                                            }},
+                                            .location = nolocation()
+                                        },
+                                        ast.Stmt {
+                                            .stmt = ast.StmtInner {.ReturnStmt = &ast.Expr {
+                                                .expr = ast.ExprInner {
+                                                    .AssignExpr = ast.AssignExpr {
+                                                        .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "var"}},.location = nolocation()},
+                                                        .rhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "lst"}},.location = nolocation()}
+                                                    }
+                                                },
+                                                .location = nolocation()
+                                            }},
+                                            .location = nolocation()
+                                        }
+                                    }},
+                                    .location = nolocation()
+                                }
+                            }},
+                            .location = nolocation()
+                        },
+                        ast.Stmt {
+                            .stmt = ast.StmtInner {.ReturnStmt = &ast.Expr{
+                                .expr = ast.ExprInner {.CallExpr = ast.CallExpr {
+                                    .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "g"}},.location = nolocation()},
+                                    .args = &[_]*const ast.Expr {}
+                                }},
+                                .location = nolocation()
+                            }},
+                            .location = nolocation()
+                        }
+                    }},
+                    .location = nolocation()
+                }
+            }},
+            .location = nolocation()
+        },
+
+        ast.Stmt {
+            .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {
+                &ast.Expr {
+                    .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
+                        .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "mylist"}},.location = nolocation()},
+                        .rhs = &ast.Expr {
+                            .expr = ast.ExprInner {.CallExpr = ast.CallExpr {
+                                .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "f"}},.location = nolocation()},
+                                .args = &[_]*const ast.Expr {}
+                            }},
+                            .location = nolocation()
+                        }
+                    }},
+                    .location = nolocation()
+                }
+            }},
+            .location = nolocation()
+        },
+
+        ast.Stmt {
+            .stmt = ast.StmtInner {.ExprStmt = &ast.Expr {
+                .expr = ast.ExprInner {.CallExpr = ast.CallExpr {
+                    .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "f"}},.location = nolocation()},
+                    .args = &[_]*const ast.Expr {}
                 }},
-                ast.Stmt {.ReturnStmt = &ast.Expr{.CallExpr = ast.CallExpr {
-                    .id = &ast.Expr {.Lval = ast.Lval {.Var = "g"}},
-                    .args = &[_]*const ast.Expr {}
-                }}}
-            }}
-        }},
-
-        ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {
-            &ast.Expr {.AssignExpr = ast.AssignExpr {
-                .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "mylist"}},
-                .rhs = &ast.Expr {.CallExpr = ast.CallExpr {
-                    .id = &ast.Expr {.Lval = ast.Lval {.Var = "f"}},
-                    .args = &[_]*const ast.Expr {}
-                }}
-            }}
-        }},
-
-        ast.Stmt {.ExprStmt =
-            &ast.Expr {.CallExpr = ast.CallExpr {
-                .id = &ast.Expr {.Lval = ast.Lval {.Var = "f"}},
-                .args = &[_]*const ast.Expr {}
-            }}
+                .location = nolocation()
+            }},
+            .location = nolocation()
         },
 
     }};
@@ -2247,6 +3518,12 @@ test "nested list function return assignexpr" {
         .refs = 1
     };
 
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
+
     // Make sure that y is set with updated x
     _ = try interpreter.evalProc(proc, &env);
     try std.testing.expectEqualDeep(
@@ -2257,10 +3534,6 @@ test "nested list function return assignexpr" {
 
 test "list function return print statement" {
 
-    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
-    defer out.deinit();
-    interpreter.setWriter(&out.writer);
-
     // Prepare environment
     var env = venv.Env.new(std.testing.allocator);
     defer env.deinit();
@@ -2268,28 +3541,55 @@ test "list function return print statement" {
     // Prepare procedure
     const proc: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
 
-        ast.Stmt {.FunDefStmt = &ast.FunDefStmt {
-            .id = "f",
-            .params = &[_]ast.Var {},
-            .body = ast.Stmt {.BlockStmt = &[_]ast.Stmt {
-                ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {
-                    &ast.Expr {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
-                        .id = &ast.Expr {.Lval = ast.Lval {.Var = "lst"}},
-                        .idx = &ast.Expr {.Lit = ast.Lit {.Int = 10}}
-                    }}}
-                }},
-                ast.Stmt {.ReturnStmt = &ast.Expr {.Lval = ast.Lval {.Var = "lst"}}}
-            }}
-        }},
+        ast.Stmt {
+            .stmt = ast.StmtInner {.FunDefStmt = &ast.FunDefStmt {
+                .id = "f",
+                .params = &[_]ast.Var {},
+                .body = ast.Stmt {
+                    .stmt = ast.StmtInner {.BlockStmt = &[_]ast.Stmt {
+                        ast.Stmt {
+                            .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {
+                                &ast.Expr {
+                                    .expr = ast.ExprInner {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
+                                        .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "lst"}},.location = nolocation()},
+                                        .idx = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 10}},.location = nolocation()}
+                                    }}},
+                                    .location = nolocation()
+                                }
+                            }},
+                            .location = nolocation()
+                        },
+                        ast.Stmt {
+                            .stmt = ast.StmtInner {.ReturnStmt = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "lst"}},.location = nolocation()}},
+                            .location = nolocation()
+                        }
+                    }},
+                    .location = nolocation()
+                }
+            }},
+            .location = nolocation()
+        },
 
-        ast.Stmt {.PrintStmt = &[_]*const ast.Expr {
-            &ast.Expr {.CallExpr = ast.CallExpr {
-                .id = &ast.Expr {.Lval = ast.Lval {.Var = "f"}},
-                .args = &[_]*const ast.Expr {}
-            }}
-        }},
+        ast.Stmt {
+            .stmt = ast.StmtInner {.PrintStmt = &[_]*const ast.Expr {
+                &ast.Expr {
+                    .expr = ast.ExprInner {.CallExpr = ast.CallExpr {
+                        .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "f"}},.location = nolocation()},
+                        .args = &[_]*const ast.Expr {}
+                    }},
+                    .location = nolocation()
+                }
+            }},
+            .location = nolocation()
+        },
 
     }};
+
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
 
     // Make sure that y is set with updated x
     _ = try interpreter.evalProc(proc, &env);
@@ -2305,28 +3605,55 @@ test "immediate list function return" {
     // Prepare procedure
     const proc: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
 
-        ast.Stmt {.FunDefStmt = &ast.FunDefStmt {
-            .id = "f",
-            .params = &[_]ast.Var {},
-            .body = ast.Stmt {.ReturnStmt = &ast.Expr {.ListExpr = &[_]*const ast.Expr {
-                &ast.Expr {.Lit = ast.Lit {.Int = 1}}
-            }}}
-        }},
+        ast.Stmt {
+            .stmt = ast.StmtInner {.FunDefStmt = &ast.FunDefStmt {
+                .id = "f",
+                .params = &[_]ast.Var {},
+                .body = ast.Stmt {
+                    .stmt = ast.StmtInner {.ReturnStmt = &ast.Expr {
+                        .expr = ast.ExprInner {.ListExpr = &[_]*const ast.Expr {
+                            &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},.location = nolocation()}
+                        }},
+                        .location = nolocation()
+                    }},
+                    .location = nolocation()
+                }
+            }},
+            .location = nolocation()
+        },
 
-        ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {
-            &ast.Expr {.AssignExpr = ast.AssignExpr {
-                .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-                .rhs = &ast.Expr {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
-                    .idx = &ast.Expr {.Lit = ast.Lit {.Int = 0}},
-                    .id = &ast.Expr {.CallExpr = ast.CallExpr {
-                        .id = &ast.Expr {.Lval = ast.Lval {.Var = "f"}},
-                        .args = &[_]*const ast.Expr {}
-                    }}
-                }}}
-            }}
-        }},
+        ast.Stmt {
+            .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {
+                &ast.Expr {
+                    .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
+                        .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+                        .rhs = &ast.Expr {
+                            .expr = ast.ExprInner {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
+                                .idx = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 0}},.location = nolocation()},
+                                .id = &ast.Expr {
+                                    .expr = ast.ExprInner {.CallExpr = ast.CallExpr {
+                                        .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "f"}},.location = nolocation()},
+                                        .args = &[_]*const ast.Expr {}
+                                    }},
+                                    .location = nolocation()
+                                }
+                            }}},
+                            .location = nolocation()
+                        }
+                    }},
+                    .location = nolocation()
+                }
+            }},
+            .location = nolocation()
+        },
 
     }};
+
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
 
     // Evaluate procedure
     _ = try interpreter.evalProc(proc, &env);
@@ -2344,14 +3671,25 @@ test "declare list immediate" {
     // Prepare procedure
     const proc: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
 
-        ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {
-            &ast.Expr {.AssignExpr = ast.AssignExpr {
-                .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-                .rhs = &ast.Expr {.ListExpr = &[_]*const ast.Expr {
-                    &ast.Expr {.Lit = ast.Lit {.Int = 1}},
-                }}
-            }}
-        }},
+        ast.Stmt {
+            .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {
+                &ast.Expr {
+                    .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
+                        .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+                        .rhs = &ast.Expr {
+                            .expr = ast.ExprInner {.ListExpr = &[_]*const ast.Expr {
+                                &ast.Expr {
+                                    .expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},
+                                    .location = nolocation()
+                                },
+                            }},
+                            .location = nolocation()
+                        }
+                    }},
+                    .location = nolocation()}
+            }},
+            .location = nolocation()
+        },
 
     }};
 
@@ -2366,6 +3704,12 @@ test "declare list immediate" {
         .len = 1,
         .refs = 1
     };
+
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
 
     _ = try interpreter.evalProc(proc, &env);
 
@@ -2383,17 +3727,29 @@ test "declare list of list immediates" {
     // Prepare procedure
     const proc: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
 
-        ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {
-            &ast.Expr {.AssignExpr = ast.AssignExpr {
-                .lhs = &ast.Expr {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
-                    .id = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-                    .idx = &ast.Expr {.Lit = ast.Lit {.Int = 5}}
-                }}},
-                .rhs = &ast.Expr {.ListExpr = &[_]*const ast.Expr {
-                    &ast.Expr {.Lit = ast.Lit {.Int = 1}},
-                }}
-            }}
-        }},
+        ast.Stmt {
+            .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {
+                &ast.Expr {
+                    .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
+                        .lhs = &ast.Expr {
+                            .expr = ast.ExprInner {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
+                                .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+                                .idx = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 5}},.location = nolocation()}
+                            }}},
+                            .location = nolocation()
+                        },
+                        .rhs = &ast.Expr {
+                            .expr = ast.ExprInner {.ListExpr = &[_]*const ast.Expr {
+                                &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},.location = nolocation()},
+                            }},
+                            .location = nolocation()
+                        }
+                    }},
+                    .location = nolocation()
+                }
+            }},
+            .location = nolocation()
+        },
 
     }};
 
@@ -2418,6 +3774,12 @@ test "declare list of list immediates" {
 
     defer ptr.destroyAll(std.testing.allocator);
 
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
+
     _ = try interpreter.evalProc(proc, &env);
 
     try std.testing.expectEqualDeep(
@@ -2434,34 +3796,61 @@ test "list immediate to funcall" {
     // Prepare procedure
     const proc: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
 
-        ast.Stmt {.FunDefStmt = &ast.FunDefStmt {
-            .id = "f",
-            .params = &[_]ast.Var {"x"},
-            .body = ast.Stmt {.ReturnStmt = &ast.Expr {
-                .Lval = ast.Lval {.ListIndex = ast.ListIndex {
-                    .id = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-                    .idx = &ast.Expr {.Lit = ast.Lit {.Int = 0}}
-                }}
-            }}
-        }},
+        ast.Stmt {
+            .stmt = ast.StmtInner {.FunDefStmt = &ast.FunDefStmt {
+                .id = "f",
+                .params = &[_]ast.Var {"x"},
+                .body = ast.Stmt {
+                    .stmt = ast.StmtInner {.ReturnStmt = &ast.Expr {
+                        .expr = ast.ExprInner {
+                            .Lval = ast.Lval {.ListIndex = ast.ListIndex {
+                                .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+                                .idx = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 0}},.location = nolocation()}
+                            }}
+                        },
+                        .location = nolocation()
+                    }},
+                    .location = nolocation()
+                }
+            }},
+            .location = nolocation()
+        },
 
-        ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {
-            &ast.Expr {.AssignExpr = ast.AssignExpr {
-                .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-                .rhs = &ast.Expr {.CallExpr = ast.CallExpr {
-                    .id = &ast.Expr {.Lval = ast.Lval {.Var = "f"}},
-                    .args = &[_]*const ast.Expr {
-                        &ast.Expr {.ListExpr = &[_]*const ast.Expr {
-                            &ast.Expr {.Lit = ast.Lit {.Int = 9}},
-                            &ast.Expr {.Lit = ast.Lit {.Int = 8}},
-                            &ast.Expr {.Lit = ast.Lit {.Int = 7}},
-                        }}
-                    }
-                }}
-            }}
-        }},
+        ast.Stmt {
+            .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {
+                &ast.Expr {
+                    .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
+                        .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+                        .rhs = &ast.Expr {
+                            .expr = ast.ExprInner {.CallExpr = ast.CallExpr {
+                                .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "f"}},.location = nolocation()},
+                                .args = &[_]*const ast.Expr {
+                                    &ast.Expr {
+                                        .expr = ast.ExprInner {.ListExpr = &[_]*const ast.Expr {
+                                            &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 9}},.location = nolocation()},
+                                            &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 8}},.location = nolocation()},
+                                            &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 7}},.location = nolocation()},
+                                        }},
+                                        .location = nolocation()
+                                    }
+                                }
+                            }},
+                            .location = nolocation()
+                        }
+                    }},
+                    .location = nolocation()
+                }
+            }},
+            .location = nolocation()
+        },
 
     }};
+
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
 
     _ = try interpreter.evalProc(proc, &env);
 
@@ -2479,25 +3868,43 @@ test "return list immediate" {
     // Prepare procedure
     const proc: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
 
-        ast.Stmt {.FunDefStmt = &ast.FunDefStmt {
-            .id = "f",
-            .params = &[_]ast.Var {},
-            .body = ast.Stmt {.ReturnStmt = &ast.Expr {
-                .ListExpr = &[_]*const ast.Expr {
-                    &ast.Expr {.Lit = ast.Lit {.Int = -1}},
+        ast.Stmt {
+            .stmt = ast.StmtInner {.FunDefStmt = &ast.FunDefStmt {
+                .id = "f",
+                .params = &[_]ast.Var {},
+                .body = ast.Stmt {
+                    .stmt = ast.StmtInner {.ReturnStmt = &ast.Expr {
+                        .expr = ast.ExprInner {
+                            .ListExpr = &[_]*const ast.Expr {
+                                &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = -1}},.location = nolocation()},
+                            }
+                        },
+                        .location = nolocation()
+                    }},
+                    .location = nolocation()
                 }
-            }}
-        }},
+            }},
+            .location = nolocation()
+        },
 
-        ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {
-            &ast.Expr {.AssignExpr = ast.AssignExpr {
-                .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-                .rhs = &ast.Expr {.CallExpr = ast.CallExpr {
-                    .id = &ast.Expr {.Lval = ast.Lval {.Var = "f"}},
-                    .args = &[_]*const ast.Expr {}
-                }}
-            }}
-        }},
+        ast.Stmt {
+            .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {
+                &ast.Expr {
+                    .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
+                        .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+                        .rhs = &ast.Expr {
+                            .expr = ast.ExprInner {.CallExpr = ast.CallExpr {
+                                .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "f"}},.location = nolocation()},
+                                .args = &[_]*const ast.Expr {}
+                            }},
+                            .location = nolocation()
+                        }
+                    }},
+                    .location = nolocation()
+                }
+            }},
+            .location = nolocation()
+        },
 
     }};
 
@@ -2511,6 +3918,12 @@ test "return list immediate" {
     };
 
     defer ptr.destroyAll(std.testing.allocator);
+
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
 
     _ = try interpreter.evalProc(proc, &env);
 
@@ -2528,20 +3941,35 @@ test "list immediate assign expression" {
     // Prepare procedure
     const proc: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
 
-        ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {
-            &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-            &ast.Expr {.Lval = ast.Lval {.Var = "y"}},
-        }},
+        ast.Stmt {
+            .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {
+                &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+                &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "y"}},.location = nolocation()},
+            }},
+            .location = nolocation()
+        },
 
-        ast.Stmt {.ExprStmt = &ast.Expr {.AssignExpr = ast.AssignExpr {
-            .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-            .rhs = &ast.Expr {.AssignExpr = ast.AssignExpr {
-                .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "y"}},
-                .rhs = &ast.Expr {.ListExpr = &[_]*const ast.Expr {
-                    &ast.Expr {.Lit = ast.Lit {.Int = 1}}
-                }}
-            }}
-        }}},
+        ast.Stmt {
+            .stmt = ast.StmtInner {.ExprStmt = &ast.Expr {
+                .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
+                    .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+                    .rhs = &ast.Expr {
+                        .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
+                            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "y"}},.location = nolocation()},
+                            .rhs = &ast.Expr {
+                                .expr = ast.ExprInner {.ListExpr = &[_]*const ast.Expr {
+                                    &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},.location = nolocation()}
+                                }},
+                                .location = nolocation()
+                            }
+                        }},
+                        .location = nolocation()
+                    }
+                }},
+                .location = nolocation()
+            }},
+            .location = nolocation()
+        },
 
     }};
 
@@ -2556,6 +3984,12 @@ test "list immediate assign expression" {
 
     defer std.testing.allocator.free(items);
     defer std.testing.allocator.destroy(ptr);
+
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
 
     _ = try interpreter.evalProc(proc, &env);
 
@@ -2577,23 +4011,41 @@ test "list immediate indexing" {
     defer env.deinit();
 
     // Test less-than expressions
-    const exp1: ast.Expr = ast.Expr {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
-        .id = &ast.Expr {.ListExpr = &[_]*const ast.Expr {
-            &ast.Expr {.Lit = ast.Lit {.Int = 1}},
-            &ast.Expr {.Lit = ast.Lit {.Int = 2}},
-            &ast.Expr {.Lit = ast.Lit {.Int = 3}},
-        }},
-        .idx = &ast.Expr {.Lit = ast.Lit {.Int = 0}}
-    }}};
+    const exp1: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
+            .id = &ast.Expr {
+                .expr = ast.ExprInner {.ListExpr = &[_]*const ast.Expr {
+                    &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},.location = nolocation()},
+                    &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 2}},.location = nolocation()},
+                    &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 3}},.location = nolocation()},
+                }},
+                .location = nolocation()
+            },
+            .idx = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 0}},.location = nolocation()}
+        }}},
+        .location = nolocation()
+    };
 
-    const exp2: ast.Expr = ast.Expr {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
-        .id = &ast.Expr {.ListExpr = &[_]*const ast.Expr {
-            &ast.Expr {.Lit = ast.Lit {.Int = 1}},
-            &ast.Expr {.Lit = ast.Lit {.Int = 2}},
-            &ast.Expr {.Lit = ast.Lit {.Int = 3}},
-        }},
-        .idx = &ast.Expr {.Lit = ast.Lit {.Int = 2}}
-    }}};
+    const exp2: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
+            .id = &ast.Expr {
+                .expr = ast.ExprInner {.ListExpr = &[_]*const ast.Expr {
+                    &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},.location = nolocation()},
+                    &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 2}},.location = nolocation()},
+                    &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 3}},.location = nolocation()},
+                }},
+                .location = nolocation()
+            },
+            .idx = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 2}},.location = nolocation()}
+        }}},
+        .location = nolocation()
+    };
+
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
 
     try std.testing.expectEqual(
         try interpreter.evalExpr(&exp1, &env),
@@ -2615,19 +4067,31 @@ test "nested list immediate" {
     const proc: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
 
 
-        ast.Stmt {.DeclareStmt = &[_]*const ast.Expr {
-            &ast.Expr {.AssignExpr = ast.AssignExpr {
-                .lhs = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-                .rhs = &ast.Expr {.ListExpr = &[_]*const ast.Expr {
-                    &ast.Expr {.Lit = ast.Lit {.Int = 0}},
-                    &ast.Expr {.ListExpr = &[_]*const ast.Expr {
-                        &ast.Expr {.Lit = ast.Lit {.Int = -1}},
-                        &ast.Expr {.Lit = ast.Lit {.Int = -1}},
+        ast.Stmt {
+            .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {
+                &ast.Expr {
+                    .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
+                        .lhs = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+                        .rhs = &ast.Expr {
+                            .expr = ast.ExprInner {.ListExpr = &[_]*const ast.Expr {
+                                &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 0}},.location = nolocation()},
+                                &ast.Expr {
+                                    .expr = ast.ExprInner {.ListExpr = &[_]*const ast.Expr {
+                                        &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = -1}},.location = nolocation()},
+                                        &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = -1}},.location = nolocation()},
+                                    }},
+                                    .location = nolocation()
+                                },
+                                &ast.Expr {.expr = ast.ExprInner {.ListExpr = &[_]*const ast.Expr {}},.location = nolocation()},
+                            }},
+                            .location = nolocation()
+                        }
                     }},
-                    &ast.Expr {.ListExpr = &[_]*const ast.Expr {}},
-                }}
-            }}
-        }},
+                    .location = nolocation()
+                }
+            }},
+            .location = nolocation()
+        },
 
     }};
 
@@ -2668,6 +4132,12 @@ test "nested list immediate" {
 
     defer ptr.destroyAll(std.testing.allocator);
 
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
+
     _ = try interpreter.evalProc(proc, &env);
 
     try std.testing.expectEqualDeep(
@@ -2684,13 +4154,25 @@ test "list immediate expression statement" {
     // Prepare procedure
     const proc: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
 
-        ast.Stmt {.ExprStmt = &ast.Expr {.ListExpr = &[_]*const ast.Expr {
-            &ast.Expr {.Lit = ast.Lit {.Int = -1}},
-            &ast.Expr {.Lit = ast.Lit {.Int = 3}},
-            &ast.Expr {.Lit = ast.Lit {.Int = 7}},
-        }}}
+        ast.Stmt {
+            .stmt = ast.StmtInner {.ExprStmt = &ast.Expr {
+                .expr = ast.ExprInner {.ListExpr = &[_]*const ast.Expr {
+                    &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = -1}},.location = nolocation()},
+                    &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 3}},.location = nolocation()},
+                    &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 7}},.location = nolocation()},
+                }},
+                .location = nolocation()
+            }},
+            .location = nolocation()
+        }
 
     }};
+
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
 
     _ = try interpreter.evalProc(proc, &env);
 }
@@ -2703,29 +4185,50 @@ test "callable in list immediate" {
     // Prepare procedure
     const proc: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
 
-        ast.Stmt {.FunDefStmt = &ast.FunDefStmt {
-            .id = "f",
-            .params = &[_]ast.Var {"x"},
-            .body = ast.Stmt {.ReturnStmt = &ast.Expr {
-                .Lval = ast.Lval {.ListIndex = ast.ListIndex {
-                    .id = &ast.Expr {.Lval = ast.Lval {.Var = "x"}},
-                    .idx = &ast.Expr {.Lit = ast.Lit {.Int = 0}}
-                }}
-            }}
-        }},
+        ast.Stmt {
+            .stmt = ast.StmtInner {.FunDefStmt = &ast.FunDefStmt {
+                .id = "f",
+                .params = &[_]ast.Var {"x"},
+                .body = ast.Stmt {
+                    .stmt = ast.StmtInner {.ReturnStmt = &ast.Expr {
+                        .expr = ast.ExprInner {
+                            .Lval = ast.Lval {.ListIndex = ast.ListIndex {
+                                .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "x"}},.location = nolocation()},
+                                .idx = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 0}},.location = nolocation()}
+                            }}
+                        },
+                        .location = nolocation()
+                    }},
+                    .location = nolocation()
+                }
+            }},
+            .location = nolocation()
+        },
 
-        ast.Stmt {.ExprStmt = &ast.Expr {.ListExpr = &[_]*const ast.Expr {
-            &ast.Expr {.Lit = ast.Lit {.Int = 0}},
-            &ast.Expr {.Lval = ast.Lval {.Var = "f"}},
-        }}}
+        ast.Stmt {
+            .stmt = ast.StmtInner {.ExprStmt = &ast.Expr {
+                .expr = ast.ExprInner {.ListExpr = &[_]*const ast.Expr {
+                    &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 0}},.location = nolocation()},
+                    &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "f"}},.location = nolocation()},
+                }},
+                .location = nolocation()
+            }},
+            .location = nolocation()
+        }
 
     }};
 
-    const r: interpreter.EvalError!void = interpreter.evalProc(proc, &env);
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
+
+    const r: interprtr.EvalError!void = interpreter.evalProc(proc, &env);
 
     try std.testing.expectEqualDeep(
         r,
-        interpreter.EvalError.InvalidUpcall
+        interprtr.EvalError.InvalidUpcall
     );
 }
 
@@ -2734,59 +4237,86 @@ test "type conversion int - bool" {
     var env = venv.Env.new(std.testing.allocator);
     defer env.deinit();
 
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
+
     // Test different cases
-    const e1: ast.Expr = ast.Expr {.AsExpr = ast.AsExpr {
-        .lhs = &ast.Expr {.Lit = ast.Lit {.Int = 1}},
-        .as = &ast.Expr {.Lit = ast.Lit {.Type = .Bool}}
-    }};
+    const e1: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.AsExpr = ast.AsExpr {
+            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},.location = nolocation()},
+            .as = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Type = .Bool}},.location = nolocation()}
+        }},
+        .location = nolocation()
+    };
     try std.testing.expectEqualDeep(
         try interpreter.evalExpr(&e1, &env),
         ast.Lit {.Bool = true}
     );
-    const e2: ast.Expr = ast.Expr {.AsExpr = ast.AsExpr {
-        .lhs = &ast.Expr {.Lit = ast.Lit {.Int = 0}},
-        .as = &ast.Expr {.Lit = ast.Lit {.Type = .Bool}}
-    }};
+    const e2: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.AsExpr = ast.AsExpr {
+            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 0}},.location = nolocation()},
+            .as = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Type = .Bool}},.location = nolocation()}
+        }},
+        .location = nolocation()
+    };
     try std.testing.expectEqualDeep(
         try interpreter.evalExpr(&e2, &env),
         ast.Lit {.Bool = false}
     );
-    const e3: ast.Expr = ast.Expr {.AsExpr = ast.AsExpr {
-        .lhs = &ast.Expr {.Lit = ast.Lit {.Bool = true}},
-        .as = &ast.Expr {.Lit = ast.Lit {.Type = .Int}}
-    }};
+    const e3: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.AsExpr = ast.AsExpr {
+            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Bool = true}},.location = nolocation()},
+            .as = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Type = .Int}},.location = nolocation()}
+        }},
+        .location = nolocation()
+    };
     try std.testing.expectEqualDeep(
         try interpreter.evalExpr(&e3, &env),
         ast.Lit {.Int = 1}
     );
-    const e4: ast.Expr = ast.Expr {.AsExpr = ast.AsExpr {
-        .lhs = &ast.Expr {.Lit = ast.Lit {.Bool = false}},
-        .as = &ast.Expr {.Lit = ast.Lit {.Type = .Int}}
-    }};
+    const e4: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.AsExpr = ast.AsExpr {
+            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Bool = false}},.location = nolocation()},
+            .as = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Type = .Int}},.location = nolocation()}
+        }},
+        .location = nolocation()
+    };
     try std.testing.expectEqualDeep(
         try interpreter.evalExpr(&e4, &env),
         ast.Lit {.Int = 0}
     );
-    const e5: ast.Expr = ast.Expr {.AsExpr = ast.AsExpr {
-        .lhs = &ast.Expr {.Lit = ast.Lit {.Int = 2}},
-        .as = &ast.Expr {.Lit = ast.Lit {.Type = .Bool}}
-    }};
+    const e5: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.AsExpr = ast.AsExpr {
+            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 2}},.location = nolocation()},
+            .as = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Type = .Bool}},.location = nolocation()}
+        }},
+        .location = nolocation()
+    };
     try std.testing.expectEqualDeep(
         try interpreter.evalExpr(&e5, &env),
         ast.Lit {.Bool = true}
     );
-    const e6: ast.Expr = ast.Expr {.AsExpr = ast.AsExpr {
-        .lhs = &ast.Expr {.Lit = ast.Lit {.Int = -124}},
-        .as = &ast.Expr {.Lit = ast.Lit {.Type = .Bool}}
-    }};
+    const e6: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.AsExpr = ast.AsExpr {
+            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = -124}},.location = nolocation()},
+            .as = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Type = .Bool}},.location = nolocation()}
+        }},
+        .location = nolocation()
+    };
     try std.testing.expectEqualDeep(
         try interpreter.evalExpr(&e6, &env),
         ast.Lit {.Bool = true}
     );
-    const e7: ast.Expr = ast.Expr {.AsExpr = ast.AsExpr {
-        .lhs = &ast.Expr {.Lit = ast.Lit {.Int = -(0)}},
-        .as = &ast.Expr {.Lit = ast.Lit {.Type = .Bool}}
-    }};
+    const e7: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.AsExpr = ast.AsExpr {
+            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = -(0)}},.location = nolocation()},
+            .as = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Type = .Bool}},.location = nolocation()}
+        }},
+        .location = nolocation()
+    };
     try std.testing.expectEqualDeep(
         try interpreter.evalExpr(&e7, &env),
         ast.Lit {.Bool = false}
@@ -2798,67 +4328,97 @@ test "type conversion float - bool" {
     var env = venv.Env.new(std.testing.allocator);
     defer env.deinit();
 
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
+
     // Test different cases
-    const e1: ast.Expr = ast.Expr {.AsExpr = ast.AsExpr {
-        .lhs = &ast.Expr {.Lit = ast.Lit {.Float = 1.0}},
-        .as = &ast.Expr {.Lit = ast.Lit {.Type = .Bool}}
-    }};
+    const e1: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.AsExpr = ast.AsExpr {
+            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Float = 1.0}},.location = nolocation()},
+            .as = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Type = .Bool}},.location = nolocation()}
+        }},
+        .location = nolocation()
+    };
     try std.testing.expectEqualDeep(
         try interpreter.evalExpr(&e1, &env),
         ast.Lit {.Bool = true}
     );
-    const e2: ast.Expr = ast.Expr {.AsExpr = ast.AsExpr {
-        .lhs = &ast.Expr {.Lit = ast.Lit {.Float = 0.0}},
-        .as = &ast.Expr {.Lit = ast.Lit {.Type = .Bool}}
-    }};
+    const e2: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.AsExpr = ast.AsExpr {
+            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Float = 0.0}},.location = nolocation()},
+            .as = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Type = .Bool}},.location = nolocation()}
+        }},
+        .location = nolocation()
+    };
     try std.testing.expectEqualDeep(
         try interpreter.evalExpr(&e2, &env),
         ast.Lit {.Bool = false}
     );
-    const e3: ast.Expr = ast.Expr {.AsExpr = ast.AsExpr {
-        .lhs = &ast.Expr {.Lit = ast.Lit {.Bool = true}},
-        .as = &ast.Expr {.Lit = ast.Lit {.Type = .Float}}
-    }};
+    const e3: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.AsExpr = ast.AsExpr {
+            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Bool = true}},.location = nolocation()},
+            .as = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Type = .Float}},.location = nolocation()}
+        }},
+        .location = nolocation()
+    };
     try std.testing.expectEqualDeep(
         try interpreter.evalExpr(&e3, &env),
         ast.Lit {.Float = 1.0}
     );
-    const e4: ast.Expr = ast.Expr {.AsExpr = ast.AsExpr {
-        .lhs = &ast.Expr {.Lit = ast.Lit {.Bool = false}},
-        .as = &ast.Expr {.Lit = ast.Lit {.Type = .Float}}
-    }};
+    const e4: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.AsExpr = ast.AsExpr {
+            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Bool = false}},.location = nolocation()},
+            .as = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Type = .Float}},.location = nolocation()}
+        }},
+        .location = nolocation()
+    };
     try std.testing.expectEqualDeep(
         try interpreter.evalExpr(&e4, &env),
         ast.Lit {.Float = 0.0}
     );
-    const e5: ast.Expr = ast.Expr {.AsExpr = ast.AsExpr {
-        .lhs = &ast.Expr {.Lit = ast.Lit {.Float = 2.00203}},
-        .as = &ast.Expr {.Lit = ast.Lit {.Type = .Bool}}
-    }};
+    const e5: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.AsExpr = ast.AsExpr {
+            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Float = 2.00203}},.location = nolocation()},
+            .as = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Type = .Bool}},.location = nolocation()}
+        }},
+        .location = nolocation()
+    };
     try std.testing.expectEqualDeep(
         try interpreter.evalExpr(&e5, &env),
         ast.Lit {.Bool = true}
     );
-    const e6: ast.Expr = ast.Expr {.AsExpr = ast.AsExpr {
-        .lhs = &ast.Expr {.Lit = ast.Lit {.Float = -1.3232042}},
-        .as = &ast.Expr {.Lit = ast.Lit {.Type = .Bool}}
-    }};
+    const e6: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.AsExpr = ast.AsExpr {
+            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Float = -1.3232042}},.location = nolocation()},
+            .as = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Type = .Bool}},.location = nolocation()}
+        }},
+        .location = nolocation()
+    };
     try std.testing.expectEqualDeep(
         try interpreter.evalExpr(&e6, &env),
         ast.Lit {.Bool = true}
     );
-    const e7: ast.Expr = ast.Expr {.AsExpr = ast.AsExpr {
-        .lhs = &ast.Expr {.Lit = ast.Lit {.Float = -(0.0)}},
-        .as = &ast.Expr {.Lit = ast.Lit {.Type = .Bool}}
-    }};
+    const e7: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.AsExpr = ast.AsExpr {
+            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Float = -(0.0)}},.location = nolocation()},
+            .as = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Type = .Bool}},.location = nolocation()}
+        }},
+        .location = nolocation()
+    };
     try std.testing.expectEqualDeep(
         try interpreter.evalExpr(&e7, &env),
         ast.Lit {.Bool = false}
     );
-    const e8: ast.Expr = ast.Expr {.AsExpr = ast.AsExpr {
-        .lhs = &ast.Expr {.Lit = ast.Lit {.Float = 0.000001}},
-        .as = &ast.Expr {.Lit = ast.Lit {.Type = .Bool}}
-    }};
+    const e8: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.AsExpr = ast.AsExpr {
+            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Float = 0.000001}},.location = nolocation()},
+            .as = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Type = .Bool}},.location = nolocation()}
+        }},
+        .location = nolocation()
+    };
     try std.testing.expectEqualDeep(
         try interpreter.evalExpr(&e8, &env),
         ast.Lit {.Bool = true}
@@ -2871,67 +4431,96 @@ test "type conversion int - float" {
     var env = venv.Env.new(std.testing.allocator);
     defer env.deinit();
 
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
+
     // Test different cases
-    const e1: ast.Expr = ast.Expr {.AsExpr = ast.AsExpr {
-        .lhs = &ast.Expr {.Lit = ast.Lit {.Float = 1.0}},
-        .as = &ast.Expr {.Lit = ast.Lit {.Type = .Int}}
-    }};
+    const e1: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.AsExpr = ast.AsExpr {
+            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Float = 1.0}},.location = nolocation()},
+            .as = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Type = .Int}},.location = nolocation()}
+        }},
+        .location = nolocation()
+    };
     try std.testing.expectEqualDeep(
         try interpreter.evalExpr(&e1, &env),
         ast.Lit {.Int = 1}
     );
-    const e2: ast.Expr = ast.Expr {.AsExpr = ast.AsExpr {
-        .lhs = &ast.Expr {.Lit = ast.Lit {.Float = 0.0}},
-        .as = &ast.Expr {.Lit = ast.Lit {.Type = .Int}}
-    }};
+    const e2: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.AsExpr = ast.AsExpr {
+            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Float = 0.0}},.location = nolocation()},
+            .as = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Type = .Int}},.location = nolocation()}
+        }},
+        .location = nolocation()
+    };
     try std.testing.expectEqualDeep(
         try interpreter.evalExpr(&e2, &env),
         ast.Lit {.Int = 0}
     );
-    const e3: ast.Expr = ast.Expr {.AsExpr = ast.AsExpr {
-        .lhs = &ast.Expr {.Lit = ast.Lit {.Int = 1}},
-        .as = &ast.Expr {.Lit = ast.Lit {.Type = .Float}}
-    }};
+    const e3: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.AsExpr = ast.AsExpr {
+            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},.location = nolocation()},
+            .as = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Type = .Float}},.location = nolocation()}
+        }},
+        .location = nolocation()
+    };
     try std.testing.expectEqualDeep(
         try interpreter.evalExpr(&e3, &env),
         ast.Lit {.Float = 1.0}
     );
-    const e4: ast.Expr = ast.Expr {.AsExpr = ast.AsExpr {
-        .lhs = &ast.Expr {.Lit = ast.Lit {.Int = 0}},
-        .as = &ast.Expr {.Lit = ast.Lit {.Type = .Float}}
-    }};
+    const e4: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.AsExpr = ast.AsExpr {
+            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 0}},.location = nolocation()},
+            .as = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Type = .Float}},.location = nolocation()}
+        }},
+        .location = nolocation()
+    };
     try std.testing.expectEqualDeep(
         try interpreter.evalExpr(&e4, &env),
         ast.Lit {.Float = 0.0}
     );
-    const e5: ast.Expr = ast.Expr {.AsExpr = ast.AsExpr {
-        .lhs = &ast.Expr {.Lit = ast.Lit {.Float = 2.00203}},
-        .as = &ast.Expr {.Lit = ast.Lit {.Type = .Int}}
-    }};
+    const e5: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.AsExpr = ast.AsExpr {
+            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Float = 2.00203}},.location = nolocation()},
+            .as = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Type = .Int}},.location = nolocation()}
+        }},
+        .location = nolocation()
+    };
     try std.testing.expectEqualDeep(
         try interpreter.evalExpr(&e5, &env),
         ast.Lit {.Int = 2}
     );
-    const e6: ast.Expr = ast.Expr {.AsExpr = ast.AsExpr {
-        .lhs = &ast.Expr {.Lit = ast.Lit {.Float = -1.3232042}},
-        .as = &ast.Expr {.Lit = ast.Lit {.Type = .Int}}
-    }};
+    const e6: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.AsExpr = ast.AsExpr {
+            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Float = -1.3232042}},.location = nolocation()},
+            .as = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Type = .Int}},.location = nolocation()}
+        }},
+        .location = nolocation()
+    };
     try std.testing.expectEqualDeep(
         try interpreter.evalExpr(&e6, &env),
         ast.Lit {.Int = -1}
     );
-    const e7: ast.Expr = ast.Expr {.AsExpr = ast.AsExpr {
-        .lhs = &ast.Expr {.Lit = ast.Lit {.Float = -(0.0)}},
-        .as = &ast.Expr {.Lit = ast.Lit {.Type = .Int}}
-    }};
+    const e7: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.AsExpr = ast.AsExpr {
+            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Float = -(0.0)}},.location = nolocation()},
+            .as = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Type = .Int}},.location = nolocation()}
+        }},
+        .location = nolocation()
+    };
     try std.testing.expectEqualDeep(
         try interpreter.evalExpr(&e7, &env),
         ast.Lit {.Int = 0}
     );
-    const e8: ast.Expr = ast.Expr {.AsExpr = ast.AsExpr {
-        .lhs = &ast.Expr {.Lit = ast.Lit {.Float = 0.000001}},
-        .as = &ast.Expr {.Lit = ast.Lit {.Type = .Int}}
-    }};
+    const e8: ast.Expr = ast.Expr {
+        .expr = ast.ExprInner {.AsExpr = ast.AsExpr {
+            .lhs = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Float = 0.000001}},.location = nolocation()},
+            .as = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Type = .Int}},.location = nolocation()}
+        }},
+        .location = nolocation()};
     try std.testing.expectEqualDeep(
         try interpreter.evalExpr(&e8, &env),
         ast.Lit {.Int = 0}
