@@ -65,7 +65,7 @@ pub const Interpreter = struct {
 
 
     // Functions
-    pub fn evalLval(self: *Self, lval: ast.Lval, env: *venv.Env) EvalError!ast.Lit {
+    pub fn evalLval(self: *Self, lval: ast.Lval, env: *venv.Env, location: loc.LocationRange) EvalError!ast.Lit {
 
         const lit: ast.Lit = sw: switch (lval) {
             .Var => |v| {
@@ -80,12 +80,18 @@ pub const Interpreter = struct {
                         .Int => |ival| ast.Lit{ .Int = ival },
                         .Float => |fval| ast.Lit{ .Float = fval },
                         .Bool => |bval| ast.Lit{ .Bool = bval },
-                        .Void => return ValueError.UnexpectedVoidValue,
+                        .Void => {
+                            self.logger.logError(ValueError.UnexpectedVoidValue, location);
+                            return ValueError.UnexpectedVoidValue;
+                        },
                         .Callable => |fun| ast.Lit{ .Callable = fun },
                         .List => |lst| ast.Lit{ .List = lst.makeReference() },
                         .Type => |tp| ast.Lit{ .Type = tp },
                     },
-                    .Undefined => return EvalError.UndefinedVariable,
+                    .Undefined => {
+                        self.logger.logError(EvalError.UndefinedVariable, location);
+                        return EvalError.UndefinedVariable;
+                    }
                 };
             },
             .ListIndex => |l| {
@@ -333,6 +339,12 @@ pub const Interpreter = struct {
                     .Float => |r| ast.Lit{ .Bool = l >= r },
                 },
             },
+        } catch |err| {
+            self.logger.logError(err, loc.LocationRange {
+                .from = expr.lhs.location.from,
+                .to = expr.rhs.location.to,
+            });
+            return err;
         };
     }
 
@@ -451,7 +463,7 @@ pub const Interpreter = struct {
         };
     }
 
-    pub fn evalCallExpr(self: *Self, expr: *const ast.CallExpr, env: *venv.Env) EvalError!ast.Lit {
+    pub fn evalCallExpr(self: *Self, expr: *const ast.CallExpr, env: *venv.Env, location: loc.LocationRange) EvalError!ast.Lit {
 
         // Evaluate identifier
         var ident = try self.evalExpr(expr.id, env);
@@ -469,7 +481,11 @@ pub const Interpreter = struct {
         defer scopedEnv.deinit();
 
         // Bind all args to function parameter names
-        if (callable.params.len != expr.args.len) return EvalError.WrongArgCount;
+        if (callable.params.len != expr.args.len) {
+            self.logger.logError(EvalError.WrongArgCount, location);
+            return EvalError.WrongArgCount;
+        }
+
         for (callable.params, expr.args) |id, arg| {
 
             // NOTE: Evaluating in current environment, not in closure or scoped
@@ -536,12 +552,24 @@ pub const Interpreter = struct {
 
         const tp: ast.Type = switch (tpe) {
             .Type => |tp| tp,
-            else => return EvalError.MismatchedType,
+            else => {
+                self.logger.logError(EvalError.MismatchedType, loc.LocationRange {
+                    .from = expr.lhs.location.from,
+                    .to = expr.as.location.to
+                });
+                return EvalError.MismatchedType;
+            }
         };
 
         // Evaluate type conversion
         return switch (lhs) {
-            .Callable, .List, .Void, .Type => EvalError.MismatchedType,
+            .Callable, .List, .Void, .Type => {
+                self.logger.logError(EvalError.MismatchedType, loc.LocationRange {
+                    .from = expr.lhs.location.from,
+                    .to = expr.as.location.to
+                });
+                return EvalError.MismatchedType;
+            },
             .Bool => |b| switch (tp) {
                 .Bool => ast.Lit{ .Bool = b },
                 .Int => ast.Lit{ .Int = if (b) 1 else 0 },
@@ -563,18 +591,10 @@ pub const Interpreter = struct {
     pub fn evalExpr(self: *Self, expr: *const ast.Expr, env: *venv.Env) EvalError!ast.Lit {
 
         return switch (expr.expr) {
-            .BinOpExpr => |ex| self.evalBinOpExpr(&ex, env) catch |err| {
-                self.logger.logError(err, expr.location);
-                return err;
-            },
-            .UnOpExpr => |ex| self.evalUnOpExpr(&ex, env) catch |err| {
-                self.logger.logError(err, expr.location);
-                return err;
-            },
-            .Lval => |lval| self.evalLval(lval, env) catch |err| {
-                self.logger.logError(err, expr.location);
-                return err;
-            },
+            .BinOpExpr => |ex| self.evalBinOpExpr(&ex, env),
+            .UnOpExpr => |ex| self.evalUnOpExpr(&ex, env),
+
+            .Lval => |lval| self.evalLval(lval, env, expr.location),
 
             // NOTE: We create an extra reference here, assuming this is bottom level
             .Lit => |lit| switch (lit) {
@@ -583,15 +603,9 @@ pub const Interpreter = struct {
             },
 
             .AssignExpr => |ex| self.evalAssignExpr(&ex, env),
-            .CallExpr => |ex| self.evalCallExpr(&ex, env) catch |err| {
-                self.logger.logError(err, expr.location);
-                return err;
-            },
+            .CallExpr => |ex| self.evalCallExpr(&ex, env, expr.location),
             .ListExpr => |ex| self.evalListExpr(ex, env),
-            .AsExpr => |ex| self.evalAsExpr(&ex, env) catch |err| {
-                self.logger.logError(err, expr.location);
-                return err;
-            },
+            .AsExpr => |ex| self.evalAsExpr(&ex, env)
         };
     }
 
