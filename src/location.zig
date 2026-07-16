@@ -25,10 +25,10 @@ pub const LocationRange = struct {
             "{s: >8}: l{d}.c{d} - l{d}.c{d}",
             .{
                 self.from.file,
-                self.from.line,
-                self.from.column,
-                self.to.line,
-                self.to.column,
+                self.from.line + 1,
+                self.from.column + 1,
+                self.to.line + 1,
+                self.to.column + 1,
             }
         );
     }
