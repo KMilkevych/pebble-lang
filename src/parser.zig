@@ -97,13 +97,7 @@ pub const Parser = struct {
 
         if (!std.meta.eql(nt.tokenType, tok)) {
             const err = expectedTokenError(tok);
-
-            self.logger.logError(log.ErrorInfo {
-                .description = "",
-                .err = err,
-                .location = nt.location
-            });
-
+            self.logger.logError(err, nt.location);
             return err;
         } else {
             return nt;
@@ -116,13 +110,7 @@ pub const Parser = struct {
 
         if (!std.meta.eql(nt.tokenType, tok) and !std.meta.eql(nt.tokenType, TokenType {.EOF = {}})) {
             const err = expectedTokenError(tok);
-
-            self.logger.logError(log.ErrorInfo {
-                .description = "",
-                .err = err,
-                .location = nt.location
-            });
-
+            self.logger.logError(err, nt.location);
             return err;
         } else {
             return nt;
@@ -131,13 +119,7 @@ pub const Parser = struct {
 
     fn expectExpression(self: *Self, location: loc.LocationRange) ParseError!*ast.Expr {
         return self.parseExpr() catch |err| {
-
-            self.logger.logError(log.ErrorInfo {
-                .description = "",
-                .err = ParseError.ExpectedExpression,
-                .location = location
-            });
-
+            self.logger.logError(ParseError.ExpectedExpression,location);
             return err;
         };
     }
@@ -145,13 +127,7 @@ pub const Parser = struct {
     fn expectExpressionBp(self: *Self, bp: u8, location: loc.LocationRange) ParseError!*ast.Expr {
 
         return self.parseExprBp(bp) catch |err| {
-
-            self.logger.logError(log.ErrorInfo {
-                .description = "",
-                .err = ParseError.ExpectedExpression,
-                .location = location
-            });
-
+            self.logger.logError(ParseError.ExpectedExpression,location);
             return err;
         };
     }
@@ -175,12 +151,7 @@ pub const Parser = struct {
             // Skip errors
             .ERROR, .ILLEGAL => {
 
-                self.logger.logError(log.ErrorInfo {
-                    .description = "",
-                    .err = ParseError.ErrorOrIllegalToken,
-                    .location = next_token.location
-                });
-
+                self.logger.logError(ParseError.ErrorOrIllegalToken, next_token.location);
                 lhs = try self.parseExprBp(min_bp);
             },
 
@@ -322,13 +293,9 @@ pub const Parser = struct {
 
             // Ensure next is operator with improved binding power
             // Make sure that there is a token
+            // FIXME: this case will never happen. It is okay to remove this check
             const op_token: Token = if (self.peekToken()) |tok| tok else {
-
-                self.logger.logError(log.ErrorInfo {
-                    .description = "",
-                    .err = ParseError.ExpectedTokenOrEOF,
-                    .location = lhs.location, // FIXME: this should be location after hls. Also, this case never happens..
-                });
+                self.logger.logError(ParseError.ExpectedTokenOrEOF, lhs.location);
                 return ParseError.ExpectedTokenOrEOF;
             };
 
@@ -503,11 +470,7 @@ pub const Parser = struct {
 
     fn expectStatement(self: *Self, location: loc.LocationRange) ParseError!ast.Stmt {
         return self.parseStmt() catch |err| {
-            self.logger.logError(log.ErrorInfo {
-                .description = "",
-                .err = ParseError.ExpectedStatement,
-                .location = location
-            });
+            self.logger.logError(ParseError.ExpectedStatement, location);
             return err;
         };
     }
@@ -522,11 +485,7 @@ pub const Parser = struct {
             .ERROR, .ILLEGAL => {
 
                 // Log illegal token
-                self.logger.logError(log.ErrorInfo {
-                    .description = "",
-                    .err = ParseError.ErrorOrIllegalToken,
-                    .location = tok.location
-                });
+                self.logger.logError(ParseError.ErrorOrIllegalToken, tok.location);
 
                 _ = try self.nextToken();
                 break :blk self.parseStmt();
@@ -708,19 +667,11 @@ pub const Parser = struct {
                 const id: ast.Var = if (self.peekToken()) |tk| switch (tk.tokenType) {
                     .IDENT => |id| id,
                     else => {
-                        self.logger.logError(log.ErrorInfo {
-                            .description = "",
-                            .err = ParseError.ExpectedIdentifier,
-                            .location = self.peekLocation()
-                        });
+                        self.logger.logError(ParseError.ExpectedIdentifier, self.peekLocation());
                         return expectedTokenError(TokenType {.IDENT = ""});
                     }
                 } else {
-                    self.logger.logError(log.ErrorInfo {
-                        .description = "",
-                        .err = ParseError.ExpectedIdentifier,
-                        .location = self.peekLocation()
-                    });
+                    self.logger.logError(ParseError.ExpectedIdentifier, self.peekLocation());
                     return expectedTokenError(TokenType {.IDENT = ""});
                 };
                 _ = try self.nextToken();
@@ -739,11 +690,7 @@ pub const Parser = struct {
                             acc.append(self.allocator, ident) catch unreachable;
                         },
                         else => {
-                            self.logger.logError(log.ErrorInfo {
-                                .description = "",
-                                .err = ParseError.ExpectedIdentifier,
-                                .location = self.peekLocation()
-                            });
+                            self.logger.logError(ParseError.ExpectedIdentifier, self.peekLocation());
                             return expectedTokenError(TokenType {.IDENT = ""});
                         }
                     }
@@ -813,11 +760,7 @@ pub const Parser = struct {
             // Otherwise treat as an expression statement
             else => {
                 const exp: *ast.Expr = self.parseExpr() catch |err| {
-                    self.logger.logError(log.ErrorInfo {
-                        .description = "",
-                        .err = ParseError.ExpectedStatement,
-                        .location = tok.location
-                    });
+                    self.logger.logError(ParseError.ExpectedStatement, tok.location);
                     return err;
                 };
                 errdefer exp.destroyAll(self.allocator);

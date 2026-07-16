@@ -67,8 +67,16 @@ pub const Logger = struct {
         self.errors.deinit(self.allocator);
     }
 
-    pub fn logError(self: *Self, err: ErrorInfo) void {
-        self.errors.append(self.allocator, err) catch unreachable;
+    // pub fn logError(self: *Self, err: ErrorInfo) void {
+    //     self.errors.append(self.allocator, err) catch unreachable;
+    // }
+
+    pub fn logError(self: *Self, err: Error, loc: location.LocationRange) void {
+        self.errors.append(self.allocator, ErrorInfo {
+            .description = "",
+            .err = err,
+            .location = loc
+        }) catch unreachable;
     }
 
 

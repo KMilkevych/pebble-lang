@@ -502,6 +502,9 @@ pub const Interpreter = struct {
             .CallExpr => |ex| self.evalCallExpr(&ex, env),
             .ListExpr => |ex| self.evalListExpr(ex, env),
             .AsExpr => |ex| self.evalAsExpr(&ex, env),
+        } catch |err| {
+            self.logger.logError(err, expr.location);
+            return err;
         };
     }
 
@@ -513,7 +516,10 @@ pub const Interpreter = struct {
                 // Evaluate the underlying expression
                 // NOTE: Inner-most return statement in CallExpr creates list reference
                 // which needs to be discarded for an ExprStmt
-                var lit: ast.Lit = try self.evalExpr(expr, env);
+                var lit: ast.Lit = self.evalExpr(expr, env) catch |err| {
+                    self.logger.logError(err, expr.location);
+                    return err;
+                };
                 lit.destroyAll(env.allocator);
 
                 return StmtReturn{ .NoReturn = {} };
@@ -531,16 +537,25 @@ pub const Interpreter = struct {
                         .Lval => |lval| lval,
                         .AssignExpr => |exp| switch (exp.lhs.expr) {
                             .Lval => |lval| lval,
-                            else => EvalError.NotIdentifier,
+                            else => blk: {
+                                self.logger.logError(EvalError.NotIdentifier, exp.lhs.location);
+                                break :blk EvalError.NotIdentifier;
+                            },
                         },
-                        else => return EvalError.NotIdentifier,
+                        else => {
+                            self.logger.logError(EvalError.NotIdentifier, expr.location);
+                            return EvalError.NotIdentifier;
+                        }
                     };
 
                     switch (try lhs) {
                         .Var => |id| {
 
                             // Do error checking
-                            if (env.isDeclaredLocal(id)) return EvalError.IdentifierAlreadyDeclared;
+                            if (env.isDeclaredLocal(id)) {
+                                self.logger.logError(EvalError.IdentifierAlreadyDeclared, expr.location);
+                                return EvalError.IdentifierAlreadyDeclared;
+                            }
 
                             // Add lhs identifier to environment
                             env.insert(id, venv.ObjectVal{ .Undefined = {} });
@@ -561,22 +576,37 @@ pub const Interpreter = struct {
                             const id: ast.Var = switch (li.id.expr) {
                                 .Lval => |lv| switch (lv) {
                                     .Var => |v| v,
-                                    .ListIndex, .PropertyAccess => return EvalError.NotIdentifier,
+                                    .ListIndex, .PropertyAccess => {
+                                        self.logger.logError(EvalError.NotIdentifier, li.id.location);
+                                        return EvalError.NotIdentifier;
+                                    }
                                 },
-                                else => return EvalError.NotIdentifier,
+                                else => {
+                                    self.logger.logError(EvalError.NotIdentifier, li.id.location);
+                                    return EvalError.NotIdentifier;
+                                }
                             };
 
                             // Do error checking
-                            if (env.isDeclaredLocal(id)) return EvalError.IdentifierAlreadyDeclared;
+                            if (env.isDeclaredLocal(id)) {
+                                self.logger.logError(EvalError.IdentifierAlreadyDeclared, li.id.location);
+                                return EvalError.IdentifierAlreadyDeclared;
+                            }
 
                             // Evaluate index (size)
                             const size: i64 = switch (try self.evalExpr(li.idx, env)) {
                                 .Int => |i| i,
-                                .Bool, .Float, .Type, .Callable, .Void, .List => return EvalError.MismatchedType,
+                                .Bool, .Float, .Type, .Callable, .Void, .List => {
+                                    self.logger.logError(EvalError.MismatchedType, li.idx.location);
+                                    return EvalError.MismatchedType;
+                                }
                             };
 
                             // Do size checking
-                            if (size < 0) return EvalError.InvalidSize;
+                            if (size < 0) {
+                                self.logger.logError(EvalError.InvalidSize, li.idx.location);
+                                return EvalError.InvalidSize;
+                            }
 
                             // Add identifier to environment
                             const items_ptr = env.allocator.alloc(ast.Lit, @as(usize, @intCast(size))) catch unreachable;
@@ -606,7 +636,10 @@ pub const Interpreter = struct {
                                 lit.destroyAll(env.allocator);
                             }
                         },
-                        .PropertyAccess => return EvalError.InvalidProperty,
+                        .PropertyAccess => {
+                            self.logger.logError(EvalError.InvalidProperty, expr.location);
+                            return EvalError.InvalidProperty;
+                        },
                     }
                 }
 
@@ -615,7 +648,7 @@ pub const Interpreter = struct {
             .PrintStmt => |exprs| {
                 for (exprs) |expr| {
                     // Evaluate expression and print resulting literal
-                    // TODO: Use parameterized writer and remove unreachable
+                    // TODO: Get rid of unreachable
                     var res: ast.Lit = try self.evalExpr(expr, env);
                     self.writer.print("{f} ", .{res}) catch unreachable;
                     res.destroyAll(env.allocator);
@@ -643,7 +676,10 @@ pub const Interpreter = struct {
                 // Check condition
                 var cond_res: ast.Lit = try self.evalExpr(stmt.cond, env);
                 const res: bool = switch (cond_res) {
-                    .Int, .Float, .Type, .Callable, .Void, .List => return TypeError.MismatchedType,
+                    .Int, .Float, .Type, .Callable, .Void, .List => {
+                        self.logger.logError(TypeError.MismatchedType, stmt.cond.location);
+                        return TypeError.MismatchedType;
+                    },
                     .Bool => |b| b,
                 };
 
@@ -667,7 +703,10 @@ pub const Interpreter = struct {
                     // Check condition
                     var cond_lit: ast.Lit = try self.evalExpr(stmt.cond, env);
                     const res: bool = switch (cond_lit) {
-                        .Int, .Float, .Type, .Callable, .Void, .List => return TypeError.MismatchedType,
+                        .Int, .Float, .Type, .Callable, .Void, .List => {
+                            self.logger.logError(TypeError.MismatchedType, stmt.cond.location);
+                            return TypeError.MismatchedType;
+                        },
                         .Bool => |b| b,
                     };
 
@@ -697,14 +736,20 @@ pub const Interpreter = struct {
                 // If expr is a CallExpr, we do not make extra list reference
                 const res: ast.Lit = try self.evalExpr(expr, env);
                 return switch (res) {
-                    .Callable => EvalError.InvalidUpcall,
+                    .Callable => {
+                        self.logger.logError(EvalError.InvalidUpcall, expr.location);
+                        return EvalError.InvalidUpcall;
+                    },
                     else => StmtReturn{ .Return = res },
                 };
             },
             .FunDefStmt => |stmt| {
 
                 // Insert function into environment
-                if (env.isDeclaredLocal(stmt.id)) return EvalError.IdentifierAlreadyDeclared;
+                if (env.isDeclaredLocal(stmt.id)) {
+                    self.logger.logError(EvalError.IdentifierAlreadyDeclared, statement.location);
+                    return EvalError.IdentifierAlreadyDeclared;
+                }
                 env.insert(stmt.id, venv.ObjectVal{ .Var = ast.Lit{ .Callable = ast.Callable{ .params = stmt.params, .body = stmt.body, .closure = env } } });
 
                 return StmtReturn{ .NoReturn = {} };
@@ -719,9 +764,18 @@ pub const Interpreter = struct {
         // Evaluate statements one by one
         for (procedure.stmts) |stmt| switch (try self.evalStmt(stmt, env)) {
             .NoReturn => {},
-            .Return => return EvalError.UnexpectedReturn,
-            .Break => return EvalError.UnexpectedBreak,
-            .Continue => return EvalError.UnexpectedContinue,
+            .Return => {
+                self.logger.logError(EvalError.UnexpectedReturn, stmt.location);
+                return EvalError.UnexpectedReturn;
+            },
+            .Break => {
+                self.logger.logError(EvalError.UnexpectedBreak, stmt.location);
+                return EvalError.UnexpectedBreak;
+            },
+            .Continue => {
+                self.logger.logError(EvalError.UnexpectedContinue, stmt.location);
+                return EvalError.UnexpectedContinue;
+            },
         };
     }
 };

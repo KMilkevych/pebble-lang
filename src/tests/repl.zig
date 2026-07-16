@@ -330,6 +330,7 @@ test "prohibit upcalling" {
     defer tokens.deinit(std.testing.allocator);
 
     var logger = Log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
     var prsr: parser.Parser = parser.Parser.new(tokens, std.testing.allocator, &logger);
     const proc: ast.Proc = try prsr.parseProcedure();
     defer proc.destroyAll(std.testing.allocator);
