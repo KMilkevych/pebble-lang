@@ -15,6 +15,7 @@ const ArrayList = std.ArrayList;
 pub const ParseError = error {
     ExpectedTokenOrEOF,
     ExpectedPClose,
+    ExpectedPOpen,
     ExpectedAngleClose,
     ExpectedPrint,
     ExpectedLineBreak,
@@ -23,11 +24,13 @@ pub const ParseError = error {
     ExpectedExpression,
     ExpectedIdentifier,
     ExpectedStatement,
+    ErrorOrIllegalToken,
 };
 
 pub fn expectedTokenError(expected: TokenType) ParseError {
     return switch (expected) {
         .RPAREN => ParseError.ExpectedPClose,
+        .LPAREN => ParseError.ExpectedPOpen,
         .PRINT => ParseError.ExpectedPrint,
         .LB => ParseError.ExpectedLineBreak,
         .IF => ParseError.ExpectedIf,
@@ -44,7 +47,7 @@ pub const Parser = struct {
 
     tokens: ArrayList(Token),
     allocator: std.mem.Allocator,
-    logger: Logger,
+    logger: *Logger,
 
     // NOTE: Old version without error logging
     // pub fn new(tokens: ArrayList(Token), allocator: std.mem.Allocator) Self {
@@ -58,7 +61,7 @@ pub const Parser = struct {
     //     };
     // }
 
-    pub fn new(tokens: ArrayList(Token), allocator: std.mem.Allocator, errLogger: Logger) Self {
+    pub fn new(tokens: ArrayList(Token), allocator: std.mem.Allocator, errLogger: *Logger) Self {
 
         // NOTE: Reversing token list to allow
         // using tokens.pop and tokens.getLast
@@ -79,24 +82,87 @@ pub const Parser = struct {
         return self.tokens.getLastOrNull();
     }
 
+    fn peekLocation(self: *Self) loc.LocationRange {
+        return (self.peekToken() orelse unreachable).location; // FIXME: fix this. remoev orelse unreachable. handle error
+    }
+
     fn peekNthToken(self: *Self, n: usize) ?Token {
         if (self.tokens.items.len >= n) return self.tokens.items[self.tokens.items.len - n]
         else return null;
     }
 
     fn expectToken(self: *Self, tok: TokenType) ParseError!Token {
+
         const nt: Token = try self.nextToken();
-        return if (
-            !std.meta.eql(nt.tokenType, tok)
-        ) expectedTokenError(tok)
-        else nt;
+
+        if (!std.meta.eql(nt.tokenType, tok)) {
+            const err = expectedTokenError(tok);
+
+            self.logger.logError(log.ErrorInfo {
+                .description = "",
+                .err = err,
+                .location = nt.location
+            });
+
+            return err;
+        } else {
+            return nt;
+        }
     }
 
     fn expectTokenOrEOF(self: *Self, tok: TokenType) ParseError!Token {
+
         const nt: Token = try self.nextToken();
-        return if (
-            !std.meta.eql(nt.tokenType, tok) and !std.meta.eql(nt.tokenType, TokenType {.EOF = {}})
-        ) expectedTokenError(tok) else nt;
+
+        if (!std.meta.eql(nt.tokenType, tok) and !std.meta.eql(nt.tokenType, TokenType {.EOF = {}})) {
+            const err = expectedTokenError(tok);
+
+            self.logger.logError(log.ErrorInfo {
+                .description = "",
+                .err = err,
+                .location = nt.location
+            });
+
+            return err;
+        } else {
+            return nt;
+        }
+    }
+
+    fn expectExpression(self: *Self, location: loc.LocationRange) ParseError!*ast.Expr {
+        return self.parseExpr() catch |err| {
+
+            self.logger.logError(log.ErrorInfo {
+                .description = "",
+                .err = ParseError.ExpectedExpression,
+                .location = location
+            });
+
+            return err;
+        };
+    }
+
+    fn expectExpressionBp(self: *Self, bp: u8, location: loc.LocationRange) ParseError!*ast.Expr {
+
+        return self.parseExprBp(bp) catch |err| {
+
+            self.logger.logError(log.ErrorInfo {
+                .description = "",
+                .err = ParseError.ExpectedExpression,
+                .location = location
+            });
+
+            return err;
+        };
+    }
+
+    fn dummyExpr(self: *Self, location: LocationRange) *ast.Expr {
+        const dum = self.allocator.create(ast.Expr) catch unreachable;
+        dum.* = ast.Expr {
+            .location = location,
+            .expr = ast.ExprInner { .Lit = ast.Lit {.Void = {}}},
+        };
+        return dum;
     }
 
     fn parseExprBp(self: *Self, min_bp: u8) ParseError!*ast.Expr {
@@ -108,6 +174,13 @@ pub const Parser = struct {
 
             // Skip errors
             .ERROR, .ILLEGAL => {
+
+                self.logger.logError(log.ErrorInfo {
+                    .description = "",
+                    .err = ParseError.ErrorOrIllegalToken,
+                    .location = next_token.location
+                });
+
                 lhs = try self.parseExprBp(min_bp);
             },
 
@@ -170,7 +243,7 @@ pub const Parser = struct {
                 const bp: u8 = next_token.tokenType.getPrefixPrecedence().?;
 
                 // Work on right-hand side
-                const rhs: *ast.Expr = try self.parseExprBp(bp);
+                const rhs: *ast.Expr = try self.expectExpressionBp(bp, self.peekLocation());
 
                 // Properly set left-hand side
                 lhs = self.allocator.create(ast.Expr) catch unreachable;
@@ -200,7 +273,7 @@ pub const Parser = struct {
 
                     // Parse expression
                     const bp: u8 = (TokenType {.GT = {}}).getInfixPrecedence().?.right;
-                    acc.append(self.allocator, try self.parseExprBp(bp)) catch unreachable;
+                    acc.append(self.allocator, try self.expectExpressionBp(bp, self.peekLocation())) catch unreachable;
 
                     // Peek the next token
                     if (self.peekToken()) |tok| switch (tok.tokenType) {
@@ -228,7 +301,7 @@ pub const Parser = struct {
 
             // Parentheses
             .LPAREN => {
-                const ptr: *ast.Expr = try self.parseExprBp(0);
+                const ptr: *ast.Expr = try self.expectExpressionBp(0, self.peekLocation());
                 lhs = ptr;
                 errdefer lhs.destroyAll(self.allocator);
                 _ = try self.expectToken(TokenType {.RPAREN = {}});
@@ -249,7 +322,15 @@ pub const Parser = struct {
 
             // Ensure next is operator with improved binding power
             // Make sure that there is a token
-            const op_token: Token = if (self.peekToken()) |tok| tok else return ParseError.ExpectedTokenOrEOF;
+            const op_token: Token = if (self.peekToken()) |tok| tok else {
+
+                self.logger.logError(log.ErrorInfo {
+                    .description = "",
+                    .err = ParseError.ExpectedTokenOrEOF,
+                    .location = lhs.location, // FIXME: this should be location after hls. Also, this case never happens..
+                });
+                return ParseError.ExpectedTokenOrEOF;
+            };
 
             // If postfix operator, we treat as postfix
             if (op_token.tokenType.getPostfixPrecedence()) |op_prec| {
@@ -271,7 +352,8 @@ pub const Parser = struct {
                         while (!std.meta.eql(self.peekToken().?.tokenType, TokenType {.RPAREN = {}})) {
 
                             // Parse expression
-                            acc.append(self.allocator, try self.parseExprBp(0)) catch unreachable;
+                            const expr = try self.expectExpressionBp(0, self.peekLocation());
+                            acc.append(self.allocator, expr) catch unreachable;
 
                             // Peek the next token
                             if (self.peekToken()) |tok| switch (tok.tokenType) {
@@ -301,7 +383,7 @@ pub const Parser = struct {
                     .LBRACK => {
 
                         // Parse single expression
-                        const exp = try self.parseExprBp(0);
+                        const exp = try self.expectExpressionBp(0, self.peekLocation());
                         const last_token = try self.expectToken(TokenType {.RBRACK = {}});
 
                         // Produce list index expression
@@ -344,7 +426,7 @@ pub const Parser = struct {
                 _ = self.nextToken() catch unreachable;
 
                 // Handle right-hand side of operator/expression
-                const rhs: *ast.Expr = try self.parseExprBp(r_bp);
+                const rhs: *ast.Expr = try self.expectExpressionBp(r_bp, self.peekLocation());
 
                 // Update left-hand side to root of ast
                 const r: ast.Expr = switch(op_token.tokenType) {
@@ -419,6 +501,17 @@ pub const Parser = struct {
         return try self.parseExprBp(0);
     }
 
+    fn expectStatement(self: *Self, location: loc.LocationRange) ParseError!ast.Stmt {
+        return self.parseStmt() catch |err| {
+            self.logger.logError(log.ErrorInfo {
+                .description = "",
+                .err = ParseError.ExpectedStatement,
+                .location = location
+            });
+            return err;
+        };
+    }
+
     pub fn parseStmt(self: *Self) ParseError!ast.Stmt {
         // Recursive descent parsing
 
@@ -427,6 +520,14 @@ pub const Parser = struct {
 
             // Skip all error tokens
             .ERROR, .ILLEGAL => {
+
+                // Log illegal token
+                self.logger.logError(log.ErrorInfo {
+                    .description = "",
+                    .err = ParseError.ErrorOrIllegalToken,
+                    .location = tok.location
+                });
+
                 _ = try self.nextToken();
                 break :blk self.parseStmt();
             },
@@ -439,10 +540,10 @@ pub const Parser = struct {
                 defer acc.deinit(self.allocator);
                 errdefer for (acc.items) |expr| expr.destroyAll(self.allocator);
 
-                acc.append(self.allocator, try self.parseExpr()) catch unreachable;
+                acc.append(self.allocator, try self.expectExpression(self.peekLocation())) catch unreachable;
                 while (std.meta.eql(self.peekToken().?.tokenType, TokenType {.COMMA = {}})) {
                     _ = try self.expectToken(TokenType {.COMMA = {}});
-                    acc.append(self.allocator, try self.parseExpr()) catch unreachable;
+                    acc.append(self.allocator, try self.expectExpression(self.peekLocation())) catch unreachable;
                 }
 
                 const last_token = try self.expectTokenOrEOF(TokenType {.LB = {}});
@@ -463,10 +564,10 @@ pub const Parser = struct {
                 defer acc.deinit(self.allocator);
                 errdefer for (acc.items) |expr| expr.destroyAll(self.allocator);
 
-                acc.append(self.allocator, try self.parseExpr()) catch unreachable;
+                acc.append(self.allocator, try self.expectExpression(self.peekLocation())) catch unreachable;
                 while (std.meta.eql(self.peekToken().?.tokenType, TokenType {.COMMA = {}})) {
                     _ = try self.expectToken(TokenType {.COMMA = {}});
-                    acc.append(self.allocator, try self.parseExpr()) catch unreachable;
+                    acc.append(self.allocator, try self.expectExpression(self.peekLocation())) catch unreachable;
                 }
 
                 const last_token = try self.expectTokenOrEOF(TokenType {.LB = {}});
@@ -482,7 +583,7 @@ pub const Parser = struct {
             },
             .IF => {
                 const if_token = try self.expectToken(TokenType {.IF = {}});
-                const exp: *ast.Expr = try self.parseExpr();
+                const exp: *ast.Expr = try self.expectExpression(self.peekLocation());
                 errdefer exp.destroyAll(self.allocator);
 
                 _ = try self.expectToken(TokenType {.LB = {}});
@@ -523,7 +624,7 @@ pub const Parser = struct {
             },
             .WHILE => {
                 const while_token = try self.expectToken(TokenType {.WHILE = {}});
-                const exp: *ast.Expr = try self.parseExpr();
+                const exp: *ast.Expr = try self.expectExpression(self.peekLocation());
                 errdefer exp.destroyAll(self.allocator);
 
                 _ = try self.expectToken(TokenType {.LB = {}});
@@ -574,7 +675,7 @@ pub const Parser = struct {
                 // Try to parse return expression
                 const maybe_expr: ?*ast.Expr = if (self.peekToken()) |tk| switch (tk.tokenType) {
                     .LB, .EOF => null,
-                    else => try self.parseExpr()
+                    else => try self.expectExpression(self.peekLocation())
                 } else null;
                 const last_token = try self.expectTokenOrEOF(TokenType {.LB = {}});
 
@@ -600,13 +701,28 @@ pub const Parser = struct {
                 };
             },
             .FUN => {
+
                 const fun_token = try self.expectToken(TokenType {.FUN = {}});
 
                 // Parse the function identifier
                 const id: ast.Var = if (self.peekToken()) |tk| switch (tk.tokenType) {
                     .IDENT => |id| id,
-                    else => return expectedTokenError(TokenType {.IDENT = ""})
-                } else return expectedTokenError(TokenType {.IDENT = ""});
+                    else => {
+                        self.logger.logError(log.ErrorInfo {
+                            .description = "",
+                            .err = ParseError.ExpectedIdentifier,
+                            .location = self.peekLocation()
+                        });
+                        return expectedTokenError(TokenType {.IDENT = ""});
+                    }
+                } else {
+                    self.logger.logError(log.ErrorInfo {
+                        .description = "",
+                        .err = ParseError.ExpectedIdentifier,
+                        .location = self.peekLocation()
+                    });
+                    return expectedTokenError(TokenType {.IDENT = ""});
+                };
                 _ = try self.nextToken();
 
                 // Parse function parameters
@@ -622,7 +738,14 @@ pub const Parser = struct {
                             _ = try self.nextToken();
                             acc.append(self.allocator, ident) catch unreachable;
                         },
-                        else => return expectedTokenError(TokenType {.IDENT = ""})
+                        else => {
+                            self.logger.logError(log.ErrorInfo {
+                                .description = "",
+                                .err = ParseError.ExpectedIdentifier,
+                                .location = self.peekLocation()
+                            });
+                            return expectedTokenError(TokenType {.IDENT = ""});
+                        }
                     }
 
                     // Continue if there is a COMMA, otherwise break loop
@@ -689,7 +812,14 @@ pub const Parser = struct {
             .EOF => ParseError.ExpectedStatement,
             // Otherwise treat as an expression statement
             else => {
-                const exp: *ast.Expr = try self.parseExpr();
+                const exp: *ast.Expr = self.parseExpr() catch |err| {
+                    self.logger.logError(log.ErrorInfo {
+                        .description = "",
+                        .err = ParseError.ExpectedStatement,
+                        .location = self.peekLocation()
+                    });
+                    return err;
+                };
                 errdefer exp.destroyAll(self.allocator);
                 const last_token = try self.expectTokenOrEOF(TokenType {.LB = {}});
                 break :blk ast.Stmt {

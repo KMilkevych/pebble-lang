@@ -20,7 +20,30 @@ pub const ErrorInfo = struct {
         self: ErrorInfo,
         writer: *std.Io.Writer
     ) !void {
-        try writer.print("ERROR {}: {s} | {f}\n", .{self.err, self.description, self.location});
+
+        const pe = parser.ParseError;
+        const ee = interpreter.EvalError;
+        _ = ee;
+        const error_message: []const u8 = switch (self.err) {
+            pe.ErrorOrIllegalToken => "ERROR or ILLEGAL token",
+            pe.ExpectedAngleClose => "Expected '>'",
+            pe.ExpectedExpression => "Expected expression",
+            pe.ExpectedIdentifier => "Expected identifier",
+            pe.ExpectedIf => "Expected 'if'",
+            pe.ExpectedLineBreak => "Expected line break",
+            pe.ExpectedPClose => "Expected ')'",
+            pe.ExpectedPOpen => "Expected '('",
+            pe.ExpectedPrint => "Expected 'print'",
+            pe.ExpectedStatement => "Expected statement",
+            pe.ExpectedTokenOrEOF => "Expected token or EOF",
+            pe.ExpectedWhile => "Expected 'while'",
+
+            else => unreachable
+
+        };
+
+        // TODO: Implement bufPrint or allocPrint to properly pad location
+        try writer.print("({f}) {s}", .{self.location, error_message});
     }
 };
 

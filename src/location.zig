@@ -9,7 +9,7 @@ pub const Location = struct {
         self: Location,
         writer: *std.Io.Writer
     ) !void {
-        try writer.print("({s}: l.{d} c.{d})", .{self.file, self.line, self.column});
+        try writer.print("({s: >8}: l.{d: >4} c.{d: >4})", .{self.file, self.line, self.column});
     }
 };
 
@@ -21,7 +21,16 @@ pub const LocationRange = struct {
         self: LocationRange,
         writer: *std.Io.Writer
     ) !void {
-        try writer.print("{f} - {f}", .{self.from, self.to});
+        try writer.print(
+            "{s: >8}: l{d}.c{d} - l{d}.c{d}",
+            .{
+                self.from.file,
+                self.from.line,
+                self.from.column,
+                self.to.line,
+                self.to.column,
+            }
+        );
     }
 
     pub fn none() LocationRange {

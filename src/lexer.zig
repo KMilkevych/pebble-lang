@@ -433,13 +433,13 @@ pub const Lexer = struct {
                     .tokenType = token.TokenType {.LB = {}},
                     .location = loc.LocationRange {
                         .from = loc.Location {
-                            .file = lastToken.location.from.file,
-                            .column = lastToken.location.from.column,
-                            .line = lastToken.location.from.line
+                            .file = lastToken.location.to.file,
+                            .column = lastToken.location.to.column+1,
+                            .line = lastToken.location.to.line
                         },
                         .to = loc.Location {
                             .file = lastToken.location.to.file,
-                            .column = lastToken.location.to.column,
+                            .column = lastToken.location.to.column+1,
                             .line = lastToken.location.to.line
                         }
                     }
