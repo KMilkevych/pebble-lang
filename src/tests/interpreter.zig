@@ -3534,10 +3534,6 @@ test "nested list function return assignexpr" {
 
 test "list function return print statement" {
 
-    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
-    defer out.deinit();
-    interpreter.setWriter(&out.writer);
-
     // Prepare environment
     var env = venv.Env.new(std.testing.allocator);
     defer env.deinit();
