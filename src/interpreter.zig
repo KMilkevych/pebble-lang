@@ -93,18 +93,29 @@ pub const Interpreter = struct {
                 // Evaluate identifier (should lookup in environment..)
                 var list: *ast.List = switch (try self.evalExpr(l.id, env)) {
                     .List => |lst| lst,
-                    .Int, .Float, .Bool, .Type, .Void, .Callable => return EvalError.NotList,
+                    .Int, .Float, .Bool, .Type, .Void, .Callable => {
+                        self.logger.logError(EvalError.NotList, l.id.location);
+                        return EvalError.NotList;
+                    }
                 };
                 defer list.destroyAll(env.allocator);
 
                 // Evaluate index
-                const index: i64 = switch (try self.evalExpr(l.idx, env)) {
+                var idx = try self.evalExpr(l.idx, env);
+                defer idx.destroyAll(env.allocator);
+                const index: i64 = switch (idx) {
                     .Int => |i| i,
-                    .Bool, .Float, .Type, .Void, .Callable, .List => return EvalError.MismatchedType,
+                    .Bool, .Float, .Type, .Void, .Callable, .List => {
+                        self.logger.logError(EvalError.MismatchedType, l.idx.location);
+                        return EvalError.MismatchedType;
+                    }
                 };
 
                 // Make sure index is within bounds
-                if (index < 0 or index >= list.len) return EvalError.IndexOutOfBounds;
+                if (index < 0 or index >= list.len) {
+                    self.logger.logError(EvalError.IndexOutOfBounds, l.idx.location);
+                    return EvalError.IndexOutOfBounds;
+                }
 
                 // Lookup by index and return
                 const lit: ast.Lit = list.items[@as(usize, @intCast(index))];
@@ -119,9 +130,15 @@ pub const Interpreter = struct {
                 const id: []const u8 = switch (p.prop.expr) {
                     .Lval => |lv| switch (lv) {
                         .Var => |v| v,
-                        else => return EvalError.InvalidProperty,
+                        else => {
+                            self.logger.logError(EvalError.InvalidProperty, p.prop.location);
+                            return EvalError.InvalidProperty;
+                        }
                     },
-                    else => return EvalError.InvalidProperty,
+                    else => {
+                        self.logger.logError(EvalError.InvalidProperty, p.prop.location);
+                        return EvalError.InvalidProperty;
+                    }
                 };
 
                 // Evaluate left-hand-side
@@ -130,9 +147,15 @@ pub const Interpreter = struct {
 
                 switch (lhs) {
                     .List => |l| {
-                        if (std.mem.eql(u8, id, "size")) break :sw ast.Lit{ .Int = @intCast(l.len) } else return EvalError.InvalidProperty;
+                        if (std.mem.eql(u8, id, "size")) break :sw ast.Lit{ .Int = @intCast(l.len) } else {
+                            self.logger.logError(EvalError.InvalidProperty, p.lhs.location);
+                            return EvalError.InvalidProperty;
+                        }
                     },
-                    else => return EvalError.InvalidProperty,
+                    else =>  {
+                        self.logger.logError(EvalError.InvalidProperty, p.lhs.location);
+                        return EvalError.InvalidProperty;
+                    }
                 }
             },
         };
@@ -144,8 +167,10 @@ pub const Interpreter = struct {
     pub fn evalBinOpExpr(self: *Self, expr: *const ast.BinOpExpr, env: *venv.Env) EvalError!ast.Lit {
 
         // Evaluate operands
-        const lhs = try self.evalExpr(expr.lhs, env);
-        const rhs = try self.evalExpr(expr.rhs, env);
+        var lhs = try self.evalExpr(expr.lhs, env);
+        defer lhs.destroyAll(env.allocator);
+        var rhs = try self.evalExpr(expr.rhs, env);
+        defer rhs.destroyAll(env.allocator);
 
         // Evaluate expression
         return switch (expr.op) {
@@ -320,13 +345,19 @@ pub const Interpreter = struct {
         // Evaluate operator
         return switch (expr.op) {
             .Not => switch (lit) {
-                .Int, .Float, .Type, .Callable, .Void, .List => TypeError.MismatchedType,
+                .Int, .Float, .Type, .Callable, .Void, .List => {
+                    self.logger.logError(TypeError.MismatchedType, expr.rhs.location);
+                    return TypeError.MismatchedType;
+                },
                 .Bool => |val| ast.Lit{ .Bool = !val },
             },
             .Neg => switch (lit) {
                 .Int => |val| ast.Lit{ .Int = -val },
                 .Float => |val| ast.Lit{ .Float = -val },
-                .Bool, .Type, .Callable, .Void, .List => TypeError.MismatchedType,
+                .Bool, .Type, .Callable, .Void, .List => {
+                    self.logger.logError(TypeError.MismatchedType, expr.rhs.location);
+                    return TypeError.MismatchedType;
+                }
             },
         };
     }
@@ -338,16 +369,23 @@ pub const Interpreter = struct {
         // Make sure left-hand side is an lval
         const lval: ast.Lval = switch (expr.lhs.expr) {
             .Lval => |lv| lv,
-            else => return EvalError.NotIdentifier,
+            else => {
+                self.logger.logError(EvalError.NotIdentifier, expr.lhs.location);
+                return EvalError.NotIdentifier;
+            }
         };
 
         // Evaluate right-hand side
-        const rhs: ast.Lit = try self.evalExpr(expr.rhs, env);
+        var rhs: ast.Lit = try self.evalExpr(expr.rhs, env);
+        errdefer rhs.destroyAll(env.allocator); // NOTE: errdefer here because normally we make a reference
 
         // Perform assignment
         switch (lval) {
             .Var => |id| {
-                if (!env.isDeclaredGlobal(id)) return EvalError.UndefinedVariable;
+                if (!env.isDeclaredGlobal(id)) {
+                    self.logger.logError(EvalError.UndefinedVariable, expr.lhs.location);
+                    return EvalError.UndefinedVariable;
+                }
 
                 // Destroy existing value
                 switch (env.lookup(id) orelse unreachable) {
@@ -368,18 +406,29 @@ pub const Interpreter = struct {
                 // NOTE: this creates an additional reference
                 var lst: *ast.List = switch (try self.evalExpr(lidx.id, env)) {
                     .List => |l| l,
-                    .Int, .Float, .Bool, .Type, .Void, .Callable => return EvalError.NotList,
+                    .Int, .Float, .Bool, .Type, .Void, .Callable => {
+                        self.logger.logError(EvalError.NotList, lidx.id.location);
+                        return EvalError.NotList;
+                    }
                 };
                 defer lst.destroyAll(env.allocator);
 
                 // Evaluate index
-                const idx: i64 = switch (try self.evalExpr(lidx.idx, env)) {
+                var index = try self.evalExpr(lidx.idx, env);
+                defer index.destroyAll(env.allocator);
+                const idx: i64 = switch (index) {
                     .Int => |i| i,
-                    .Bool, .Float, .Type, .Void, .Callable, .List => return EvalError.MismatchedType,
+                    .Bool, .Float, .Type, .Void, .Callable, .List => {
+                        self.logger.logError(EvalError.MismatchedType, lidx.idx.location);
+                        return EvalError.MismatchedType;
+                    }
                 };
 
                 // Bounds checking
-                if (idx < 0 or idx >= lst.len) return EvalError.IndexOutOfBounds;
+                if (idx < 0 or idx >= lst.len) {
+                    self.logger.logError(EvalError.IndexOutOfBounds, lidx.idx.location);
+                    return EvalError.IndexOutOfBounds;
+                }
 
                 // Destroy existing value
                 switch (lst.items[@as(usize, @intCast(idx))]) {
@@ -390,7 +439,10 @@ pub const Interpreter = struct {
                 // Perform assignment
                 lst.items[@as(usize, @intCast(idx))] = rhs;
             },
-            .PropertyAccess => return EvalError.ReadOnlyProperty, // TODO: Implement real properties
+            .PropertyAccess => {
+                self.logger.logError(EvalError.ReadOnlyProperty, expr.lhs.location);
+                return EvalError.ReadOnlyProperty; // TODO: Implement real properties
+            }
         }
 
         return switch (rhs) {
@@ -402,9 +454,14 @@ pub const Interpreter = struct {
     pub fn evalCallExpr(self: *Self, expr: *const ast.CallExpr, env: *venv.Env) EvalError!ast.Lit {
 
         // Evaluate identifier
-        const callable: ast.Callable = switch (try self.evalExpr(expr.id, env)) {
+        var ident = try self.evalExpr(expr.id, env);
+        defer ident.destroyAll(env.allocator);
+        const callable: ast.Callable = switch (ident) {
             .Callable => |fun| fun,
-            .Int, .Float, .Bool, .Type, .Void, .List => return EvalError.NotCallable,
+            .Int, .Float, .Bool, .Type, .Void, .List => {
+                self.logger.logError(EvalError.NotCallable, expr.id.location);
+                return EvalError.NotCallable;
+            }
         };
 
         // Create a scoped environment based on function closure
@@ -427,8 +484,14 @@ pub const Interpreter = struct {
         return switch (try self.evalStmt(callable.body, &scopedEnv)) {
             .NoReturn => ast.Lit{ .Void = {} },
             .Return => |lit| lit,
-            .Break => EvalError.UnexpectedBreak,
-            .Continue => EvalError.UnexpectedContinue,
+            .Break => {
+                self.logger.logError(EvalError.UnexpectedBreak, callable.body.location);
+                return EvalError.UnexpectedBreak;
+            },
+            .Continue => {
+                self.logger.logError(EvalError.UnexpectedContinue, callable.body.location);
+                return EvalError.UnexpectedContinue;
+            }
         };
     }
 
@@ -443,7 +506,10 @@ pub const Interpreter = struct {
         for (exprs) |expr| {
             const lit: ast.Lit = try self.evalExpr(expr, env);
             switch (lit) {
-                .Callable => return SemanticError.InvalidUpcall,
+                .Callable => {
+                    self.logger.logError(SemanticError.InvalidUpcall, expr.location);
+                    return SemanticError.InvalidUpcall;
+                },
                 else => acc.append(env.allocator, lit) catch unreachable,
             }
         }
@@ -461,10 +527,14 @@ pub const Interpreter = struct {
     pub fn evalAsExpr(self: *Self, expr: *const ast.AsExpr, env: *venv.Env) EvalError!ast.Lit {
 
         // Evaluate left-hand-side
-        const lhs: ast.Lit = try self.evalExpr(expr.lhs, env);
+        var lhs: ast.Lit = try self.evalExpr(expr.lhs, env);
+        defer lhs.destroyAll(env.allocator);
 
         // Evaluate right-hand side to a type literal
-        const tp: ast.Type = switch (try self.evalExpr(expr.as, env)) {
+        var tpe = try self.evalExpr(expr.as, env);
+        defer tpe.destroyAll(env.allocator);
+
+        const tp: ast.Type = switch (tpe) {
             .Type => |tp| tp,
             else => return EvalError.MismatchedType,
         };
@@ -493,9 +563,18 @@ pub const Interpreter = struct {
     pub fn evalExpr(self: *Self, expr: *const ast.Expr, env: *venv.Env) EvalError!ast.Lit {
 
         return switch (expr.expr) {
-            .BinOpExpr => |ex| self.evalBinOpExpr(&ex, env),
-            .UnOpExpr => |ex| self.evalUnOpExpr(&ex, env),
-            .Lval => |lval| self.evalLval(lval, env),
+            .BinOpExpr => |ex| self.evalBinOpExpr(&ex, env) catch |err| {
+                self.logger.logError(err, expr.location);
+                return err;
+            },
+            .UnOpExpr => |ex| self.evalUnOpExpr(&ex, env) catch |err| {
+                self.logger.logError(err, expr.location);
+                return err;
+            },
+            .Lval => |lval| self.evalLval(lval, env) catch |err| {
+                self.logger.logError(err, expr.location);
+                return err;
+            },
 
             // NOTE: We create an extra reference here, assuming this is bottom level
             .Lit => |lit| switch (lit) {
@@ -504,12 +583,15 @@ pub const Interpreter = struct {
             },
 
             .AssignExpr => |ex| self.evalAssignExpr(&ex, env),
-            .CallExpr => |ex| self.evalCallExpr(&ex, env),
+            .CallExpr => |ex| self.evalCallExpr(&ex, env) catch |err| {
+                self.logger.logError(err, expr.location);
+                return err;
+            },
             .ListExpr => |ex| self.evalListExpr(ex, env),
-            .AsExpr => |ex| self.evalAsExpr(&ex, env),
-        } catch |err| {
-            self.logger.logError(err, expr.location);
-            return err;
+            .AsExpr => |ex| self.evalAsExpr(&ex, env) catch |err| {
+                self.logger.logError(err, expr.location);
+                return err;
+            },
         };
     }
 
@@ -599,7 +681,9 @@ pub const Interpreter = struct {
                             }
 
                             // Evaluate index (size)
-                            const size: i64 = switch (try self.evalExpr(li.idx, env)) {
+                            var sz = try self.evalExpr(li.idx, env);
+                            defer sz.destroyAll(env.allocator);
+                            const size: i64 = switch (sz) {
                                 .Int => |i| i,
                                 .Bool, .Float, .Type, .Callable, .Void, .List => {
                                     self.logger.logError(EvalError.MismatchedType, li.idx.location);
@@ -655,8 +739,8 @@ pub const Interpreter = struct {
                     // Evaluate expression and print resulting literal
                     // TODO: Get rid of unreachable
                     var res: ast.Lit = try self.evalExpr(expr, env);
+                    defer res.destroyAll(env.allocator);
                     self.writer.print("{f} ", .{res}) catch unreachable;
-                    res.destroyAll(env.allocator);
                 }
                 self.writer.print("\n", .{}) catch unreachable;
                 return StmtReturn{ .NoReturn = {} };
@@ -680,6 +764,8 @@ pub const Interpreter = struct {
 
                 // Check condition
                 var cond_res: ast.Lit = try self.evalExpr(stmt.cond, env);
+                defer cond_res.destroyAll(env.allocator);
+
                 const res: bool = switch (cond_res) {
                     .Int, .Float, .Type, .Callable, .Void, .List => {
                         self.logger.logError(TypeError.MismatchedType, stmt.cond.location);
@@ -687,8 +773,6 @@ pub const Interpreter = struct {
                     },
                     .Bool => |b| b,
                 };
-
-                cond_res.destroyAll(env.allocator);
 
                 // Construct scoped environment
                 var scopedEnv = env.newScoped();
@@ -707,6 +791,7 @@ pub const Interpreter = struct {
 
                     // Check condition
                     var cond_lit: ast.Lit = try self.evalExpr(stmt.cond, env);
+                    defer cond_lit.destroyAll(env.allocator);
                     const res: bool = switch (cond_lit) {
                         .Int, .Float, .Type, .Callable, .Void, .List => {
                             self.logger.logError(TypeError.MismatchedType, stmt.cond.location);
@@ -715,7 +800,6 @@ pub const Interpreter = struct {
                         .Bool => |b| b,
                     };
 
-                    cond_lit.destroyAll(env.allocator);
 
                     if (!res) break;
 
@@ -769,7 +853,8 @@ pub const Interpreter = struct {
         // Evaluate statements one by one
         for (procedure.stmts) |stmt| switch (try self.evalStmt(stmt, env)) {
             .NoReturn => {},
-            .Return => {
+            .Return => |lit| {
+                lit.destroyAll(env.allocator);
                 self.logger.logError(EvalError.UnexpectedReturn, stmt.location);
                 return EvalError.UnexpectedReturn;
             },

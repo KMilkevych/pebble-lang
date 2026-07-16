@@ -4526,3 +4526,280 @@ test "type conversion int - float" {
         ast.Lit {.Int = 0}
     );
 }
+
+
+test "list assign no declare" {
+    // Prepare environment
+    var env = venv.Env.new(std.testing.allocator);
+    defer env.deinit();
+
+    // Prepare procedure
+    const proc: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
+
+        ast.Stmt {
+            .stmt = ast.StmtInner {.ExprStmt = &ast.Expr {
+                .expr = ast.ExprInner {.AssignExpr = ast.AssignExpr {
+                    .lhs = &ast.Expr {
+                        .expr = ast.ExprInner {.Lval = ast.Lval {.Var = "var"}},
+                        .location = nolocation()
+                    },
+                    .rhs = &ast.Expr {
+                        .expr = ast.ExprInner {.ListExpr = &[_]*const ast.Expr {
+                            &ast.Expr {
+                                .expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},
+                                .location = nolocation()
+                            },
+
+                            &ast.Expr {
+                                .expr = ast.ExprInner {.Lit = ast.Lit {.Int = 2}},
+                                .location = nolocation()
+                            },
+
+                            &ast.Expr {
+                                .expr = ast.ExprInner {.Lit = ast.Lit {.Int = 3}},
+                                .location = nolocation()
+                            },
+                        }},
+                        .location = nolocation()
+                    },
+                }},
+                .location = nolocation()
+            }},
+            .location = nolocation()
+        }
+    }};
+
+
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
+
+    const res = interpreter.evalProc(proc, &env);
+
+    try std.testing.expectEqualDeep(
+        res,
+        interprtr.EvalError.UndefinedVariable,
+    );
+}
+
+
+test "binop with list" {
+    // Prepare environment
+    var env = venv.Env.new(std.testing.allocator);
+    defer env.deinit();
+
+    // Prepare procedure
+    const listexpr = ast.Expr {
+        .expr = ast.ExprInner {.ListExpr = &[_]*const ast.Expr {
+            &ast.Expr {
+                .expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},
+                .location = nolocation()
+            },
+            &ast.Expr {
+                .expr = ast.ExprInner {.Lit = ast.Lit {.Int = 2}},
+                .location = nolocation()
+            },
+            &ast.Expr {
+                .expr = ast.ExprInner {.Lit = ast.Lit {.Int = 3}},
+                .location = nolocation()
+            },
+        }},
+        .location = nolocation(),
+    };
+
+    const proc: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
+
+        ast.Stmt {
+            .stmt = ast.StmtInner {.ExprStmt = &ast.Expr {
+                .expr = ast.ExprInner {.BinOpExpr = ast.BinOpExpr {
+                    .lhs = &ast.Expr {
+                        .expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},
+                        .location = nolocation()
+                    },
+                    .rhs = &listexpr,
+                    .op = ast.BinOp.Add
+                }},
+                .location = nolocation()
+            }},
+            .location = nolocation()
+        }
+    }};
+
+
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
+
+    const res = interpreter.evalProc(proc, &env);
+
+    try std.testing.expectEqualDeep(
+        res,
+        interprtr.EvalError.MismatchedType,
+    );
+}
+
+
+test "unop with list" {
+    // Prepare environment
+    var env = venv.Env.new(std.testing.allocator);
+    defer env.deinit();
+
+    // Prepare procedure
+    const listexpr = ast.Expr {
+        .expr = ast.ExprInner {.ListExpr = &[_]*const ast.Expr {
+            &ast.Expr {
+                .expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},
+                .location = nolocation()
+            },
+            &ast.Expr {
+                .expr = ast.ExprInner {.Lit = ast.Lit {.Int = 2}},
+                .location = nolocation()
+            },
+            &ast.Expr {
+                .expr = ast.ExprInner {.Lit = ast.Lit {.Int = 3}},
+                .location = nolocation()
+            },
+        }},
+        .location = nolocation(),
+    };
+
+    const proc: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
+
+        ast.Stmt {
+            .stmt = ast.StmtInner {.ExprStmt = &ast.Expr {
+                .expr = ast.ExprInner {.UnOpExpr = ast.UnOpExpr {
+                    .rhs = &listexpr,
+                    .op = ast.UnOp.Not
+                }},
+                .location = nolocation()
+            }},
+            .location = nolocation()
+        }
+    }};
+
+
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
+
+    const res = interpreter.evalProc(proc, &env);
+
+    try std.testing.expectEqualDeep(
+        res,
+        interprtr.EvalError.MismatchedType,
+    );
+}
+
+
+test "callexpr with list" {
+    // Prepare environment
+    var env = venv.Env.new(std.testing.allocator);
+    defer env.deinit();
+
+    // Prepare procedure
+    const listexpr = ast.Expr {
+        .expr = ast.ExprInner {.ListExpr = &[_]*const ast.Expr {
+            &ast.Expr {
+                .expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},
+                .location = nolocation()
+            },
+            &ast.Expr {
+                .expr = ast.ExprInner {.Lit = ast.Lit {.Int = 2}},
+                .location = nolocation()
+            },
+            &ast.Expr {
+                .expr = ast.ExprInner {.Lit = ast.Lit {.Int = 3}},
+                .location = nolocation()
+            },
+        }},
+        .location = nolocation(),
+    };
+
+    const proc: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
+
+        ast.Stmt {
+            .stmt = ast.StmtInner {.ExprStmt = &ast.Expr {
+                .expr = ast.ExprInner {.CallExpr = ast.CallExpr {
+                    .id = &listexpr,
+                    .args = &[_]*const ast.Expr {}
+                }},
+                .location = nolocation()
+            }},
+            .location = nolocation()
+        }
+    }};
+
+
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
+
+    const res = interpreter.evalProc(proc, &env);
+
+    try std.testing.expectEqualDeep(
+        res,
+        interprtr.EvalError.NotCallable,
+    );
+}
+
+
+test "list as list" {
+    // Prepare environment
+    var env = venv.Env.new(std.testing.allocator);
+    defer env.deinit();
+
+    // Prepare procedure
+    const listexpr = ast.Expr {
+        .expr = ast.ExprInner {.ListExpr = &[_]*const ast.Expr {
+            &ast.Expr {
+                .expr = ast.ExprInner {.Lit = ast.Lit {.Int = 1}},
+                .location = nolocation()
+            },
+            &ast.Expr {
+                .expr = ast.ExprInner {.Lit = ast.Lit {.Int = 2}},
+                .location = nolocation()
+            },
+            &ast.Expr {
+                .expr = ast.ExprInner {.Lit = ast.Lit {.Int = 3}},
+                .location = nolocation()
+            },
+        }},
+        .location = nolocation(),
+    };
+
+    const proc: ast.Proc = ast.Proc {.stmts = &[_]ast.Stmt {
+
+        ast.Stmt {
+            .stmt = ast.StmtInner {.ExprStmt = &ast.Expr {
+                .expr = ast.ExprInner {.AsExpr = ast.AsExpr {
+                    .lhs = &listexpr,
+                    .as = &listexpr
+                }},
+                .location = nolocation()
+            }},
+            .location = nolocation()
+        }
+    }};
+
+
+    var logger = log.Logger.new(std.testing.allocator);
+    defer logger.destroyAll();
+    var out = std.Io.Writer.Allocating.init(std.testing.allocator);
+    defer out.deinit();
+    var interpreter = interprtr.Interpreter.new(&out.writer, &logger);
+
+    const res = interpreter.evalProc(proc, &env);
+
+    try std.testing.expectEqualDeep(
+        res,
+        interprtr.EvalError.MismatchedType,
+    );
+}

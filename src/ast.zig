@@ -97,7 +97,7 @@ pub const Lit = union(enum) {
     List: *List,
     Type: Type,
 
-    pub fn destroyAll(self: *Lit, allocator: std.mem.Allocator) void {
+    pub fn destroyAll(self: *const Lit, allocator: std.mem.Allocator) void {
         switch (self.*) {
             .Int, .Bool, .Float, .Type, .Void => {},
             .Callable => |fun| fun.destroyAll(allocator),
