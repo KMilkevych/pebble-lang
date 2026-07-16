@@ -5,6 +5,12 @@ const log = @import("logger.zig");
 
 const std = @import("std");
 
+var writer: *std.Io.Writer = undefined;
+
+pub fn setWriter(outwriter: *std.Io.Writer) void {
+    writer = outwriter;
+}
+
 // Error types
 pub const TypeError = error{
     MismatchedType,
