@@ -15,16 +15,15 @@ run ~zig build run -- interactive~ to start the interactive REPL shell which sup
 
 Computing the first =N= fibonacci numbers:
 #+begin_src
-declare N = 10
-declare n1 = 1, n2 = 1, i = 1
-while i <= N  {
+declare N = 10, n1 = 1, n2 = 1
 
-      i = i + 1
+declare i = 1
+while (i = i + 1) <= N {
       print n1
 
-      declare TMP = n1
+      declare tmp = n1
       n1 = n1 + n2
-      n2 = TMP
+      n2 = tmp
 }
 #+end_src
 which results in output
@@ -38,7 +37,6 @@ which results in output
 21
 34
 55
-89
 #+end_example
 ** Function down-calling
 #+begin_src

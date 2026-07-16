@@ -1,9 +1,7 @@
 declare N = 10, n1 = 1, n2 = 1
 
 declare i = 1
-while i <= N {
-
-      i = i + 1
+while (i = i + 1) <= N {
       print n1
 
       declare tmp = n1
