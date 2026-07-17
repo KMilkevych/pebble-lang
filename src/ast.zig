@@ -95,6 +95,7 @@ pub const Lit = union(enum) {
     Void: void,
     Callable: Callable,
     List: *List,
+    String: []u8,
     Type: Type,
 
     pub fn destroyAll(self: *const Lit, allocator: std.mem.Allocator) void {
@@ -102,6 +103,7 @@ pub const Lit = union(enum) {
             .Int, .Bool, .Float, .Type, .Void => {},
             .Callable => |fun| fun.destroyAll(allocator),
             .List => |lst| lst.destroyAll(allocator),
+            .String => |str| allocator.free(str),
         }
     }
 
@@ -116,6 +118,7 @@ pub const Lit = union(enum) {
             .Void => try writer.print("{{}}", .{}),
             .Callable => |f| try writer.print("{f}", .{f}),
             .List => |l| try writer.print("{f}", .{l}),
+            .String => |s| try writer.print("{s}", .{s}),
             .Type => |t| try writer.print("{f}", .{t}),
         }
     }
@@ -385,7 +388,7 @@ pub const ExprInner = union(enum) {
         switch (self.*) {
             .BinOpExpr => |*expr| expr.destroyAll(allocator),
             .UnOpExpr => |*expr| expr.destroyAll(allocator),
-            .Lit => {},
+            .Lit => |l| l.destroyAll(allocator),
             .Lval => |*lval| lval.destroyAll(allocator),
             .AssignExpr => |*expr| expr.destroyAll(allocator),
             .CallExpr => |*expr| expr.destroyAll(allocator),

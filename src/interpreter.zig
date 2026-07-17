@@ -86,6 +86,7 @@ pub const Interpreter = struct {
                         },
                         .Callable => |fun| ast.Lit{ .Callable = fun },
                         .List => |lst| ast.Lit{ .List = lst.makeReference() },
+                        .String => |str| ast.Lit {.String = env.allocator.dupe(u8, str) catch unreachable},
                         .Type => |tp| ast.Lit{ .Type = tp },
                     },
                     .Undefined => {
@@ -97,21 +98,23 @@ pub const Interpreter = struct {
             .ListIndex => |l| {
 
                 // Evaluate identifier (should lookup in environment..)
-                var list: *ast.List = switch (try self.evalExpr(l.id, env)) {
+                var id = try self.evalExpr(l.id, env);
+                defer id.destroyAll(env.allocator);
+                const list: *ast.List = switch (id) {
                     .List => |lst| lst,
-                    .Int, .Float, .Bool, .Type, .Void, .Callable => {
+                    .Int, .Float, .Bool, .Type, .Void, .Callable, .String => {
                         self.logger.logError(EvalError.NotList, l.id.location);
                         return EvalError.NotList;
                     }
                 };
-                defer list.destroyAll(env.allocator);
+                // defer list.destroyAll(env.allocator);
 
                 // Evaluate index
                 var idx = try self.evalExpr(l.idx, env);
                 defer idx.destroyAll(env.allocator);
                 const index: i64 = switch (idx) {
                     .Int => |i| i,
-                    .Bool, .Float, .Type, .Void, .Callable, .List => {
+                    .Bool, .Float, .Type, .Void, .Callable, .String, .List => {
                         self.logger.logError(EvalError.MismatchedType, l.idx.location);
                         return EvalError.MismatchedType;
                     }
@@ -184,12 +187,21 @@ pub const Interpreter = struct {
                 .Int => |l| switch (rhs) {
                     .Int => |r| ast.Lit{ .Int = l + r },
                     .Float => |r| ast.Lit{ .Float = i64asf64(l) + r },
-                    .Bool, .Type, .Callable, .Void, .List => TypeError.MismatchedType,
+                    .Bool, .Type, .Callable, .Void, .List, .String => TypeError.MismatchedType,
                 },
                 .Float => |l| switch (rhs) {
                     .Int => |r| ast.Lit{ .Float = l + i64asf64(r) },
                     .Float => |r| ast.Lit{ .Float = l + r },
-                    .Bool, .Type, .Callable, .Void, .List => TypeError.MismatchedType,
+                    .Bool, .Type, .Callable, .Void, .List, .String => TypeError.MismatchedType,
+                },
+                .String => |l| switch (rhs) {
+                    .String => |r| blk: {
+                        var res = env.allocator.alloc(u8, l.len + r.len) catch unreachable;
+                        @memmove(res[0..], l);
+                        @memmove(res[l.len..], r);
+                        break :blk ast.Lit {.String = res};
+                    },
+                    .Int, .Float, .Type, .Callable, .Void, .List, .Bool => TypeError.MismatchedType
                 },
                 .Bool, .Type, .Callable, .Void, .List => TypeError.MismatchedType,
             },
@@ -197,12 +209,21 @@ pub const Interpreter = struct {
                 .Int => |l| switch (rhs) {
                     .Int => |r| ast.Lit{ .Int = l - r },
                     .Float => |r| ast.Lit{ .Float = i64asf64(l) - r },
-                    .Bool, .Type, .Callable, .Void, .List => TypeError.MismatchedType,
+                    .Bool, .Type, .Callable, .Void, .List, .String => TypeError.MismatchedType,
                 },
                 .Float => |l| switch (rhs) {
                     .Int => |r| ast.Lit{ .Float = l - i64asf64(r) },
                     .Float => |r| ast.Lit{ .Float = l - r },
-                    .Bool, .Type, .Callable, .Void, .List => TypeError.MismatchedType,
+                    .Bool, .Type, .Callable, .Void, .List, .String => TypeError.MismatchedType,
+                },
+                .String => |l| switch (rhs) {
+                    .String => |r| blk: {
+                        const sz = std.mem.replacementSize(u8, l, r, "");
+                        const res = env.allocator.alloc(u8, sz) catch unreachable;
+                        _ = std.mem.replace(u8, l, r, "", res);
+                        break :blk ast.Lit {.String = res};
+                    },
+                    .Int, .Float, .Type, .Bool, .Callable, .Void, .List => TypeError.MismatchedType
                 },
                 .Bool, .Type, .Callable, .Void, .List => TypeError.MismatchedType,
             },
@@ -210,12 +231,29 @@ pub const Interpreter = struct {
                 .Int => |l| switch (rhs) {
                     .Int => |r| ast.Lit{ .Int = l * r },
                     .Float => |r| ast.Lit{ .Float = i64asf64(l) * r },
+                    .String => |r| blk: {
+                        var res = env.allocator.alloc(u8, r.len * @abs(l)) catch unreachable;
+                        for (0..@abs(l)) |v| {
+                            @memmove(res[(v * r.len)..((v+1)*r.len)], r);
+                        }
+                        break :blk ast.Lit {.String = res};
+                    },
                     .Bool, .Type, .Callable, .Void, .List => TypeError.MismatchedType,
                 },
                 .Float => |l| switch (rhs) {
                     .Int => |r| ast.Lit{ .Float = l * i64asf64(r) },
                     .Float => |r| ast.Lit{ .Float = l * r },
-                    .Bool, .Type, .Callable, .Void, .List => TypeError.MismatchedType,
+                    .Bool, .Type, .Callable, .Void, .List, .String => TypeError.MismatchedType,
+                },
+                .String => |l| switch (rhs) {
+                    .Int => |r| blk: {
+                        var res = env.allocator.alloc(u8, l.len * @abs(r)) catch unreachable;
+                        for (0..@abs(r)) |v| {
+                            @memmove(res[(v * l.len)..((v+1)*l.len)], l);
+                        }
+                        break :blk ast.Lit {.String = res};
+                    },
+                    .String, .Float, .Type, .Bool, .Callable, .Void, .List => TypeError.MismatchedType
                 },
                 .Bool, .Type, .Callable, .Void, .List => TypeError.MismatchedType,
             },
@@ -229,7 +267,7 @@ pub const Interpreter = struct {
                         if (r == 0) return ArithmeticError.DivisionByZero;
                         return ast.Lit{ .Float = i64asf64(l) / r };
                     },
-                    .Bool, .Type, .Callable, .Void, .List => TypeError.MismatchedType,
+                    .Bool, .Type, .Callable, .Void, .List, .String => TypeError.MismatchedType,
                 },
                 .Float => |l| switch (rhs) {
                     .Int => |r| {
@@ -240,49 +278,80 @@ pub const Interpreter = struct {
                         if (r == 0) return ArithmeticError.DivisionByZero;
                         return ast.Lit{ .Float = l / r };
                     },
-                    .Bool, .Type, .Callable, .Void, .List => TypeError.MismatchedType,
+                    .Bool, .Type, .Callable, .Void, .List, .String => TypeError.MismatchedType,
+                },
+                .String => |l| switch (rhs) {
+                    .String => |r| blk: {
+
+                        // Building list of strings as result
+                        var acc: std.ArrayList(ast.Lit) = .empty;
+                        errdefer acc.deinit(env.allocator);
+                        errdefer for (acc.items) |*item| item.destroyAll(env.allocator);
+
+                        // Iterate over split parts and add to list
+                        var it = std.mem.splitSequence(u8, l, r);
+                        while (it.next()) |item| {
+                            acc.append(env.allocator, ast.Lit {.String = env.allocator.dupe(u8, item) catch unreachable}) catch unreachable;
+                        }
+
+                        // Construct list of strings
+                        const ptr = env.allocator.create(ast.List) catch unreachable;
+                        ptr.* = ast.List {
+                            .len = acc.items.len,
+                            .items = acc.toOwnedSlice(env.allocator) catch unreachable
+                        };
+                        break :blk ast.Lit {.List = ptr};
+                    },
+                    .Int, .Float, .Type, .Callable, .Bool, .Void, .List => TypeError.MismatchedType
                 },
                 .Bool, .Type, .Callable, .Void, .List => TypeError.MismatchedType,
             },
             .And => switch (lhs) {
                 .Bool => |l| switch (rhs) {
                     .Bool => |r| ast.Lit{ .Bool = l and r },
-                    .Int, .Float, .Type, .Callable, .Void, .List => TypeError.MismatchedType,
+                    .Int, .Float, .Type, .Callable, .Void, .List, .String => TypeError.MismatchedType,
                 },
-                .Int, .Float, .Type, .Callable, .Void, .List => TypeError.MismatchedType,
+                .Int, .Float, .Type, .Callable, .Void, .List, .String => TypeError.MismatchedType,
             },
             .Or => switch (lhs) {
                 .Bool => |l| switch (rhs) {
                     .Bool => |r| ast.Lit{ .Bool = l or r },
-                    .Int, .Float, .Type, .Callable, .Void, .List => TypeError.MismatchedType,
+                    .Int, .Float, .Type, .Callable, .Void, .List, .String => TypeError.MismatchedType,
                 },
-                .Int, .Float, .Type, .Callable, .Void, .List => TypeError.MismatchedType,
+                .Int, .Float, .Type, .Callable, .Void, .List, .String => TypeError.MismatchedType,
             },
             .Eq => switch (lhs) {
                 .Bool => |l| switch (rhs) {
                     .Bool => |r| ast.Lit{ .Bool = l == r },
-                    .Int, .Float, .Type, .Callable, .Void, .List => ast.Lit{ .Bool = false },
+                    .Int, .Float, .Type, .Callable, .Void, .List, .String => ast.Lit{ .Bool = false },
                 },
                 .Int => |l| switch (rhs) {
-                    .Bool, .Type, .Callable, .Void, .List => ast.Lit{ .Bool = false },
+                    .Bool, .Type, .Callable, .Void, .List, .String => ast.Lit{ .Bool = false },
                     .Int => |r| ast.Lit{ .Bool = l == r },
                     .Float => |r| ast.Lit{ .Bool = i64asf64(l) == r },
                 },
                 .Float => |l| switch (rhs) {
-                    .Bool, .Type, .Callable, .Void, .List => ast.Lit{ .Bool = false },
+                    .Bool, .Type, .Callable, .Void, .List, .String => ast.Lit{ .Bool = false },
                     .Int => |r| ast.Lit{ .Bool = l == i64asf64(r) },
                     .Float => |r| ast.Lit{ .Bool = l == r },
                 },
                 .Callable => |l| switch (rhs) {
                     .Callable => |r| ast.Lit{ .Bool = std.meta.eql(l, r) },
-                    .Int, .Float, .Bool, .Type, .Void, .List => ast.Lit{ .Bool = false },
+                    .Int, .Float, .Bool, .Type, .Void, .List, .String => ast.Lit{ .Bool = false },
                 },
                 .List => |l| switch (rhs) {
-                    .Int, .Float, .Bool, .Type, .Callable, .Void => ast.Lit{ .Bool = false },
+                    .Int, .Float, .Bool, .Type, .Callable, .Void, .String => ast.Lit{ .Bool = false },
                     .List => |r| ast.Lit{ .Bool = std.meta.eql(l.items, r.items) },
                 },
+                .String => |l| switch (rhs) {
+                    .String => |r| blk: {
+                        if (std.mem.eql(u8, l, r)) break :blk ast.Lit {.Bool = true}
+                        else break :blk ast.Lit {.Bool = false};
+                    },
+                    .Int, .Float, .Bool, .Type, .Callable, .Void, .List => ast.Lit {.Bool = false},
+                },
                 .Type => |tl| switch (rhs) {
-                    .Bool, .Int, .Float, .Callable, .Void, .List => ast.Lit{ .Bool = false },
+                    .Bool, .Int, .Float, .Callable, .Void, .List, .String => ast.Lit{ .Bool = false },
                     .Type => |tr| ast.Lit{ .Bool = tl == tr },
                 },
                 .Void => ast.Lit{ .Bool = false },
@@ -290,54 +359,82 @@ pub const Interpreter = struct {
             .Lt => switch (lhs) {
                 .Bool, .Type, .Callable, .Void, .List => TypeError.MismatchedType,
                 .Int => |l| switch (rhs) {
-                    .Bool, .Type, .Callable, .Void, .List => TypeError.MismatchedType,
+                    .Bool, .Type, .Callable, .Void, .List, .String => TypeError.MismatchedType,
                     .Int => |r| ast.Lit{ .Bool = l < r },
                     .Float => |r| ast.Lit{ .Bool = i64asf64(l) < r },
                 },
                 .Float => |l| switch (rhs) {
-                    .Bool, .Type, .Callable, .Void, .List => TypeError.MismatchedType,
+                    .Bool, .Type, .Callable, .Void, .List, .String => TypeError.MismatchedType,
                     .Int => |r| ast.Lit{ .Bool = l < i64asf64(r) },
                     .Float => |r| ast.Lit{ .Bool = l < r },
                 },
+                .String => |l| switch (rhs) {
+                    .Bool, .Type, .Callable, .Void, .List, .Int, .Float => TypeError.MismatchedType,
+                    .String => |r| switch (std.mem.order(u8, l, r)) {
+                        .lt => ast.Lit {.Bool = true},
+                        else => ast.Lit {.Bool = false}
+                    }
+                }
             },
             .Gt => switch (lhs) {
                 .Bool, .Type, .Callable, .Void, .List => TypeError.MismatchedType,
                 .Int => |l| switch (rhs) {
-                    .Bool, .Type, .Callable, .Void, .List => TypeError.MismatchedType,
+                    .Bool, .Type, .Callable, .Void, .List, .String => TypeError.MismatchedType,
                     .Int => |r| ast.Lit{ .Bool = l > r },
                     .Float => |r| ast.Lit{ .Bool = i64asf64(l) > r },
                 },
                 .Float => |l| switch (rhs) {
-                    .Bool, .Type, .Callable, .Void, .List => TypeError.MismatchedType,
+                    .Bool, .Type, .Callable, .Void, .List, .String => TypeError.MismatchedType,
                     .Int => |r| ast.Lit{ .Bool = l > i64asf64(r) },
                     .Float => |r| ast.Lit{ .Bool = l > r },
                 },
+                .String => |l| switch (rhs) {
+                    .Bool, .Type, .Callable, .Void, .List, .Int, .Float => TypeError.MismatchedType,
+                    .String => |r| switch (std.mem.order(u8, l, r)) {
+                        .gt => ast.Lit {.Bool = true},
+                        else => ast.Lit {.Bool = false}
+                    }
+                }
             },
             .Lte => switch (lhs) {
                 .Bool, .Type, .Callable, .Void, .List => TypeError.MismatchedType,
                 .Int => |l| switch (rhs) {
-                    .Bool, .Type, .Callable, .Void, .List => TypeError.MismatchedType,
+                    .Bool, .Type, .Callable, .Void, .List, .String => TypeError.MismatchedType,
                     .Int => |r| ast.Lit{ .Bool = l <= r },
                     .Float => |r| ast.Lit{ .Bool = i64asf64(l) <= r },
                 },
                 .Float => |l| switch (rhs) {
-                    .Bool, .Type, .Callable, .Void, .List => TypeError.MismatchedType,
+                    .Bool, .Type, .Callable, .Void, .List, .String => TypeError.MismatchedType,
                     .Int => |r| ast.Lit{ .Bool = l <= i64asf64(r) },
                     .Float => |r| ast.Lit{ .Bool = l <= r },
                 },
+                .String => |l| switch (rhs) {
+                    .Bool, .Type, .Callable, .Void, .List, .Int, .Float => TypeError.MismatchedType,
+                    .String => |r| switch (std.mem.order(u8, l, r)) {
+                        .lt, .eq => ast.Lit {.Bool = true},
+                        else => ast.Lit {.Bool = false}
+                    }
+                }
             },
             .Gte => switch (lhs) {
                 .Bool, .Type, .Callable, .Void, .List => TypeError.MismatchedType,
                 .Int => |l| switch (rhs) {
-                    .Bool, .Type, .Callable, .Void, .List => TypeError.MismatchedType,
+                    .Bool, .Type, .Callable, .Void, .List, .String => TypeError.MismatchedType,
                     .Int => |r| ast.Lit{ .Bool = l >= r },
                     .Float => |r| ast.Lit{ .Bool = i64asf64(l) >= r },
                 },
                 .Float => |l| switch (rhs) {
-                    .Bool, .Type, .Callable, .Void, .List => TypeError.MismatchedType,
+                    .Bool, .Type, .Callable, .Void, .List, .String => TypeError.MismatchedType,
                     .Int => |r| ast.Lit{ .Bool = l >= i64asf64(r) },
                     .Float => |r| ast.Lit{ .Bool = l >= r },
                 },
+                .String => |l| switch (rhs) {
+                    .Bool, .Type, .Callable, .Void, .List, .Int, .Float => TypeError.MismatchedType,
+                    .String => |r| switch (std.mem.order(u8, l, r)) {
+                        .gt, .eq => ast.Lit {.Bool = true},
+                        else => ast.Lit {.Bool = false}
+                    }
+                }
             },
         } catch |err| {
             self.logger.logError(err, loc.LocationRange {
@@ -357,7 +454,7 @@ pub const Interpreter = struct {
         // Evaluate operator
         return switch (expr.op) {
             .Not => switch (lit) {
-                .Int, .Float, .Type, .Callable, .Void, .List => {
+                .Int, .Float, .Type, .Callable, .Void, .List, .String => {
                     self.logger.logError(TypeError.MismatchedType, expr.rhs.location);
                     return TypeError.MismatchedType;
                 },
@@ -366,7 +463,7 @@ pub const Interpreter = struct {
             .Neg => switch (lit) {
                 .Int => |val| ast.Lit{ .Int = -val },
                 .Float => |val| ast.Lit{ .Float = -val },
-                .Bool, .Type, .Callable, .Void, .List => {
+                .Bool, .Type, .Callable, .Void, .List, .String => {
                     self.logger.logError(TypeError.MismatchedType, expr.rhs.location);
                     return TypeError.MismatchedType;
                 }
@@ -402,11 +499,7 @@ pub const Interpreter = struct {
                 // Destroy existing value
                 switch (env.lookup(id) orelse unreachable) {
                     .Undefined => {},
-                    .Var => |v| switch (v) {
-                        .List => |l| l.destroyAll(env.allocator),
-                        .Callable => |c| c.destroyAll(env.allocator),
-                        .Int, .Float, .Bool, .Type, .Void => {},
-                    },
+                    .Var => |v| v.destroyAll(env.allocator),
                 }
 
                 // Insert new value
@@ -416,21 +509,23 @@ pub const Interpreter = struct {
 
                 // Make sure that left-hand side is a list
                 // NOTE: this creates an additional reference
-                var lst: *ast.List = switch (try self.evalExpr(lidx.id, env)) {
+                var lhs = try self.evalExpr(lidx.id, env);
+                defer lhs.destroyAll(env.allocator);
+
+                var lst: *ast.List = switch (lhs) {
                     .List => |l| l,
-                    .Int, .Float, .Bool, .Type, .Void, .Callable => {
+                    .Int, .Float, .Bool, .Type, .Void, .Callable, .String => {
                         self.logger.logError(EvalError.NotList, lidx.id.location);
                         return EvalError.NotList;
                     }
                 };
-                defer lst.destroyAll(env.allocator);
 
                 // Evaluate index
                 var index = try self.evalExpr(lidx.idx, env);
                 defer index.destroyAll(env.allocator);
                 const idx: i64 = switch (index) {
                     .Int => |i| i,
-                    .Bool, .Float, .Type, .Void, .Callable, .List => {
+                    .Bool, .Float, .Type, .Void, .Callable, .List, .String => {
                         self.logger.logError(EvalError.MismatchedType, lidx.idx.location);
                         return EvalError.MismatchedType;
                     }
@@ -444,7 +539,7 @@ pub const Interpreter = struct {
 
                 // Destroy existing value
                 switch (lst.items[@as(usize, @intCast(idx))]) {
-                    .List, .Callable => lst.items[@as(usize, @intCast(idx))].destroyAll(env.allocator),
+                    .List, .Callable, .String => lst.items[@as(usize, @intCast(idx))].destroyAll(env.allocator),
                     .Int, .Float, .Type, .Bool, .Void => {},
                 }
 
@@ -459,6 +554,7 @@ pub const Interpreter = struct {
 
         return switch (rhs) {
             .List => |l| ast.Lit{ .List = l.makeReference() },
+            .String => |s| ast.Lit {.String = env.allocator.dupe(u8, s) catch unreachable},
             else => rhs,
         };
     }
@@ -470,7 +566,7 @@ pub const Interpreter = struct {
         defer ident.destroyAll(env.allocator);
         const callable: ast.Callable = switch (ident) {
             .Callable => |fun| fun,
-            .Int, .Float, .Bool, .Type, .Void, .List => {
+            .Int, .Float, .Bool, .Type, .Void, .List, .String => {
                 self.logger.logError(EvalError.NotCallable, expr.id.location);
                 return EvalError.NotCallable;
             }
@@ -563,7 +659,7 @@ pub const Interpreter = struct {
 
         // Evaluate type conversion
         return switch (lhs) {
-            .Callable, .List, .Void, .Type => {
+            .Callable, .List, .Void, .Type, .String => {
                 self.logger.logError(EvalError.MismatchedType, loc.LocationRange {
                     .from = expr.lhs.location.from,
                     .to = expr.as.location.to
@@ -596,9 +692,11 @@ pub const Interpreter = struct {
 
             .Lval => |lval| self.evalLval(lval, env, expr.location),
 
-            // NOTE: We create an extra reference here, assuming this is bottom level
+            // NOTE: For list, we implement reference counting
+            // and for strings we implement clone semantics
             .Lit => |lit| switch (lit) {
                 .List => |l| ast.Lit{ .List = l.makeReference() },
+                .String => |s| ast.Lit {.String = env.allocator.dupe(u8, s) catch unreachable},
                 else => lit,
             },
 
@@ -699,7 +797,7 @@ pub const Interpreter = struct {
                             defer sz.destroyAll(env.allocator);
                             const size: i64 = switch (sz) {
                                 .Int => |i| i,
-                                .Bool, .Float, .Type, .Callable, .Void, .List => {
+                                .Bool, .Float, .Type, .Callable, .Void, .List, .String => {
                                     self.logger.logError(EvalError.MismatchedType, li.idx.location);
                                     return EvalError.MismatchedType;
                                 }
@@ -781,7 +879,7 @@ pub const Interpreter = struct {
                 defer cond_res.destroyAll(env.allocator);
 
                 const res: bool = switch (cond_res) {
-                    .Int, .Float, .Type, .Callable, .Void, .List => {
+                    .Int, .Float, .Type, .Callable, .Void, .List, .String => {
                         self.logger.logError(TypeError.MismatchedType, stmt.cond.location);
                         return TypeError.MismatchedType;
                     },
@@ -807,7 +905,7 @@ pub const Interpreter = struct {
                     var cond_lit: ast.Lit = try self.evalExpr(stmt.cond, env);
                     defer cond_lit.destroyAll(env.allocator);
                     const res: bool = switch (cond_lit) {
-                        .Int, .Float, .Type, .Callable, .Void, .List => {
+                        .Int, .Float, .Type, .Callable, .Void, .List, .String => {
                             self.logger.logError(TypeError.MismatchedType, stmt.cond.location);
                             return TypeError.MismatchedType;
                         },

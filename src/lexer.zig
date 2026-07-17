@@ -20,6 +20,7 @@ const is_ident_digit: [256]bool = createLU(
     "abcdefghijklmnopqrstuvwxyz_ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 );
 const is_comment_digit: [256]bool = createLU(";#");
+const is_string_digit: [256]bool = createLU("\"");
 
 fn contains(arr: []const []const u8, item: []const u8) bool {
     for (arr) |v| if (std.mem.eql(u8, v, item)) return true;
@@ -192,8 +193,8 @@ pub const Lexer = struct {
             c = try self.advance();
     }
 
-    fn inputBackSlice(self: *Self, charcount: usize) []const u8 {
-        return self.input[(self.pos - charcount)..self.pos];
+    fn inputBackSlice(self: *Self, charcount: usize, revoffset: usize) []const u8 {
+        return self.input[(self.pos - charcount - revoffset)..(self.pos - revoffset)];
     }
 
     fn lexComment(self: *Self) error{EndOfFile}!void {
@@ -265,7 +266,7 @@ pub const Lexer = struct {
             std.fmt.ParseIntError.Overflow =>
                 return token.Token {
                     .tokenType = token.TokenType {
-                        .ERROR = self.inputBackSlice(buf.items.len)
+                        .ERROR = self.inputBackSlice(buf.items.len, 0)
                     }
                 },
             std.fmt.ParseIntError.InvalidCharacter => unreachable
@@ -310,8 +311,33 @@ pub const Lexer = struct {
         // Otherwise construct identifier
         return token.Token {
             .tokenType = token.TokenType {
-                .IDENT = self.inputBackSlice(buf.items.len)
+                .IDENT = self.inputBackSlice(buf.items.len, 0)
             },
+            .location = self.getLocationRange(buf.items.len)
+        };
+    }
+
+    fn lexString(self: *Self) !token.Token {
+
+        // Create buffer for storing operator characters
+        var buf: std.ArrayList(u8) = .empty;
+        defer buf.deinit(self.allocator);
+
+        // Greedily collect identifier digits
+        // NOTE: we expect first digit to be valid
+        var c = try self.advance();
+        while (!is_string_digit[c]) {
+            try buf.append(self.allocator, c);
+            c = try self.advance(); // FIXME: this will cause lexer to Panic on unclosed string
+        }
+        _ = try self.advance(); // consume the closing "
+
+        // Construct string literal
+        return token.Token {
+            .tokenType = token.TokenType {
+                .STRINGLIT = self.inputBackSlice(buf.items.len, 1)
+            },
+            // NOTE: we must include the quotes in location range
             .location = self.getLocationRange(buf.items.len)
         };
     }
@@ -352,7 +378,7 @@ pub const Lexer = struct {
         if (!is_operator(buf.items))
             return token.Token {
                 .tokenType = token.TokenType {
-                    .ERROR = self.inputBackSlice(buf.items.len)
+                    .ERROR = self.inputBackSlice(buf.items.len, 0)
                 },
                 .location = self.getLocationRange(buf.items.len)
             };
@@ -405,6 +431,8 @@ pub const Lexer = struct {
         } else if (is_comment_digit[c]) {
             self.lexComment() catch unreachable;
             tok = self.lexToken();
+        } else if (is_string_digit[c]) {
+            tok = self.lexString() catch unreachable;
         } else {
             // This is RAW token produce
             tok = token.Token {

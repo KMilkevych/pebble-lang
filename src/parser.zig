@@ -184,6 +184,13 @@ pub const Parser = struct {
                     .expr = ast.ExprInner { .Lval = ast.Lval {.Var = val}},
                 };
             },
+            .STRINGLIT => |val| {
+                lhs = self.allocator.create(ast.Expr) catch unreachable;
+                lhs.* = ast.Expr {
+                    .location = next_token.location,
+                    .expr = ast.ExprInner { .Lit = ast.Lit {.String = self.allocator.dupe(u8, val) catch unreachable}},
+                };
+            },
             .INT => {
                 lhs = self.allocator.create(ast.Expr) catch unreachable;
                 lhs.* = ast.Expr {
