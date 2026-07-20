@@ -5,6 +5,7 @@ const TokenTypeInner: type = enum {
     INTLIT,
     FLOATLIT,
     BOOLLIT,
+    CHARLIT,
     STRINGLIT,
     IDENT,
     PLUS,
@@ -38,6 +39,7 @@ const TokenTypeInner: type = enum {
     INT,
     FLOAT,
     BOOL,
+    CHAR,
     AS,
     LB,
     COMMA,
@@ -53,7 +55,8 @@ pub const TokenType: type = union(TokenTypeInner) {
     INTLIT: i64,
     FLOATLIT: f64,
     BOOLLIT: bool,
-    STRINGLIT: []const u8,
+    CHARLIT: u8,
+    STRINGLIT: []u8,
     IDENT: []const u8,
 
     // Operators
@@ -92,6 +95,7 @@ pub const TokenType: type = union(TokenTypeInner) {
     INT: void,
     FLOAT: void,
     BOOL: void,
+    CHAR: void,
     AS: void,
 
     // Utility
@@ -198,11 +202,13 @@ pub const Token: type = struct {
             .INT       => try writer.print("[INT     ]: \t| {f}", .{self.location}),
             .FLOAT     => try writer.print("[FLOAT   ]: \t| {f}", .{self.location}),
             .BOOL      => try writer.print("[BOOL    ]: \t| {f}", .{self.location}),
+            .CHAR      => try writer.print("[CHAR    ]: \t| {f}", .{self.location}),
             .AS        => try writer.print("[AS      ]: \t| {f}", .{self.location}),
             .INTLIT    => |val| try writer.print("[INTLIT  ]: {d} \t| {f}", .{val, self.location}),
             .FLOATLIT  => |val| try writer.print("[FLOATLIT]: {d} \t| {f}", .{val, self.location}),
             .BOOLLIT   => |val| try writer.print("[BOOLLIT ]: {} \t| {f}", .{val, self.location}),
             .IDENT     => |val| try writer.print("[IDENT   ]: {s} \t| {f}", .{val, self.location}),
+            .CHARLIT   => |val| try writer.print("[CHARLIT ]: {c} \t| {f}", .{val, self.location}),
             .STRINGLIT => |val| try writer.print("[STRLIT  ]: {s} \t| {f}", .{val, self.location})
         }
     }

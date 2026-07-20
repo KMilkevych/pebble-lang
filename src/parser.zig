@@ -188,7 +188,7 @@ pub const Parser = struct {
                 lhs = self.allocator.create(ast.Expr) catch unreachable;
                 lhs.* = ast.Expr {
                     .location = next_token.location,
-                    .expr = ast.ExprInner { .Lit = ast.Lit {.String = self.allocator.dupe(u8, val) catch unreachable}},
+                    .expr = ast.ExprInner { .Lit = ast.Lit {.String = val}},
                 };
             },
             .INT => {

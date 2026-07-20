@@ -21,6 +21,7 @@ const is_ident_digit: [256]bool = createLU(
 );
 const is_comment_digit: [256]bool = createLU(";#");
 const is_string_digit: [256]bool = createLU("\"");
+const is_char_digit: [256]bool = createLU("'");
 
 fn contains(arr: []const []const u8, item: []const u8) bool {
     for (arr) |v| if (std.mem.eql(u8, v, item)) return true;
@@ -326,19 +327,37 @@ pub const Lexer = struct {
         // Greedily collect identifier digits
         // NOTE: we expect first digit to be valid
         var c = try self.advance();
+        var escapes: usize = 0;
         while (!is_string_digit[c]) {
+
+            // ESCAPE CHARACTERS:
+            // if the character is a backslash, consume the next one as well
+            if (c == '\\') {
+                escapes += 1;
+                const k = try self.advance();
+                c = switch (k) {
+                    'n' => '\n',
+                    't' => '\t',
+                    'r' => '\r',
+                    '\\' => '\\',
+                    else => k,
+                };
+            }
+
             try buf.append(self.allocator, c);
             c = try self.advance(); // FIXME: this will cause lexer to Panic on unclosed string
         }
         _ = try self.advance(); // consume the closing "
 
+
         // Construct string literal
         return token.Token {
             .tokenType = token.TokenType {
-                .STRINGLIT = self.inputBackSlice(buf.items.len, 1)
+                // .STRINGLIT = self.inputBackSlice(buf.items.len, 1)
+                .STRINGLIT = self.allocator.dupe(u8, buf.items) catch unreachable,
             },
             // NOTE: we must include the quotes in location range
-            .location = self.getLocationRange(buf.items.len)
+            .location = self.getLocationRange(buf.items.len + escapes)
         };
     }
 
