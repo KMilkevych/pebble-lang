@@ -197,7 +197,7 @@ pub const Interpreter = struct {
                 .String => |l| switch (rhs) {
                     .String => |r| blk: {
                         var res = env.allocator.alloc(u8, l.len + r.len) catch unreachable;
-                        @memmove(res[0..], l);
+                        @memmove(res[0..l.len], l);
                         @memmove(res[l.len..], r);
                         break :blk ast.Lit {.String = res};
                     },
