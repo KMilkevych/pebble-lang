@@ -160,6 +160,13 @@ pub const Token: type = struct {
     },
     tokenType: TokenType,
 
+    pub fn destroy(self: Token, allocator: std.mem.Allocator) void {
+        switch (self.tokenType) {
+            .STRINGLIT => |v| allocator.free(v),
+            else => {}
+        }
+    }
+
     pub fn format(
         self: Token,
         writer: *std.Io.Writer

@@ -8,7 +8,7 @@ const interpreter = @import("interpreter.zig");
 const location = @import("location.zig");
 
 // Accumulate all the errors...
-pub const Error = parser.ParseError || interpreter.EvalError;
+pub const Error = lexer.LexError || parser.ParseError || interpreter.EvalError;
 
 // Error-information which includes location and description
 pub const ErrorInfo = struct {
@@ -22,7 +22,7 @@ pub const ErrorInfo = struct {
     ) !void {
 
         const pe = parser.ParseError;
-        // const ee = interpreter.EvalError;
+        const le = lexer.LexError;
         const te = interpreter.TypeError;
         const ae = interpreter.ArithmeticError;
         const ve = interpreter.ValueError;
@@ -57,8 +57,16 @@ pub const ErrorInfo = struct {
             se.NotCallable => "Object not callable",
             se.WrongArgCount => "Wrong argument count",
             se.InvalidUpcall => "Invalid function up-call",
-            se.NotList => "Not indexable",
-            se.ReadOnlyProperty => "Property is read-only"
+            se.NotIndexable => "Not indexable",
+            se.ReadOnlyProperty => "Property is read-only",
+            se.UnsupportedOperation => "Unsupported operation",
+            se.NotCharacter => "Not a character",
+
+            le.UnclosedString => "Unclosed string",
+            le.NotSingleCharacter => "Not a single character",
+            le.EndOfFile => "End of file",
+            le.InvalidCharacter => "Invalid character",
+            le.LiteralTooLarge => "Literal too large"
         };
 
         // TODO: Implement bufPrint or allocPrint to properly pad location

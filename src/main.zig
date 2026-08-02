@@ -64,14 +64,17 @@ fn run(io: std.Io, allocator: std.mem.Allocator, stdout: *std.Io.Writer, loc: [:
     const input: []const u8 = try file_reader.interface.allocRemaining(allocator, .limited(4096 * 4096));
     defer allocator.free(input);
 
-    // Perform lexing parsing and interpreting...
-    var lxr: lexer.Lexer = lexer.Lexer.new(input, loc, allocator);
-    var tokens: std.ArrayList(token.Token) = lxr.lex();
-    defer tokens.deinit(allocator);
-
-    // Create parser
+    // Create logger for all errors
     var logger = Log.Logger.new(allocator);
     defer logger.destroyAll();
+
+    // Perform lexing parsing and interpreting...
+    var lxr: lexer.Lexer = lexer.Lexer.new(input, loc, allocator, &logger);
+    var tokens: std.ArrayList(token.Token) = lxr.lex();
+    defer tokens.deinit(allocator);
+    defer for (tokens.items) |tok| tok.destroy(allocator);
+
+    // Create parser
     var prsr: parser.Parser = parser.Parser.new(tokens, allocator, &logger);
 
     // Parse all statements into a procedure
@@ -81,6 +84,7 @@ fn run(io: std.Io, allocator: std.mem.Allocator, stdout: *std.Io.Writer, loc: [:
             try stdout.print("{f}\n", .{errinf});
         }
         try stdout.flush();
+
 
         return;
     };
@@ -129,12 +133,13 @@ fn interactive(io: std.Io, gpa: std.mem.Allocator, out: *std.Io.Writer) !void {
         const line = std.mem.trimEnd(u8, raw_line, "\r");
         const input = try alloc.dupe(u8, line);
 
-        var lxr: lexer.Lexer = lexer.Lexer.new(input, "", alloc);
+        var logger = Log.Logger.new(alloc);
+        defer logger.destroyAll();
+
+        var lxr: lexer.Lexer = lexer.Lexer.new(input, "", alloc, &logger);
         var tokens = lxr.lex();
         defer tokens.deinit(alloc);
 
-        var logger = Log.Logger.new(alloc);
-        defer logger.destroyAll();
         var prsr = parser.Parser.new(tokens, alloc, &logger);
         const tree: ast.Stmt = prsr.parseStmt() catch |err| {
             try out.print("{}\n", .{err});

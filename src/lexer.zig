@@ -3,6 +3,15 @@ const ArrayList = std.ArrayList;
 
 const token = @import("token.zig");
 const loc = @import("location.zig");
+const log = @import("logger.zig");
+
+pub const LexError = error {
+    UnclosedString,
+    NotSingleCharacter,
+    EndOfFile,
+    InvalidCharacter,
+    LiteralTooLarge,
+};
 
 // TODO: Make these comptime
 fn createLU(comptime chars: []const u8) [256]bool {
@@ -81,6 +90,7 @@ fn keyword_from_string(str: []const u8) token.TokenType {
     if (std.mem.eql(u8, str, "Int")) return token.TokenType {.INT = {}};
     if (std.mem.eql(u8, str, "Float")) return token.TokenType {.FLOAT = {}};
     if (std.mem.eql(u8, str, "Bool")) return token.TokenType {.BOOL = {}};
+    if (std.mem.eql(u8, str, "Char")) return token.TokenType {.CHAR = {}};
     unreachable;
 }
 
@@ -103,17 +113,20 @@ pub const Lexer = struct {
     file: []const u8,
     allocator: std.mem.Allocator,
 
+    logger: *log.Logger,
+
     line: usize = 0,
     column: usize = 0,
 
     storeLocation: bool = true,
 
-    pub fn new(input: []const u8, file: []const u8, allocator: std.mem.Allocator) Self {
+    pub fn new(input: []const u8, file: []const u8, allocator: std.mem.Allocator, errLogger: *log.Logger) Self {
         return .{
             .pos = 0,
             .input = input,
             .file = file,
-            .allocator = allocator
+            .allocator = allocator,
+            .logger = errLogger,
         };
     }
 
@@ -177,18 +190,18 @@ pub const Lexer = struct {
         self.line += 1;
     }
 
-    fn topdigit(self: *Self) error{EndOfFile}!u8 {
-        if (self.pos >= self.input.len) return error.EndOfFile;
+    fn topdigit(self: *Self) LexError!u8 {
+        if (self.pos >= self.input.len) return LexError.EndOfFile;
         return self.input[self.pos];
     }
 
-    fn advance(self: *Self) error{EndOfFile}!u8 {
+    fn advance(self: *Self) LexError!u8 {
         self.pos += 1;
         self.column += 1;
         return self.topdigit();
     }
 
-    fn skipWhitespace(self: *Self) error{EndOfFile}!void {
+    fn skipWhitespace(self: *Self) LexError!void {
         var c = try self.topdigit();
         while (is_whitespace_digit[c])
             c = try self.advance();
@@ -198,17 +211,17 @@ pub const Lexer = struct {
         return self.input[(self.pos - charcount - revoffset)..(self.pos - revoffset)];
     }
 
-    fn lexComment(self: *Self) error{EndOfFile}!void {
+    fn lexComment(self: *Self) LexError!void {
         var c = try self.topdigit();
         while (c != '\n') {
             c = self.advance() catch |err| switch (err) {
-                error.EndOfFile => break,
+                LexError.EndOfFile => break,
                 else => unreachable
             };
         }
     }
 
-    fn lexIntOrFloat(self: *Self) !token.Token {
+    fn lexIntOrFloat(self: *Self) LexError!token.Token {
 
         // Create a buffer for storing digit characters
         var buf: std.ArrayList(u8) = .empty;
@@ -216,11 +229,11 @@ pub const Lexer = struct {
 
         // Read full sequence of numeric digits
         // NOTE: we expect first digit to be valid
-        var c = self.topdigit() catch unreachable;
+        var c = try self.topdigit();
         while (is_numeric_digit[c]) {
-            try buf.append(self.allocator, c);
+            buf.append(self.allocator, c) catch unreachable;
             c = self.advance() catch |err| switch (err) {
-                error.EndOfFile => break,
+                LexError.EndOfFile => break,
                 else => unreachable
             };
         }
@@ -232,16 +245,16 @@ pub const Lexer = struct {
             if (is_real_digit[c]) {
 
                 // Append decimal separator
-                try buf.append(self.allocator, c);
+                buf.append(self.allocator, c) catch unreachable;
 
                 // Lex remainder of float
                 if (self.advance()) |val| {
                     c = val;
 
                     while (is_numeric_digit[c]) {
-                        try buf.append(self.allocator, c);
+                        buf.append(self.allocator, c) catch unreachable;
                         c = self.advance() catch |err| switch (err) {
-                            error.EndOfFile => break,
+                            LexError.EndOfFile => break,
                             else => unreachable
                         };
                     }
@@ -264,12 +277,10 @@ pub const Lexer = struct {
         // Convert found digits into an int
         // NOTE: we only expect valid characters here
         const lit: i64 = std.fmt.parseInt(i64, buf.items, 10) catch |err| switch (err) {
-            std.fmt.ParseIntError.Overflow =>
-                return token.Token {
-                    .tokenType = token.TokenType {
-                        .ERROR = self.inputBackSlice(buf.items.len, 0)
-                    }
-                },
+            std.fmt.ParseIntError.Overflow => {
+                self.logger.logError(LexError.LiteralTooLarge, self.getLocationRange(buf.items.len));
+                return LexError.LiteralTooLarge;
+            },
             std.fmt.ParseIntError.InvalidCharacter => unreachable
         };
 
@@ -280,7 +291,7 @@ pub const Lexer = struct {
         };
     }
 
-    fn lexIdent(self: *Self) !token.Token {
+    fn lexIdent(self: *Self) LexError!token.Token {
 
         // Create buffer for storing operator characters
         var buf: std.ArrayList(u8) = .empty;
@@ -288,11 +299,11 @@ pub const Lexer = struct {
 
         // Greedily collect identifier digits
         // NOTE: we expect first digit to be valid
-        var c = self.topdigit() catch unreachable;
+        var c = try self.topdigit();
         while (is_ident_digit[c]) {
-            try buf.append(self.allocator, c);
+            buf.append(self.allocator, c) catch unreachable;
             c = self.advance() catch |err| switch (err) {
-                error.EndOfFile => break,
+                LexError.EndOfFile => break,
                 else => unreachable
             };
         }
@@ -318,7 +329,7 @@ pub const Lexer = struct {
         };
     }
 
-    fn lexString(self: *Self) !token.Token {
+    fn lexString(self: *Self) LexError!token.Token {
 
         // Create buffer for storing operator characters
         var buf: std.ArrayList(u8) = .empty;
@@ -344,16 +355,20 @@ pub const Lexer = struct {
                 };
             }
 
-            try buf.append(self.allocator, c);
-            c = try self.advance(); // FIXME: this will cause lexer to Panic on unclosed string
+            buf.append(self.allocator, c) catch unreachable;
+            c = self.advance() catch |err| {
+                self.logger.logError(LexError.UnclosedString, self.getLocationRange(buf.items.len + escapes));
+                return err;
+            };
         }
+
+        // TODO: decide what to do here
         _ = try self.advance(); // consume the closing "
 
 
         // Construct string literal
         return token.Token {
             .tokenType = token.TokenType {
-                // .STRINGLIT = self.inputBackSlice(buf.items.len, 1)
                 .STRINGLIT = self.allocator.dupe(u8, buf.items) catch unreachable,
             },
             // NOTE: we must include the quotes in location range
@@ -361,7 +376,65 @@ pub const Lexer = struct {
         };
     }
 
-    fn lexOperator(self: *Self) !token.Token {
+    fn lexChar(self: *Self) LexError!token.Token {
+
+        // Create buffer for storing operator characters
+        var buf: std.ArrayList(u8) = .empty;
+        defer buf.deinit(self.allocator);
+
+        // Greedily collect identifier digits
+        // NOTE: we expect first digit to be valid
+        var c = try self.advance();
+        var escapes: usize = 0;
+        while (!is_char_digit[c]) {
+
+            // ESCAPE CHARACTERS:
+            // if the character is a backslash, consume the next one as well
+            if (c == '\\') {
+                escapes += 1;
+                const k = try self.advance();
+                c = switch (k) {
+                    'n' => '\n',
+                    't' => '\t',
+                    'r' => '\r',
+                    '\\' => '\\',
+                    else => k,
+                };
+            }
+
+            buf.append(self.allocator, c) catch unreachable;
+            c = self.advance() catch |err| {
+                self.logger.logError(LexError.UnclosedString, self.getLocationRange(buf.items.len + escapes));
+                return err;
+            };
+        }
+
+        // TODO: Decide what to do here
+        _ = try self.advance(); // consume the closing '
+
+        // Constructing CHAR or STRING literal
+        if (buf.items.len != 1) {
+            self.logger.logError(LexError.NotSingleCharacter, self.getLocationRange(buf.items.len + escapes));
+            return token.Token {
+                .tokenType = token.TokenType {
+                    .STRINGLIT = self.allocator.dupe(u8, buf.items) catch unreachable,
+                },
+                // NOTE: we must include the quotes in location range
+                .location = self.getLocationRange(buf.items.len + escapes)
+            };
+        } else {
+            return token.Token {
+                .tokenType = token.TokenType {
+                    .CHARLIT = buf.items[0],
+                },
+                // NOTE: we must include the quotes in location range
+                .location = self.getLocationRange(buf.items.len + escapes)
+            };
+        }
+
+    }
+
+    fn lexOperator(self: *Self) LexError!token.Token {
 
         // Create buffer for storing operator characters
         var buf: std.ArrayList(u8) = .empty;
@@ -379,16 +452,16 @@ pub const Lexer = struct {
             // NOTE: if we want to accept n-char operators, we need a valid
             // operators consisting of the first n-1, n-2, ... chars
             // OR the n-char operator should have no valid prefix
-            try buf.append(self.allocator, c);
+            buf.append(self.allocator, c) catch unreachable;
             if (!is_operator(buf.items) and current_is_legal) {
                 _ = buf.pop();
                 break;
             }
 
-            // Advance char
+            // Advance char unless we have end of file
             c = self.advance() catch |err| switch (err) {
-                error.EndOfFile => break,
-                else => unreachable
+                LexError.EndOfFile => break,
+                else => return err
             };
 
         }
@@ -424,7 +497,7 @@ pub const Lexer = struct {
 
         // We start by skipping the whitespace
         self.skipWhitespace() catch |err| switch (err) {
-            error.EndOfFile => return token.Token {
+            LexError.EndOfFile => return token.Token {
                 .tokenType = token.TokenType {.EOF = {}},
                 .location = self.getLocationAtPoint(0),
             },
@@ -433,40 +506,51 @@ pub const Lexer = struct {
 
         // Match against the first digit or EOF
         const c: u8 = self.topdigit() catch |err| switch (err) {
-            error.EndOfFile => return token.Token {
+            LexError.EndOfFile => return token.Token {
                 .tokenType = token.TokenType {.EOF = {}},
                 .location = self.getLocationAtPoint(0),
             },
             else => unreachable
         };
 
-        // TODO: Remove unreachables...
+        // Lex the next token
+        var next_token: LexError!token.Token = undefined;
         if (is_numeric_digit[c]) {
-            tok = self.lexIntOrFloat() catch unreachable;
+            next_token = self.lexIntOrFloat();
         } else if (is_operator_digit[c]) {
-            tok = self.lexOperator() catch unreachable;
+            next_token = self.lexOperator();
         } else if (is_ident_digit[c]) {
-            tok = self.lexIdent() catch unreachable;
+            next_token = self.lexIdent();
         } else if (is_comment_digit[c]) {
-            self.lexComment() catch unreachable;
-            tok = self.lexToken();
+            self.lexComment() catch {};
+            next_token = self.lexToken();
         } else if (is_string_digit[c]) {
-            tok = self.lexString() catch unreachable;
+            next_token = self.lexString();
+        } else if (is_char_digit[c]) {
+            next_token = self.lexChar();
         } else {
             // This is RAW token produce
-            tok = token.Token {
+            next_token = token.Token {
                 .tokenType = token.TokenType {.ILLEGAL = c},
                 .location = self.getLocationRange(1),
             };
             self.pos += 1; // Force advance without check
         }
 
+        // All errors have been handled bottom-level
+        tok = next_token catch |err| blk: {
+            self.logger.logError(err, self.getLocationRange(1));
+            break :blk token.Token {
+                .tokenType = token.TokenType {.ERROR = ""},
+                .location = self.getLocationRange(1)
+            };
+        };
+
         // Return the resulting token
         return tok;
 
     }
 
-    // TODO: Refactor this to not maybe not lie inside the Lexer
     fn pushLB(self: *Self, buf: *std.ArrayList(token.Token)) void {
         // Insert line break if last token is not a line break
         // and there are items before this

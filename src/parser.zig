@@ -177,6 +177,13 @@ pub const Parser = struct {
                     .expr = ast.ExprInner { .Lit = ast.Lit {.Bool = val}},
                 };
             },
+            .CHARLIT => |val| {
+                lhs = self.allocator.create(ast.Expr) catch unreachable;
+                lhs.* = ast.Expr {
+                    .location = next_token.location,
+                    .expr = ast.ExprInner { .Lit = ast.Lit {.Char = val}},
+                };
+            },
             .IDENT => |val| {
                 lhs = self.allocator.create(ast.Expr) catch unreachable;
                 lhs.* = ast.Expr {
@@ -210,6 +217,13 @@ pub const Parser = struct {
                 lhs.* = ast.Expr {
                     .location = next_token.location,
                     .expr = ast.ExprInner { .Lit = ast.Lit {.Type = .Bool}},
+                };
+            },
+            .CHAR => {
+                lhs = self.allocator.create(ast.Expr) catch unreachable;
+                lhs.* = ast.Expr {
+                    .location = next_token.location,
+                    .expr = ast.ExprInner { .Lit = ast.Lit {.Type = .Char}},
                 };
             },
 

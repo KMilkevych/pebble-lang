@@ -2275,10 +2275,22 @@ test "make statement test" {
         ast.Stmt {
             .stmt = ast.StmtInner {.DeclareStmt = &[_]*const ast.Expr {
                 &ast.Expr {
-                    .expr = ast.ExprInner {.Lval = ast.Lval {.ListIndex = ast.ListIndex {
-                        .id = &ast.Expr {.expr = ast.ExprInner {.Lval = ast.Lval {.Var = "lst"}},.location = nolocation()},
-                        .idx = &ast.Expr {.expr = ast.ExprInner {.Lit = ast.Lit {.Int = 4}},.location = nolocation()}
-                    }}},
+                    .expr = ast.ExprInner {.Lval = ast.Lval {
+                        .ListIndex = ast.ListIndex {
+                            .id = &ast.Expr {
+                                .expr = ast.ExprInner {
+                                    .Lval = ast.Lval {.Var = "lst"}
+                                },
+                                .location = nolocation()
+                            },
+                            .idx = &ast.Expr {
+                                .expr = ast.ExprInner {
+                                    .Lit = ast.Lit {.Int = 4}
+                                },
+                                .location = nolocation()
+                            }
+                        }
+                    }},
                     .location = nolocation()
                 },
             }},
@@ -3047,6 +3059,7 @@ test "list size" {
 
     // Insert function into environment
     const items_ptr = try std.testing.allocator.alloc(ast.Lit, 10);
+    for (items_ptr) |*item| item.* = ast.Lit {.Void = {}};
     const ptr = try std.testing.allocator.create(ast.List);
     ptr.* = ast.List {
         .items = items_ptr,
@@ -3088,6 +3101,7 @@ test "list invalid property" {
 
     // Insert function into environment
     const items_ptr = try std.testing.allocator.alloc(ast.Lit, 10);
+    for (items_ptr) |*item| item.* = ast.Lit {.Void = {}};
     const ptr = try std.testing.allocator.create(ast.List);
     ptr.* = ast.List {
         .items = items_ptr,
@@ -4691,8 +4705,8 @@ test "unop with list" {
     const res = interpreter.evalProc(proc, &env);
 
     try std.testing.expectEqualDeep(
+        interprtr.EvalError.UnsupportedOperation,
         res,
-        interprtr.EvalError.MismatchedType,
     );
 }
 

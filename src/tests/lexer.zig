@@ -7,6 +7,7 @@ const Token = token.Token;
 const TokenType = token.TokenType;
 const Location = loc.Location;
 const LocationRange = loc.LocationRange;
+const Log = @import("../logger.zig");
 
 const std = @import("std");
 const expect = std.testing.expect;
@@ -72,8 +73,11 @@ test "tokens_eql 3" {
 
 test "intlits" {
 
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+
     const input = "12+2+891 + 21823 + 2";
-    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator, &logger);
     lx.storeLocation = false;
 
     var tokens: std.ArrayList(Token) = lx.lex();
@@ -98,8 +102,11 @@ test "intlits" {
 
 test "whitespace" {
 
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+
     const input = "++ + \t+\t\t+ \t\r\t+ \r+\r\t+  \t \t \t +";
-    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator, &logger);
     lx.storeLocation = false;
 
     var tokens: std.ArrayList(Token) = lx.lex();
@@ -125,8 +132,11 @@ test "whitespace" {
 
 test "operators" {
 
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+
     const input = "(1+3)*\t( 8912 || 123 )&&  4/5==12";
-    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator, &logger);
     lx.storeLocation = false;
 
     var tokens: std.ArrayList(Token) = lx.lex();
@@ -158,8 +168,11 @@ test "operators" {
 
 test "booleans" {
 
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+
     const input = "!(true&&false)||!true==false";
-    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator, &logger);
     lx.storeLocation = false;
 
     var tokens: std.ArrayList(Token) = lx.lex();
@@ -185,17 +198,18 @@ test "booleans" {
 
 test "illegal" {
 
-    const input = "12'32 ^23@3";
-    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+
+    const input = "1232 ^23@3";
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator, &logger);
     lx.storeLocation = false;
 
     var tokens: std.ArrayList(Token) = lx.lex();
     defer tokens.deinit(std.testing.allocator);
 
     const expected: []const Token = &[_]Token{
-        Token {.tokenType = TokenType {.INTLIT = 12}},
-        Token {.tokenType = TokenType {.ILLEGAL = '\''}},
-        Token {.tokenType = TokenType {.INTLIT = 32}},
+        Token {.tokenType = TokenType {.INTLIT = 1232}},
         Token {.tokenType = TokenType {.ILLEGAL = '^'}},
         Token {.tokenType = TokenType {.INTLIT = 23}},
         Token {.tokenType = TokenType {.ILLEGAL = '@'}},
@@ -208,8 +222,11 @@ test "illegal" {
 
 test "bool literals" {
 
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+
     const input = "true && false||true*false";
-    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator, &logger);
     lx.storeLocation = false;
 
     var tokens: std.ArrayList(Token) = lx.lex();
@@ -231,8 +248,11 @@ test "bool literals" {
 
 test "keyword" {
 
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+
     const input = "declare && declare4declare";
-    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator, &logger);
     lx.storeLocation = false;
 
     var tokens: std.ArrayList(Token) = lx.lex();
@@ -250,8 +270,10 @@ test "keyword" {
 
 test "keyword 2" {
 
-    const input = "print x declare y = 3";
-    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
+    var logger: Log.Logger = .new(std.testing.allocator);
+defer logger.destroyAll();
+const input = "print x declare y = 3";
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator, &logger);
     lx.storeLocation = false;
 
     var tokens: std.ArrayList(Token) = lx.lex();
@@ -273,8 +295,10 @@ test "keyword 2" {
 
 test "identifiers" {
 
-    const input = "declare (bob == alice)||eve*b0b";
-    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
+    var logger: Log.Logger = .new(std.testing.allocator);
+defer logger.destroyAll();
+const input = "declare (bob == alice)||eve*b0b";
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator, &logger);
     lx.storeLocation = false;
 
     var tokens: std.ArrayList(Token) = lx.lex();
@@ -300,8 +324,10 @@ test "identifiers" {
 
 test "assignment" {
 
-    const input = "declare eeve=bob&&alice";
-    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
+    var logger: Log.Logger = .new(std.testing.allocator);
+defer logger.destroyAll();
+const input = "declare eeve=bob&&alice";
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator, &logger);
     lx.storeLocation = false;
 
     var tokens: std.ArrayList(Token) = lx.lex();
@@ -323,8 +349,10 @@ test "assignment" {
 
 test "brackets" {
 
-    const input = "()[(]{[}";
-    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
+    var logger: Log.Logger = .new(std.testing.allocator);
+defer logger.destroyAll();
+const input = "()[(]{[}";
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator, &logger);
     lx.storeLocation = false;
 
     var tokens: std.ArrayList(Token) = lx.lex();
@@ -351,8 +379,10 @@ test "brackets" {
 }
 
 test "smart line breaks" {
-    const input = "declare x=x+1\n\n\ndeclare";
-    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
+    var logger: Log.Logger = .new(std.testing.allocator);
+defer logger.destroyAll();
+const input = "declare x=x+1\n\n\ndeclare";
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator, &logger);
     lx.storeLocation = false;
 
     var tokens: std.ArrayList(Token) = lx.lex();
@@ -375,8 +405,10 @@ test "smart line breaks" {
 
 
 test "no line break before first statement" {
-    const input = "\nprint x";
-    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
+    var logger: Log.Logger = .new(std.testing.allocator);
+defer logger.destroyAll();
+const input = "\nprint x";
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator, &logger);
     lx.storeLocation = false;
 
     var tokens: std.ArrayList(Token) = lx.lex();
@@ -393,8 +425,10 @@ test "no line break before first statement" {
 
 
 test "no line break before first statement 2" {
-    const input = "\n\n \n\n \nprint x";
-    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
+    var logger: Log.Logger = .new(std.testing.allocator);
+defer logger.destroyAll();
+const input = "\n\n \n\n \nprint x";
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator, &logger);
     lx.storeLocation = false;
 
     var tokens: std.ArrayList(Token) = lx.lex();
@@ -411,8 +445,10 @@ test "no line break before first statement 2" {
 
 
 test "line break mixup" {
-    const input = "\n\n \n\n \nprint x\n \n\n\r   \nprint x";
-    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
+    var logger: Log.Logger = .new(std.testing.allocator);
+defer logger.destroyAll();
+const input = "\n\n \n\n \nprint x\n \n\n\r   \nprint x";
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator, &logger);
     lx.storeLocation = false;
 
     var tokens: std.ArrayList(Token) = lx.lex();
@@ -431,8 +467,10 @@ test "line break mixup" {
 }
 
 test "single line statement" {
-    const input = "print x";
-    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
+    var logger: Log.Logger = .new(std.testing.allocator);
+defer logger.destroyAll();
+const input = "print x";
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator, &logger);
     lx.storeLocation = false;
 
     var tokens: std.ArrayList(Token) = lx.lex();
@@ -449,8 +487,10 @@ test "single line statement" {
 
 
 test "single line statement 2" {
-    const input = "\nprint x\n";
-    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
+    var logger: Log.Logger = .new(std.testing.allocator);
+defer logger.destroyAll();
+const input = "\nprint x\n";
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator, &logger);
     lx.storeLocation = false;
 
     var tokens: std.ArrayList(Token) = lx.lex();
@@ -467,8 +507,10 @@ test "single line statement 2" {
 }
 
 test "single line statement 3" {
-    const input = "\n\n \nprint x\n \n";
-    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
+    var logger: Log.Logger = .new(std.testing.allocator);
+defer logger.destroyAll();
+const input = "\n\n \nprint x\n \n";
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator, &logger);
     lx.storeLocation = false;
 
     var tokens: std.ArrayList(Token) = lx.lex();
@@ -486,8 +528,10 @@ test "single line statement 3" {
 
 
 test "single line two statements" {
-    const input = "print x print y";
-    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
+    var logger: Log.Logger = .new(std.testing.allocator);
+defer logger.destroyAll();
+const input = "print x print y";
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator, &logger);
     lx.storeLocation = false;
 
     var tokens: std.ArrayList(Token) = lx.lex();
@@ -506,8 +550,10 @@ test "single line two statements" {
 }
 
 test "single line two statements 2" {
-    const input = "print x \n \n print y";
-    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
+    var logger: Log.Logger = .new(std.testing.allocator);
+defer logger.destroyAll();
+const input = "print x \n \n print y";
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator, &logger);
     lx.storeLocation = false;
 
     var tokens: std.ArrayList(Token) = lx.lex();
@@ -526,8 +572,10 @@ test "single line two statements 2" {
 }
 
 test "single line two statements 3" {
-    const input = "\n print x \n \n print y";
-    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
+    var logger: Log.Logger = .new(std.testing.allocator);
+defer logger.destroyAll();
+const input = "\n print x \n \n print y";
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator, &logger);
     lx.storeLocation = false;
 
     var tokens: std.ArrayList(Token) = lx.lex();
@@ -546,8 +594,10 @@ test "single line two statements 3" {
 }
 
 test "single line with block statement" {
-    const input = "\n print x \n \n {print y}";
-    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
+    var logger: Log.Logger = .new(std.testing.allocator);
+defer logger.destroyAll();
+const input = "\n print x \n \n {print y}";
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator, &logger);
     lx.storeLocation = false;
 
     var tokens: std.ArrayList(Token) = lx.lex();
@@ -570,12 +620,14 @@ test "single line with block statement" {
 }
 
 test "multiline input" {
-    const input =
+    var logger: Log.Logger = .new(std.testing.allocator);
+defer logger.destroyAll();
+const input =
         \\print x
         \\print y
     ;
 
-    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator, &logger);
     lx.storeLocation = false;
 
     var tokens: std.ArrayList(Token) = lx.lex();
@@ -594,13 +646,15 @@ test "multiline input" {
 }
 
 test "multiline input 2" {
-    const input =
+    var logger: Log.Logger = .new(std.testing.allocator);
+defer logger.destroyAll();
+const input =
         \\print x
         \\print y
         \\
     ;
 
-    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator, &logger);
     lx.storeLocation = false;
 
     var tokens: std.ArrayList(Token) = lx.lex();
@@ -621,7 +675,9 @@ test "multiline input 2" {
 
 
 test "multiline input with blocks" {
-    const input =
+    var logger: Log.Logger = .new(std.testing.allocator);
+defer logger.destroyAll();
+const input =
         \\print x
         \\print y
         \\{
@@ -629,7 +685,7 @@ test "multiline input with blocks" {
         \\}
     ;
 
-    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator, &logger);
     lx.storeLocation = false;
 
     var tokens: std.ArrayList(Token) = lx.lex();
@@ -655,13 +711,15 @@ test "multiline input with blocks" {
 }
 
 test "multiline input with inline block" {
-    const input =
+    var logger: Log.Logger = .new(std.testing.allocator);
+defer logger.destroyAll();
+const input =
         \\print x
         \\print y
         \\{print y}
     ;
 
-    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator, &logger);
     lx.storeLocation = false;
 
     var tokens: std.ArrayList(Token) = lx.lex();
@@ -688,13 +746,15 @@ test "multiline input with inline block" {
 
 
 test "multiline input with inline block two statements" {
-    const input =
+    var logger: Log.Logger = .new(std.testing.allocator);
+defer logger.destroyAll();
+const input =
         \\print x
         \\print y
         \\{print y print x}
     ;
 
-    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator, &logger);
     lx.storeLocation = false;
 
     var tokens: std.ArrayList(Token) = lx.lex();
@@ -724,14 +784,16 @@ test "multiline input with inline block two statements" {
 
 
 test "multiline input with inline block two statements 2" {
-    const input =
+    var logger: Log.Logger = .new(std.testing.allocator);
+defer logger.destroyAll();
+const input =
         \\print x
         \\print y
         \\{print y
         \\print x}
     ;
 
-    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator, &logger);
     lx.storeLocation = false;
 
     var tokens: std.ArrayList(Token) = lx.lex();
@@ -761,7 +823,9 @@ test "multiline input with inline block two statements 2" {
 }
 
 test "multiline input with block two statements" {
-    const input =
+    var logger: Log.Logger = .new(std.testing.allocator);
+defer logger.destroyAll();
+const input =
         \\print x
         \\print y
         \\{
@@ -770,7 +834,7 @@ test "multiline input with block two statements" {
         \\}
     ;
 
-    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator, &logger);
     lx.storeLocation = false;
 
     var tokens: std.ArrayList(Token) = lx.lex();
@@ -800,14 +864,16 @@ test "multiline input with block two statements" {
 
 
 test "multiline input with empty block" {
-    const input =
+    var logger: Log.Logger = .new(std.testing.allocator);
+defer logger.destroyAll();
+const input =
         \\print x
         \\print y
         \\{
         \\}
     ;
 
-    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator, &logger);
     lx.storeLocation = false;
 
     var tokens: std.ArrayList(Token) = lx.lex();
@@ -831,12 +897,14 @@ test "multiline input with empty block" {
 
 
 test "empty block" {
-    const input =
+    var logger: Log.Logger = .new(std.testing.allocator);
+defer logger.destroyAll();
+const input =
         \\{
         \\}
     ;
 
-    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator, &logger);
     lx.storeLocation = false;
 
     var tokens: std.ArrayList(Token) = lx.lex();
@@ -854,11 +922,13 @@ test "empty block" {
 
 
 test "empty block inline" {
-    const input =
+    var logger: Log.Logger = .new(std.testing.allocator);
+defer logger.destroyAll();
+const input =
         \\{}
     ;
 
-    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator, &logger);
     lx.storeLocation = false;
 
     var tokens: std.ArrayList(Token) = lx.lex();
@@ -876,14 +946,16 @@ test "empty block inline" {
 
 
 test "nested blocks" {
-    const input =
+    var logger: Log.Logger = .new(std.testing.allocator);
+defer logger.destroyAll();
+const input =
         \\{
         \\{
         \\}
         \\}
     ;
 
-    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator, &logger);
     lx.storeLocation = false;
 
     var tokens: std.ArrayList(Token) = lx.lex();
@@ -904,11 +976,13 @@ test "nested blocks" {
 }
 
 test "nested blocks inline" {
-    const input =
+    var logger: Log.Logger = .new(std.testing.allocator);
+defer logger.destroyAll();
+const input =
         \\{{}}
     ;
 
-    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator, &logger);
     lx.storeLocation = false;
 
     var tokens: std.ArrayList(Token) = lx.lex();
@@ -929,12 +1003,14 @@ test "nested blocks inline" {
 }
 
 test "nested blocks semi-inline" {
-    const input =
+    var logger: Log.Logger = .new(std.testing.allocator);
+defer logger.destroyAll();
+const input =
         \\{{
         \\}}
     ;
 
-    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator, &logger);
     lx.storeLocation = false;
 
     var tokens: std.ArrayList(Token) = lx.lex();
@@ -955,12 +1031,14 @@ test "nested blocks semi-inline" {
 }
 
 test "nested blocks semi-inline 2" {
-    const input =
+    var logger: Log.Logger = .new(std.testing.allocator);
+defer logger.destroyAll();
+const input =
         \\{
         \\{}}
     ;
 
-    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator, &logger);
     lx.storeLocation = false;
 
     var tokens: std.ArrayList(Token) = lx.lex();
@@ -981,12 +1059,14 @@ test "nested blocks semi-inline 2" {
 }
 
 test "nested blocks semi-inline 3" {
-    const input =
+    var logger: Log.Logger = .new(std.testing.allocator);
+defer logger.destroyAll();
+const input =
         \\{{}
         \\}
     ;
 
-    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator, &logger);
     lx.storeLocation = false;
 
     var tokens: std.ArrayList(Token) = lx.lex();
@@ -1007,7 +1087,9 @@ test "nested blocks semi-inline 3" {
 }
 
 test "advanced sequence with nested blocks" {
-    const input =
+    var logger: Log.Logger = .new(std.testing.allocator);
+defer logger.destroyAll();
+const input =
         \\{{}
         \\}
         \\declare x = 10
@@ -1016,7 +1098,7 @@ test "advanced sequence with nested blocks" {
         \\print x
     ;
 
-    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator, &logger);
     lx.storeLocation = false;
 
     var tokens: std.ArrayList(Token) = lx.lex();
@@ -1062,12 +1144,14 @@ test "advanced sequence with nested blocks" {
 }
 
 test "multiline if else" {
-    const input =
+    var logger: Log.Logger = .new(std.testing.allocator);
+defer logger.destroyAll();
+const input =
         \\if x {
         \\} else {}
     ;
 
-    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator, &logger);
     lx.storeLocation = false;
 
     var tokens: std.ArrayList(Token) = lx.lex();
@@ -1093,11 +1177,13 @@ test "multiline if else" {
 }
 
 test "inline if else" {
-    const input =
+    var logger: Log.Logger = .new(std.testing.allocator);
+defer logger.destroyAll();
+const input =
         \\if x {} else {}
     ;
 
-    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator, &logger);
     lx.storeLocation = false;
 
     var tokens: std.ArrayList(Token) = lx.lex();
@@ -1123,11 +1209,13 @@ test "inline if else" {
 }
 
 test "if else without curly braces" {
-    const input =
+    var logger: Log.Logger = .new(std.testing.allocator);
+defer logger.destroyAll();
+const input =
         \\if x print x else print y
     ;
 
-    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator, &logger);
     lx.storeLocation = false;
 
     var tokens: std.ArrayList(Token) = lx.lex();
@@ -1151,11 +1239,13 @@ test "if else without curly braces" {
 }
 
 test "if else with mixed curly braces" {
-    const input =
+    var logger: Log.Logger = .new(std.testing.allocator);
+defer logger.destroyAll();
+const input =
         \\if x {print x} else print y
     ;
 
-    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator, &logger);
     lx.storeLocation = false;
 
     var tokens: std.ArrayList(Token) = lx.lex();
@@ -1183,14 +1273,16 @@ test "if else with mixed curly braces" {
 }
 
 test "multiline if else with mixed curly braces" {
-    const input =
+    var logger: Log.Logger = .new(std.testing.allocator);
+defer logger.destroyAll();
+const input =
         \\if x {
         \\x = 10
         \\}
         \\else print y
     ;
 
-    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator, &logger);
     lx.storeLocation = false;
 
     var tokens: std.ArrayList(Token) = lx.lex();
@@ -1219,13 +1311,15 @@ test "multiline if else with mixed curly braces" {
 }
 
 test "multiline while" {
-    const input =
+    var logger: Log.Logger = .new(std.testing.allocator);
+defer logger.destroyAll();
+const input =
         \\while x {
         \\ print x
         \\}
     ;
 
-    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator, &logger);
     lx.storeLocation = false;
 
     var tokens: std.ArrayList(Token) = lx.lex();
@@ -1249,9 +1343,11 @@ test "multiline while" {
 }
 
 test "inline while" {
-    const input = "while x print x";
+    var logger: Log.Logger = .new(std.testing.allocator);
+defer logger.destroyAll();
+const input = "while x print x";
 
-    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator, &logger);
     lx.storeLocation = false;
 
     var tokens: std.ArrayList(Token) = lx.lex();
@@ -1270,9 +1366,11 @@ test "inline while" {
 }
 
 test "less than" {
-    const input = "x < y";
+    var logger: Log.Logger = .new(std.testing.allocator);
+defer logger.destroyAll();
+const input = "x < y";
 
-    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator, &logger);
     lx.storeLocation = false;
 
     var tokens: std.ArrayList(Token) = lx.lex();
@@ -1290,9 +1388,11 @@ test "less than" {
 
 
 test "greater than" {
-    const input = "x > y";
+    var logger: Log.Logger = .new(std.testing.allocator);
+defer logger.destroyAll();
+const input = "x > y";
 
-    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator, &logger);
     lx.storeLocation = false;
 
     var tokens: std.ArrayList(Token) = lx.lex();
@@ -1309,9 +1409,11 @@ test "greater than" {
 }
 
 test "less than equal" {
-    const input = "x <= y";
+    var logger: Log.Logger = .new(std.testing.allocator);
+defer logger.destroyAll();
+const input = "x <= y";
 
-    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator, &logger);
     lx.storeLocation = false;
 
     var tokens: std.ArrayList(Token) = lx.lex();
@@ -1329,9 +1431,11 @@ test "less than equal" {
 
 
 test "greater than equal" {
-    const input = "x >= y";
+    var logger: Log.Logger = .new(std.testing.allocator);
+defer logger.destroyAll();
+const input = "x >= y";
 
-    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator, &logger);
     lx.storeLocation = false;
 
     var tokens: std.ArrayList(Token) = lx.lex();
@@ -1348,12 +1452,14 @@ test "greater than equal" {
 }
 
 test "expression statement after other statements" {
-    const input =
+    var logger: Log.Logger = .new(std.testing.allocator);
+defer logger.destroyAll();
+const input =
         \\print x
         \\x = x
     ;
 
-    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator, &logger);
     lx.storeLocation = false;
 
     var tokens: std.ArrayList(Token) = lx.lex();
@@ -1373,9 +1479,11 @@ test "expression statement after other statements" {
 }
 
 test "break" {
-    const input = "break";
+    var logger: Log.Logger = .new(std.testing.allocator);
+defer logger.destroyAll();
+const input = "break";
 
-    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator, &logger);
     lx.storeLocation = false;
 
     var tokens: std.ArrayList(Token) = lx.lex();
@@ -1390,9 +1498,11 @@ test "break" {
 }
 
 test "continue" {
-    const input = "continue";
+    var logger: Log.Logger = .new(std.testing.allocator);
+defer logger.destroyAll();
+const input = "continue";
 
-    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator, &logger);
     lx.storeLocation = false;
 
     var tokens: std.ArrayList(Token) = lx.lex();
@@ -1407,13 +1517,15 @@ test "continue" {
 }
 
 test "block break" {
-    const input =
+    var logger: Log.Logger = .new(std.testing.allocator);
+defer logger.destroyAll();
+const input =
         \\while true {
         \\break
         \\}
     ;
 
-    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator, &logger);
     lx.storeLocation = false;
 
     var tokens: std.ArrayList(Token) = lx.lex();
@@ -1436,13 +1548,15 @@ test "block break" {
 
 
 test "block continue" {
-    const input =
+    var logger: Log.Logger = .new(std.testing.allocator);
+defer logger.destroyAll();
+const input =
         \\while true {
         \\continue
         \\}
     ;
 
-    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator, &logger);
     lx.storeLocation = false;
 
     var tokens: std.ArrayList(Token) = lx.lex();
@@ -1464,11 +1578,13 @@ test "block continue" {
 }
 
 test "inline block break" {
-    const input =
+    var logger: Log.Logger = .new(std.testing.allocator);
+defer logger.destroyAll();
+const input =
         \\while true break
     ;
 
-    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator, &logger);
     lx.storeLocation = false;
 
     var tokens: std.ArrayList(Token) = lx.lex();
@@ -1486,12 +1602,14 @@ test "inline block break" {
 }
 
 test "newline block break" {
-    const input =
+    var logger: Log.Logger = .new(std.testing.allocator);
+defer logger.destroyAll();
+const input =
         \\while true
         \\break
     ;
 
-    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator, &logger);
     lx.storeLocation = false;
 
     var tokens: std.ArrayList(Token) = lx.lex();
@@ -1510,11 +1628,13 @@ test "newline block break" {
 
 
 test "comma declaration" {
-    const input =
+    var logger: Log.Logger = .new(std.testing.allocator);
+defer logger.destroyAll();
+const input =
         \\declare x = 1, y = 2, z, w = 5
     ;
 
-    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator, &logger);
     lx.storeLocation = false;
 
     var tokens: std.ArrayList(Token) = lx.lex();
@@ -1542,12 +1662,14 @@ test "comma declaration" {
 }
 
 test "inline simple function definition with return" {
-    const input =
+    var logger: Log.Logger = .new(std.testing.allocator);
+defer logger.destroyAll();
+const input =
         \\declare x = 0
         \\function last(x, y, z) return z
     ;
 
-    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator, &logger);
     lx.storeLocation = false;
 
     var tokens: std.ArrayList(Token) = lx.lex();
@@ -1578,11 +1700,13 @@ test "inline simple function definition with return" {
 }
 
 test "single make" {
-    const input =
+    var logger: Log.Logger = .new(std.testing.allocator);
+defer logger.destroyAll();
+const input =
         \\declare list[10]
     ;
 
-    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator, &logger);
     lx.storeLocation = false;
 
     var tokens: std.ArrayList(Token) = lx.lex();
@@ -1601,12 +1725,14 @@ test "single make" {
 }
 
 test "multiline multi make" {
-    const input =
+    var logger: Log.Logger = .new(std.testing.allocator);
+defer logger.destroyAll();
+const input =
         \\declare list[10], anotherlist[5]
         \\print 10
     ;
 
-    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator, &logger);
     lx.storeLocation = false;
 
     var tokens: std.ArrayList(Token) = lx.lex();
@@ -1633,11 +1759,13 @@ test "multiline multi make" {
 }
 
 test "property access" {
-    const input =
+    var logger: Log.Logger = .new(std.testing.allocator);
+defer logger.destroyAll();
+const input =
         \\mylist.size
     ;
 
-    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator, &logger);
     lx.storeLocation = false;
 
     var tokens: std.ArrayList(Token) = lx.lex();
@@ -1654,11 +1782,13 @@ test "property access" {
 }
 
 test "multi property access" {
-    const input =
+    var logger: Log.Logger = .new(std.testing.allocator);
+defer logger.destroyAll();
+const input =
         \\obj.prop1.prop2
     ;
 
-    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator, &logger);
     lx.storeLocation = false;
 
     var tokens: std.ArrayList(Token) = lx.lex();
@@ -1677,13 +1807,15 @@ test "multi property access" {
 }
 
 test "multiline property access not allowed" {
-    const input =
+    var logger: Log.Logger = .new(std.testing.allocator);
+defer logger.destroyAll();
+const input =
         \\obj
         \\  .prop1
         \\  .prop2
     ;
 
-    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator, &logger);
     lx.storeLocation = false;
 
     var tokens: std.ArrayList(Token) = lx.lex();
@@ -1704,13 +1836,15 @@ test "multiline property access not allowed" {
 }
 
 test "line comment" {
-    const input =
+    var logger: Log.Logger = .new(std.testing.allocator);
+defer logger.destroyAll();
+const input =
         \\ # this is a comment
         \\ ; this is another comment
         \\ declare x = 0
     ;
 
-    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator, &logger);
     lx.storeLocation = false;
 
     var tokens: std.ArrayList(Token) = lx.lex();
@@ -1728,12 +1862,14 @@ test "line comment" {
 }
 
 test "after line comment" {
-    const input =
+    var logger: Log.Logger = .new(std.testing.allocator);
+defer logger.destroyAll();
+const input =
         \\ declare x = 0 ; this is a descriptive comment
         \\ print x # this is another descriptive comment
     ;
 
-    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator, &logger);
     lx.storeLocation = false;
 
     var tokens: std.ArrayList(Token) = lx.lex();
@@ -1754,12 +1890,14 @@ test "after line comment" {
 }
 
 test "inline comment" {
-    const input =
+    var logger: Log.Logger = .new(std.testing.allocator);
+defer logger.destroyAll();
+const input =
         \\ declare my_;variable = 0 <-- inline comment
         \\ print my_#variable print 0
     ;
 
-    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator, &logger);
     lx.storeLocation = false;
 
     var tokens: std.ArrayList(Token) = lx.lex();
@@ -1778,9 +1916,11 @@ test "inline comment" {
 }
 
 test "float literal" {
-    const input = "13.4";
+    var logger: Log.Logger = .new(std.testing.allocator);
+defer logger.destroyAll();
+const input = "13.4";
 
-    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator, &logger);
     lx.storeLocation = false;
 
     var tokens: std.ArrayList(Token) = lx.lex();
@@ -1795,9 +1935,11 @@ test "float literal" {
 }
 
 test "short form float literal" {
-    const input = "13.";
+    var logger: Log.Logger = .new(std.testing.allocator);
+defer logger.destroyAll();
+const input = "13.";
 
-    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator, &logger);
     lx.storeLocation = false;
 
     var tokens: std.ArrayList(Token) = lx.lex();
@@ -1812,9 +1954,11 @@ test "short form float literal" {
 }
 
 test "float expression" {
-    const input = "13.4+1.-1.3434";
+    var logger: Log.Logger = .new(std.testing.allocator);
+defer logger.destroyAll();
+const input = "13.4+1.-1.3434";
 
-    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator, &logger);
     lx.storeLocation = false;
 
     var tokens: std.ArrayList(Token) = lx.lex();
@@ -1833,9 +1977,11 @@ test "float expression" {
 }
 
 test "mixed float" {
-    const input = "13.,42";
+    var logger: Log.Logger = .new(std.testing.allocator);
+defer logger.destroyAll();
+const input = "13.,42";
 
-    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator, &logger);
     lx.storeLocation = false;
 
     var tokens: std.ArrayList(Token) = lx.lex();
@@ -1853,8 +1999,10 @@ test "mixed float" {
 
 test "booleans alternative" {
 
-    const input = "!(true and false)or true==false";
-    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
+    var logger: Log.Logger = .new(std.testing.allocator);
+defer logger.destroyAll();
+const input = "!(true and false)or true==false";
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator, &logger);
     lx.storeLocation = false;
 
     var tokens: std.ArrayList(Token) = lx.lex();
@@ -1879,8 +2027,10 @@ test "booleans alternative" {
 
 test "as and type keywords" {
 
-    const input = "true as Int as Float as Bool";
-    var lx = lexer.Lexer.new(input, "", std.testing.allocator);
+    var logger: Log.Logger = .new(std.testing.allocator);
+defer logger.destroyAll();
+const input = "true as Int as Float as Bool";
+    var lx = lexer.Lexer.new(input, "", std.testing.allocator, &logger);
     lx.storeLocation = false;
 
     var tokens: std.ArrayList(Token) = lx.lex();
@@ -1902,8 +2052,10 @@ test "as and type keywords" {
 
 test "location one line" {
 
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
     const input = "myvar + 3";
-    var lx = lexer.Lexer.new(input, "test.peb", std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "test.peb", std.testing.allocator, &logger);
 
     var tokens: std.ArrayList(Token) = lx.lex();
     defer tokens.deinit(std.testing.allocator);
@@ -1944,12 +2096,14 @@ test "location one line" {
 
 test "location two lines auto line break" {
 
-    const input =
+    var logger: Log.Logger = .new(std.testing.allocator);
+defer logger.destroyAll();
+const input =
         \\declare myvar = 1
         \\return 0.23
     ;
 
-    var lx = lexer.Lexer.new(input, "tf", std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "tf", std.testing.allocator, &logger);
 
     var tokens: std.ArrayList(Token) = lx.lex();
     defer tokens.deinit(std.testing.allocator);
@@ -2018,13 +2172,15 @@ test "location two lines auto line break" {
 
 test "location extra line break" {
 
-    const input =
+    var logger: Log.Logger = .new(std.testing.allocator);
+defer logger.destroyAll();
+const input =
         \\declare myvar = 1
         \\
         \\return 0.23
     ;
 
-    var lx = lexer.Lexer.new(input, "tf", std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "tf", std.testing.allocator, &logger);
 
     var tokens: std.ArrayList(Token) = lx.lex();
     defer tokens.deinit(std.testing.allocator);
@@ -2093,12 +2249,14 @@ test "location extra line break" {
 
 test "location if statement" {
 
-    const input =
+    var logger: Log.Logger = .new(std.testing.allocator);
+defer logger.destroyAll();
+const input =
         \\if (1 == 0)
         \\  return false
     ;
 
-    var lx = lexer.Lexer.new(input, "tf", std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "tf", std.testing.allocator, &logger);
 
     var tokens: std.ArrayList(Token) = lx.lex();
     defer tokens.deinit(std.testing.allocator);
@@ -2181,11 +2339,13 @@ test "location if statement" {
 
 test "location early eof" {
 
-    const input =
+    var logger: Log.Logger = .new(std.testing.allocator);
+defer logger.destroyAll();
+const input =
         \\
     ;
 
-    var lx = lexer.Lexer.new(input, "tf", std.testing.allocator);
+    var lx = lexer.Lexer.new(input, "tf", std.testing.allocator, &logger);
 
     var tokens: std.ArrayList(Token) = lx.lex();
     defer tokens.deinit(std.testing.allocator);
@@ -2196,6 +2356,114 @@ test "location early eof" {
             .location = LocationRange {
                 .from = Location {.file = "tf", .column = 0, .line = 0},
                 .to = Location {.file = "tf", .column = 0, .line = 0},
+            }
+        },
+    };
+
+    try std.testing.expectEqualDeep(expected, tokens.items);
+}
+
+
+test "location with property access" {
+
+    var logger: Log.Logger = .new(std.testing.allocator);
+    defer logger.destroyAll();
+    const input = "while (i = i + 2) < x.sizes";
+    var lx = lexer.Lexer.new(input, "test.peb", std.testing.allocator, &logger);
+
+    var tokens: std.ArrayList(Token) = lx.lex();
+    defer tokens.deinit(std.testing.allocator);
+
+    const expected: []const Token = &[_]Token{
+        Token {
+            .tokenType = TokenType {.WHILE = {}},
+            .location = LocationRange {
+                .from = Location {.file = "test.peb", .column = 0, .line = 0},
+                .to = Location {.file = "test.peb", .column = 4, .line = 0},
+            }
+        },
+        Token {
+            .tokenType = TokenType {.LPAREN = {}},
+            .location = LocationRange {
+                .from = Location {.file = "test.peb", .column = 6, .line = 0},
+                .to = Location {.file = "test.peb", .column = 6, .line = 0},
+            }
+        },
+        Token {
+            .tokenType = TokenType {.IDENT = "i"},
+            .location = LocationRange {
+                .from = Location {.file = "test.peb", .column = 7, .line = 0},
+                .to = Location {.file = "test.peb", .column = 7, .line = 0},
+            }
+        },
+        Token {
+            .tokenType = TokenType {.EQ = {}},
+            .location = LocationRange {
+                .from = Location {.file = "test.peb", .column = 9, .line = 0},
+                .to = Location {.file = "test.peb", .column = 9, .line = 0},
+            }
+        },
+        Token {
+            .tokenType = TokenType {.IDENT = "i"},
+            .location = LocationRange {
+                .from = Location {.file = "test.peb", .column = 11, .line = 0},
+                .to = Location {.file = "test.peb", .column = 11, .line = 0},
+            }
+        },
+        Token {
+            .tokenType = TokenType {.PLUS = {}},
+            .location = LocationRange {
+                .from = Location {.file = "test.peb", .column = 13, .line = 0},
+                .to = Location {.file = "test.peb", .column = 13, .line = 0},
+            }
+        },
+        Token {
+            .tokenType = TokenType {.INTLIT = 2},
+            .location = LocationRange {
+                .from = Location {.file = "test.peb", .column = 15, .line = 0},
+                .to = Location {.file = "test.peb", .column = 15, .line = 0},
+            }
+        },
+        Token {
+            .tokenType = TokenType {.RPAREN = {}},
+            .location = LocationRange {
+                .from = Location {.file = "test.peb", .column = 16, .line = 0},
+                .to = Location {.file = "test.peb", .column = 16, .line = 0},
+            }
+        },
+        Token {
+            .tokenType = TokenType {.LT = {}},
+            .location = LocationRange {
+                .from = Location {.file = "test.peb", .column = 18, .line = 0},
+                .to = Location {.file = "test.peb", .column = 18, .line = 0},
+            }
+        },
+        Token {
+            .tokenType = TokenType {.IDENT = "x"},
+            .location = LocationRange {
+                .from = Location {.file = "test.peb", .column = 20, .line = 0},
+                .to = Location {.file = "test.peb", .column = 20, .line = 0},
+            }
+        },
+        Token {
+            .tokenType = TokenType {.DOT = {}},
+            .location = LocationRange {
+                .from = Location {.file = "test.peb", .column = 21, .line = 0},
+                .to = Location {.file = "test.peb", .column = 21, .line = 0},
+            }
+        },
+        Token {
+            .tokenType = TokenType {.IDENT = "sizes"},
+            .location = LocationRange {
+                .from = Location {.file = "test.peb", .column = 22, .line = 0},
+                .to = Location {.file = "test.peb", .column = 26, .line = 0},
+            }
+        },
+        Token {
+            .tokenType = TokenType {.EOF = {}},
+            .location = LocationRange {
+                .from = Location {.file = "test.peb", .column = 27, .line = 0},
+                .to = Location {.file = "test.peb", .column = 27, .line = 0},
             }
         },
     };

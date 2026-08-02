@@ -75,6 +75,7 @@ pub const Type = enum {
     Int,
     Float,
     Bool,
+    Char,
 
     pub fn format(
         self: Type,
@@ -84,6 +85,7 @@ pub const Type = enum {
             .Int => try writer.print("Int", .{}),
             .Float => try writer.print("Float", .{}),
             .Bool => try writer.print("Bool", .{}),
+            .Char => try writer.print("Char", .{}),
         }
     }
 };
@@ -92,6 +94,7 @@ pub const Lit = union(enum) {
     Int: i64,
     Float: f64,
     Bool: bool,
+    Char: u8,
     Void: void,
     Callable: Callable,
     List: *List,
@@ -100,7 +103,7 @@ pub const Lit = union(enum) {
 
     pub fn destroyAll(self: *const Lit, allocator: std.mem.Allocator) void {
         switch (self.*) {
-            .Int, .Bool, .Float, .Type, .Void => {},
+            .Int, .Bool, .Float, .Char, .Type, .Void => {},
             .Callable => |fun| fun.destroyAll(allocator),
             .List => |lst| lst.destroyAll(allocator),
             .String => |str| allocator.free(str),
@@ -115,6 +118,7 @@ pub const Lit = union(enum) {
             .Int => |v| try writer.print("{d}", .{v}),
             .Float => |v| try writer.print("{d}", .{v}),
             .Bool => |v| try writer.print("{}", .{v}),
+            .Char => |c| try writer.print("{c}", .{c}),
             .Void => try writer.print("{{}}", .{}),
             .Callable => |f| try writer.print("{f}", .{f}),
             .List => |l| try writer.print("{f}", .{l}),
