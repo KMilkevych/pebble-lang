@@ -73,7 +73,10 @@ pub const Interpreter = struct {
             .Var => |v| {
 
                 // Lookup in environment
-                if (!env.isDeclaredGlobal(v)) return ValueError.UndefinedVariable;
+                if (!env.isDeclaredGlobal(v)) {
+                    self.logger.logError(ValueError.UndefinedVariable, location);
+                    return ValueError.UndefinedVariable;
+                }
                 const value: venv.ObjectVal = env.lookup(v).?;
 
                 // Evalue to a literal based on value

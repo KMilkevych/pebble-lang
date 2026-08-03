@@ -71,7 +71,7 @@ fn operator_from_string(str: []const u8) token.TokenType {
 }
 
 fn is_keyword(chars: []const u8) bool {
-    return contains(&[_][]const u8 {"declare", "print", "if", "else", "while", "break", "continue", "return", "function", "and", "or", "as", "Int", "Float", "Bool"}, chars);
+    return contains(&[_][]const u8 {"declare", "print", "if", "else", "while", "break", "continue", "return", "function", "and", "or", "as", "Int", "Float", "Bool", "Char"}, chars);
 }
 
 fn keyword_from_string(str: []const u8) token.TokenType {
